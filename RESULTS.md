@@ -1,14 +1,25 @@
 # Results
 
-## LiH Ground State Energy
-- **Bond Length**: 1.6 Å
-- **Hartree-Fock Energy**: -7.66194677 Ha
-- **VQE Final Energy**: -7.67957954 Ha
-- **Energy Improvement**: 0.01763277 Ha (0.48 eV)
-- **Convergence**: 50 iterations
-- **Dominant State**: |111100000000⟩ with amplitude 0.9930
+The project generates comprehensive visualizations for molecular systems.
+Both visualizations demonstrate the dominance of the Hartree-Fock reference state with correlation corrections from excitations.
+Basis state indices are converted from binary to decimal for shorter/clearer axis-labeling.
 
-### LiH Ground State
+## LiH
+
+### Set Up
+
+- **Bond Length**: $1.6 Å$
+- **Hartree-Fock Energy**: $-7.66194677 Ha$
+- **Convergence**: $50$ iterations
+
+### Visualization
+
+```GradientDescentOptimizer``` with step-size $0.1$ successfully converges at ground state energy $-7.67957954 Ha$:
+
+![LiH Convergence](notebooks/images/LiH_convergence.png)
+
+The calculated wavefunction for the ground state of LiH is:
+
 ```
 |ψ⟩ = 0.9930|111100000000⟩ - 0.0969|110000000011⟩ 
     - 0.0334|110000001100⟩ - 0.0334|110000110000⟩ 
@@ -16,15 +27,27 @@
     - 0.0123|110011000000⟩
 ```
 
-## H₂O Ground State Energy
-- **Molecular Geometry**: Bent structure (104.5° bond angle)
-- **Hartree-Fock Energy**: -72.86837737 Ha
-- **VQE Final Energy**: -72.87712785 Ha
-- **Energy Improvement**: 0.00875048 Ha (0.24 eV)
-- **Convergence**: 50 iterations with Adam optimizer
-- **Dominant State**: |11111111110000⟩ with amplitude 0.9979
+The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
-### H₂O Ground State
+![LiH Ground State](notebooks/images/LiH_ground_state.png)
+
+## H₂O
+
+### Set Up
+
+- **Bond Lengths**: $0.910922 Å$
+- **Molecular Geometry**: Bent structure ($104.5\textdegree$ bond angle)
+- **Hartree-Fock Energy**: $-72.86837737 Ha$
+- **Convergence**: $50$ iterations with Adam optimizer
+
+### Visualization
+
+```AdamOptimizer```  with step-size $0.1$ successfully converges at ground state energy $-72.87712785 Ha$:
+
+![H₂O Convergence](notebooks/images/H2O_convergence.png)
+
+The calculated wavefunction for the ground state of water is:
+
 ```
 |ψ⟩ = 0.9979|11111111110000⟩ - 0.0323|11110011110011⟩
     - 0.0244|11111100110011⟩ - 0.0211|11111111001100⟩
@@ -32,24 +55,26 @@
     + 0.0156|11011011111001⟩ - 0.0105|11110011111100⟩
 ```
 
-## Visualizations
+The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
-The project generates comprehensive visualizations for both molecular systems.
-Basis state indices are converted from binary to decimal for shorter/clearer axis-labeling.
+![H₂O Ground State](notebooks/images/H2O_ground_state.png)
 
-### LiH Visualizations
-1. **Energy Convergence Plot**: Shows VQE optimization progress over 50 iterations
-2. **Ground State Amplitudes**: Bar plot of significant quantum state components
+## Optimal H₂O Angle
 
-![LiH Ground State](notebooks/images/LiH_ground_state.png)
+The Adam optimizer was used to find the angle between the two hydrogens in water.
+$10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]$.
+```notebooks/Water_Angle_VQE.png``` outputs:
 
-### H₂O Visualizations  
-1. **Energy Convergence Plot**: Shows Adam optimizer convergence behavior
-2. **Ground State Amplitudes**: Bar plot showing basis state contributions
+![Optimal H₂O Angle](notebooks/images/Water_Optimal_Angle.png)
 
-![H2O Ground State](notebooks/images/H2O_ground_state.png)
+```
+Minimum energy: -71.539353 Ha
+Optimal angle: 104.50°
+```
 
-Both visualizations demonstrate the dominance of the Hartree-Fock reference state with correlation corrections from excitations.
+These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5\textdegree$) of water.
+[Chemical bonding of water](https://en.wikipedia.org/wiki/Chemical_bonding_of_water)
+[Ground-state energy estimation of the water molecule on a trapped ion quantum computer](https://arxiv.org/abs/1902.10171)
 
 ---
 
