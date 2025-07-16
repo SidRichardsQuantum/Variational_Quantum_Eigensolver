@@ -4,6 +4,41 @@ The project generates comprehensive visualizations for molecular systems.
 Both visualizations demonstrate the dominance of the Hartree-Fock reference state with correlation corrections from excitations.
 Basis state indices are converted from binary to decimal for shorter/clearer axis-labeling.
 
+## H₂
+
+### Set Up
+
+- **Bond Length**: $0.7414 Å$
+- **Hartree-Fock Energy**: $-0.88842304 Ha$
+- **Convergence**: $50$ iterations
+
+### Visualization
+
+```GradientDescentOptimizer```, ```AdamOptimizer``` and ```NesterovMomentumOptimizer``` each with step size $0.2$ all successfully convert at ground state energies:
+
+```
+Adam:
+Final ground state energy = -0.89801392 Ha
+
+GradientDescent:
+Final ground state energy = -0.89805304 Ha
+
+Nesterov:
+Final ground state energy = -0.89805304 Ha
+```
+
+![H₂ Optimizer Comparisson](notebooks/images/H2_optimiser_comparison.png)
+
+The best optimizer for this dihydrogen example is the Gradient Descent.
+Using this, the ground state is found:
+
+```
+Ground state of H₂:
+|ψ⟩ = -0.0585|0011> + 0.9983|1100>
+```
+
+![H₂ Ground State](notebooks/images/H2_ground_state.png)
+
 ## LiH
 
 ### Set Up
@@ -30,6 +65,19 @@ The calculated wavefunction for the ground state of LiH is:
 The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
 ![LiH Ground State](notebooks/images/LiH_ground_state.png)
+
+### Optimal LiH Length
+
+The Gradient Descent Optimizer was used to scan over a range of bond-lengths between the Li and H atoms.
+$20$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.0] Å$.
+```notebooks/H2O_Bond_Angle.png``` outputs:
+
+![Optimal Length](notebooks/images/LiH_Optimal_Bond_Length.png)
+
+```
+Optimal bond length: 1.60 Å
+Minimum ground state energy: -5.59357194 Ha
+```
 
 ## H₂O
 
@@ -59,11 +107,11 @@ The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
 ![H₂O Ground State](notebooks/images/H2O_ground_state.png)
 
-## Optimal H₂O Angle
+### Optimal H₂O Angle
 
 The Adam optimizer was used to find the angle between the two hydrogens in water.
 $10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]$.
-```notebooks/Water_Angle_VQE.png``` outputs:
+```notebooks/H2O_Bond_Angle.png``` outputs:
 
 ![Optimal H₂O Angle](notebooks/images/Water_Optimal_Angle.png)
 

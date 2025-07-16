@@ -1,7 +1,7 @@
 # Variational Quantum Eigensolver
 
 This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Lithium Hydride (LiH)** and **Water (H₂O)** using **PennyLane** and **Python**.
-We demonstrate noisy and noiseless ground state energy calculations and eigenstate visualizations, using different ansatz approaches and optimisers.
+We demonstrate noiseless ground state energy calculations and eigenstate visualizations, using different ansatz approaches and optimisers.
 The optimum bond-length of LiH and bond-angle of water are found, by using the VQE to calculate the ground state akin to molecules with variable geometry.
 
 For detailed theoretical explanations, see [THEORY.md](THEORY.md).
@@ -26,12 +26,12 @@ This repository showcases:
 - **Dihydrogen (H₂)**: Simplest molecule, pair of protons with a pair of electrons
   - 4 qubits required
   - Ansatz: Single + Double excitations (UCCSD)
-  - Optimizer: Adam
+  - Optimizers: Gradient Descent, Adam, Nesterov Momentum
 
 - **Lithium Hydride (LiH)**: Simple molecule with 4 electrons
   - 12 qubits required
   - Ansatz: Double excitations only
-  - Optimizers: Gradient Descent, Adam
+  - Optimizer: Gradient Descent
   - VQE is ran for a range bond-lengths to find the optimum
   
 - **Water (H₂O)**: Bent molecular geometry with 10 electrons
@@ -55,27 +55,23 @@ This repository showcases:
 - **[PennyLane-qchem](https://pennylane.ai/qml/demos/tutorial_qchem.html)**: Quantum chemistry extension
 - **NumPy**: Numerical computations
 - **Matplotlib**: Data visualization
-- **SciPy**: Scientific computing utilities
 
 ## Project Structure
 
 ```
 variational_quantum_eigensolver/
-├── requirements.txt          # Dependencies
-├── LICENSE                   # MIT license
-├── README.md                 # This file 
-├── THEORY.md                 # Detailed theoretical background
-├── RESULTS.md                # Results and analysis
-├── notebooks/                # Jupyter notebooks written in Python
-│   ├── H2_Noiseless.ipynb    # Noiseless H₂ VQE implementation
-│   ├── LiH_Noiseless.ipynb   # Noiseless LiH VQE implementation
-│   ├── LiH_Bond_Length.ipynb  # Optimum bond-length of LiH
-│   ├── H2O_Noiseless.ipynb   # Noiseless H₂O VQE implementation
-│   └── H2O_Bond_Angle.ipynb   # Optimum bond-angle of H₂O
-└── images/                   # Generated visualization plots
-    ├── LiH_ground_state.png  # LiH ground state amplitude plot
-    ├── H2O_ground_state.png  # H₂O ground state amplitude plot
-    └── H2_ground_state.png    # H₂ ground state amplitude plot
+├── LICENSE                    # MIT license
+├── requirements.txt           # Dependencies
+├── README.md                  # This file 
+├── THEORY.md                  # Detailed theoretical background
+├── RESULTS.md                 # Results and analysis
+└── notebooks/                 # Jupyter notebooks written in Python
+    ├── images/                # Directory of generated visualization plots
+    ├── H2_Noiseless.ipynb     # Noiseless H₂ VQE implementation
+    ├── LiH_Noiseless.ipynb    # Noiseless LiH VQE implementation
+    ├── LiH_Bond_Length.ipynb  # Optimum bond-length of LiH
+    ├── H2O_Noiseless.ipynb    # Noiseless H₂O VQE implementation
+    └── H2O_Bond_Angle.ipynb   # Optimum bond-angle of H₂O
 ```
 
 ## Usage
@@ -135,14 +131,15 @@ Different optimization approaches for each molecule:
 
 - **Parameters**: 72 double excitation angles
 - **Cost Function**: ⟨ψ(θ)| H |ψ(θ)⟩
-- **Optimisers**: Gradient Descent, Adam
+- **Optimisers**: Gradient Descent
 - **Convergence**: Energy tracked at each iteration for each optimiser
 
 #### H₂ and H₂O Optimization
 
 - **Parameters**: Single + double excitation angles
 - **Cost Function**: ⟨ψ(θ_s, θ_d)| H |ψ(θ_s, θ_d)⟩
-- **Optimizer**: Adam with $0.1$ step size
+- **H₂O Optimizer**: Adam with $0.1$ step size
+- **H₂ Optimizer**: Gradient Descent, Adam, Nesterov Momentum; each with $0.2$ step sizes
 - **Convergence**: Energy tracked at each iteration
 
 ### 5. Analysis & Visualization
