@@ -4,16 +4,18 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ## Molecules Studied:
 
-| Molecule | Property Scanned       | Notes                             |
-|----------|------------------------|-----------------------------------|
-| H₂       | Ansatz & Optimizer     | Exact solvable reference          |
-| LiH      | Bond length variation  | 4 qubits (minimal basis), ionic   |
-| H₂O      | Bond angle variation   | Triatomic, more degrees of freedom|
+| Molecule |   Properties Scanned  | Qubits Required |
+|----------|-----------------------|-----------------|
+|    H₂    |   Ansätz & Optimizer  |       $4$       |
+|    LiH   | Bond length variation |       $12$      |
+|    H₂O   | Bond angle variation  |       $14$      |
 
 All simulations use the **STO-3G** basis set for consistency.
 Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the **Jordan-Wigner** transformation (via PennyLane's `qchem` module).
 
-## Variational Principle
+## Background
+
+### Variational Principle
 
 The variational principle states that for any trial wavefunction $|\psi⟩$, the expectation value of the Hamiltonian is an upper bound to the true ground state energy:
 ```
@@ -24,50 +26,107 @@ where:
 - $|\psi⟩$ is any normalized wavefunction
 - $H$ is the Hamiltonian
 
-## Hartree-Fock
+### Hartree-Fock
 
 The Hartree-Fock state is written as the tensor product of a qubit state $\phi$ for every electron orbital:
 ```
 |HF⟩ = |φ₁φ₂...φₙ⟩
 ```
-For LiH with 4 electrons in 12 orbitals, the HF reference state is ```|111100000000⟩```, which describes electrons occupying the four lowest energy orbital states.
+For LiH with $4$ electrons in $12$ orbitals, the HF reference state is ```|111100000000⟩```, which describes electrons occupying the four lowest energy orbital states.
 
-## VQE Algorithm
+## VQE Algorithm Overview
 
 The VQE algorithm consists of:
-1. **State Preparation**: Prepare parameterized quantum state |ψ(θ)⟩
-2. **Measurement**: Measure expectation value ⟨ψ(θ)|H|ψ(θ)⟩
-3. **Optimization**: Classically optimize parameters θ to minimize energy
+1. **State Preparation**: Prepare parameterized quantum state $|\psi(\theta)⟩$
+2. **Measurement**: Measure expectation value $⟨\psi(\theta)| H |\psi(\theta)⟩$
+3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
 
-## Ansatz Construction
+### Ansätz Construction:
 
-An ansatz defines the form of the quantum state using:
-- **Single Excitations** for orbital relaxation
-- **Double Excitations** for electron-electron correlation effects
+An ansätze defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
+It determines how expressive, efficient, and trainable your VQE circuit is.
+Different ansätze trade off physical accuracy, circuit depth, and compatibility with quantum hardware.
 
-## Implementation Parameters
+#### UCCSD (Unitary Coupled Cluster Singles and Doubles)
 
-### LiH
-- **Bond Length**: 1.6Å
-- **Electrons**: 4 total electrons
-- **Qubits**: 12 qubits required
-- **Ansatz**: Double excitation gates only (72 parameters)
-- **Optimizer**: Gradient Descent with 0.1 step size
-- **Iterations**: 50 optimization steps
+A chemistry-inspired ansätze derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
 
-### H₂O
-- **Geometry**: 104.5° bond angle between the hydrogens about the oxygen
-- **Electrons**: 10 total electrons  
-- **Qubits**: 14 qubits required
-- **Ansatz**: Single + Double excitations (UCCSD)
-- **Optimizer**: Adam with 0.1 step size
-- **Iterations**: 50 optimization steps
+- Designed for capturing electron correlation from first principles
+- Exact for small systems like H₂ in minimal basis sets (e.g., STO-3G)
+- Can become deep and resource-intensive for larger molecules
+
+#### $R_Y-C_Z$ Ansätz
+
+A hardware-efficient ansätze composed of layers alternating single-qubit rotations and entangling gates.
+
+- Uses $R_Y$ rotations followed by a chain of $C_Z$ gates
+- Tunable number of layers (depth)
+- Good expressibility for small and medium systems
+- Easier to implement on near-term hardware
+
+#### Minimal / One-Parameter Ansätz
+
+A manually constructed, problem-specific ansätze using very few parameters.
+
+- Tailored for simple systems like H₂ in minimal basis
+- Uses a single $R_Y$ rotation and one entangling gate (e.g., CNOT)
+- Extremely shallow and interpretable
+- Useful for testing optimizers, energy landscapes, or learning curves
+
+### Optimizers:
+
+Classical optimizers are a critical component of the VQE algorithm, as they minimize the energy by adjusting circuit parameters $\theta$.
+
+#### AdamOptimizer
+
+Designed for fast, stable optimization by combining the benefits of momentum and adaptive learning rates.
+- Automatically adjusts step size for each parameter
+- Performs well in noisy or irregular energy landscapes
+- Common default in VQE due to ease of use and robustness
+
+#### GradientDescentOptimizer
+
+The simplest optimizer, as it updates parameters in the direction of steepest descent.
+- Useful for educational or baseline comparisons
+- Very sensitive to step size
+- Often slower and less reliable in quantum settings
+
+#### MomentumOptimizer
+
+Adds inertia to gradient descent to smooth parameter updates and help escape shallow local minima.
+- Useful when gradients fluctuate heavily
+- Reduces oscillations near minima
+- Often used as a stepping stone toward more adaptive optimizers
+
+#### NesterovMomentumOptimizer
+
+An improvement over standard momentum optimizers that “looks ahead” before making updates.
+- Accelerates convergence in smooth regions
+- Helps avoid getting stuck in flat or gently curved regions
+- Can be unstable if not tuned carefully
+
+#### AdagradOptimizer
+
+Adapts learning rates for each parameter based on past gradient history.
+- Useful when some parameters require more aggressive updates than others
+- Can become sluggish over time as it overcorrects
+
+#### SPSAOptimizer
+
+(Simultaneous Perturbation Stochastic Approximation)
+
+Designed for noisy or hardware-executed circuits, where gradients are expensive or unreliable.
+- Estimates the gradient using random perturbations
+- Requires very few circuit evaluations per step
+- Performs well in realistic noisy quantum environments
 
 ## References
 
 - [VQE](https://en.wikipedia.org/wiki/Variational_quantum_eigensolver)
 - [Hartree-Fock Method](https://en.wikipedia.org/wiki/Hartree–Fock_method)
+- [Ansätzes](https://docs.pennylane.ai/en/stable/code/qml.html)
+- [Optimisers](https://docs.pennylane.ai/en/stable/introduction/interfaces.html)
 
 ---
 

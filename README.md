@@ -1,7 +1,7 @@
 # Variational Quantum Eigensolver
 
 This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Lithium Hydride (LiH)** and **Water (H₂O)** using **PennyLane** and **Python**.
-We demonstrate noiseless ground state energy calculations and eigenstate visualizations, using different ansatz approaches and optimisers.
+We demonstrate noiseless ground state energy calculations and eigenstate visualizations, using different ansätze approaches and optimisers.
 The optimum bond-length of LiH and bond-angle of water are found, by using the VQE to calculate the ground state akin to molecules with variable geometry.
 
 For detailed theoretical explanations, see [THEORY.md](THEORY.md).
@@ -15,7 +15,7 @@ To read our main findings and results, see [RESULTS.md](RESULTS.md).
 VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry problems.
 This project implements VQE for:
 
-- **H₂ (Dihydrogen)**: Optimizer and ansatz benchmarking
+- **H₂ (Dihydrogen)**: Optimizer and ansätze benchmarking
 - **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
 - **H₂O (Water)**: Energy variation with bond angle
 
@@ -31,19 +31,19 @@ This project implements VQE for:
 
 ```
 variational_quantum_eigensolver/
-├── LICENSE                        # MIT license
-├── requirements.txt               # Dependencies
-├── README.md                      # This file 
-├── THEORY.md                      # Detailed theoretical background
-├── RESULTS.md                     # Results and analysis
-└── notebooks/                     # Jupyter notebooks written in Python
-    ├── images/                    # Directory of generated visualization plots
-    ├── H2_Noiseless.ipynb         # Noiseless H₂ VQE implementation
-    ├── H2_Ansatz_Comparison.ipynb  # Comparing ansatz for H₂
-    ├── LiH_Noiseless.ipynb        # Noiseless LiH VQE implementation
-    ├── LiH_Bond_Length.ipynb      # Optimum bond-length of LiH
-    ├── H2O_Noiseless.ipynb        # Noiseless H₂O VQE implementation
-    └── H2O_Bond_Angle.ipynb       # Optimum bond-angle of H₂O
+├── LICENSE                         # MIT license
+├── requirements.txt                # Dependencies
+├── README.md                       # This file 
+├── THEORY.md                       # Detailed theoretical background
+├── RESULTS.md                      # Results and analysis
+└── notebooks/                      # Jupyter notebooks written in Python
+    ├── images/                     # Directory of generated visualization plots
+    ├── H2_Noiseless.ipynb          # Noiseless H₂ VQE implementation
+    ├── H2_Ansatz_Comparison.ipynb  # Comparing ansätze for H₂
+    ├── LiH_Noiseless.ipynb         # Noiseless LiH VQE implementation
+    ├── LiH_Bond_Length.ipynb       # Optimum bond-length of LiH
+    ├── H2O_Noiseless.ipynb         # Noiseless H₂O VQE implementation
+    └── H2O_Bond_Angle.ipynb        # Optimum bond-angle of H₂O
 ```
 
 ## Usage
@@ -79,7 +79,7 @@ jupyter notebook LiH_Noiseless.ipynb
 - Hartree-Fock reference state as initial guess
 - Jordan-Wigner transformation maps fermions to qubits
 
-3. Ansatz Construction: Single and double excitaions to maximise electron-electron correlation effects
+3. Ansätze Construction: Single and double excitaions to maximise electron-electron correlation effects
 
 4. VQE Optimization:
 
