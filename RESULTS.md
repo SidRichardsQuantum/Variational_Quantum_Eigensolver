@@ -4,7 +4,18 @@ The project generates comprehensive visualizations for molecular systems.
 Both visualizations demonstrate the dominance of the Hartree-Fock reference state with correlation corrections from excitations.
 Basis state indices are converted from binary to decimal for shorter/clearer axis-labeling.
 
-## H₂
+---
+
+## 📚 Table of Contents
+- [H₂ (Optimiser Comparison)](#h₂-optimiser-comparison)
+- [H₂ (Ansätze Comparison)](#h₂-ansätze-comparison)
+- [LiH](#lih)
+  - [Optimal LiH Length](#optimal-lih-length)
+- [H₂O](#h₂o)
+  - [Optimal H₂O Angle](#optimal-h₂o-angle)
+---
+
+## H₂ (Optimiser Comparison)
 
 ### Set Up
 
@@ -14,7 +25,7 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 
 ### Visualization
 
-```GradientDescentOptimizer```, ```AdamOptimizer``` and ```NesterovMomentumOptimizer``` each with step size $0.2$ all successfully convert at ground state energies:
+`GradientDescentOptimizer`, `AdamOptimizer` and `NesterovMomentumOptimizer` each with step size $0.2$ all successfully convert at ground state energies:
 
 ```
 Adam:
@@ -27,7 +38,7 @@ Nesterov:
 Final ground state energy = -0.89805304 Ha
 ```
 
-![H₂ Optimizer Comparisson](notebooks/images/H2_optimiser_comparison.png)
+![H₂ Optimizer Comparison](notebooks/images/H2_optimiser_comparison.png)
 
 The best optimizer for this dihydrogen example is the Gradient Descent.
 Using this, the ground state is found:
@@ -39,6 +50,40 @@ Ground state of H₂:
 
 ![H₂ Ground State](notebooks/images/H2_ground_state.png)
 
+## H₂ (Ansätze Comparison)
+
+### Set Up
+
+- **Bond Length**: $0.7414 Å$
+- **Optimizer**: `AdamOptimizer` with step size $0.2$
+- **Iterations**: $40$
+- **Ansätze Compared**: `UCCSD`, `RY-CZ`, `Minimal`
+
+### Visualization
+
+The following ansätze were tested in a noiseless simulation:
+
+- **UCCSD**: A chemically motivated circuit including single and double excitations.
+- **$R_Y-C_Z$**: A hardware-efficient structure using rotation and $C_Z$ entanglement layers.
+- **Minimal**: A single-parameter ansätze tailored for H₂.
+
+All three ansätze successfully converged to near ground-state energies within $40$ iterations:
+
+```
+UCCSD:
+Final energy = -0.89805120 Ha
+
+RY-CZ:
+Final energy = -0.89805661 Ha
+
+Minimal:
+Final energy = -0.89804851 Ha
+```
+
+![H₂ Ansätze Comparison](notebooks/images/H2_Ansatz_Comparison.png)
+
+Although all ansätze reach similar energy minima, UCCSD and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
+
 ## LiH
 
 ### Set Up
@@ -49,7 +94,7 @@ Ground state of H₂:
 
 ### Visualization
 
-```GradientDescentOptimizer``` with step-size $0.1$ successfully converges at ground state energy $-7.67957954 Ha$:
+`GradientDescentOptimizer` with step-size $0.1$ successfully converges at ground state energy $-7.67957954 Ha$:
 
 ![LiH Convergence](notebooks/images/LiH_convergence.png)
 
@@ -70,7 +115,7 @@ The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
 The Gradient Descent Optimizer was used to scan over a range of bond-lengths between the Li and H atoms.
 $20$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.0] Å$.
-```notebooks/H2O_Bond_Angle.png``` outputs:
+Plot output from `LiH_Bond_Length.ipynb`:
 
 ![Optimal Length](notebooks/images/LiH_Optimal_Bond_Length.png)
 
@@ -84,13 +129,13 @@ Minimum ground state energy: -5.59357194 Ha
 ### Set Up
 
 - **Bond Lengths**: $0.910922 Å$
-- **Molecular Geometry**: Bent structure ($104.5\textdegree$ bond angle)
+- **Molecular Geometry**: Bent structure ($104.5°$ bond angle)
 - **Hartree-Fock Energy**: $-72.86837737 Ha$
 - **Convergence**: $50$ iterations with Adam optimizer
 
 ### Visualization
 
-```AdamOptimizer```  with step-size $0.1$ successfully converges at ground state energy $-72.87712785 Ha$:
+`AdamOptimizer`  with step-size $0.1$ successfully converges at ground state energy $-72.87712785 Ha$:
 
 ![H₂O Convergence](notebooks/images/H2O_convergence.png)
 
@@ -110,8 +155,8 @@ The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 ### Optimal H₂O Angle
 
 The Adam optimizer was used to find the angle between the two hydrogens in water.
-$10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]$.
-```notebooks/H2O_Bond_Angle.png``` outputs:
+$10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]°$.
+Plot output from `H2O_Bond_Angle.ipynb`:
 
 ![Optimal H₂O Angle](notebooks/images/Water_Optimal_Angle.png)
 
@@ -120,7 +165,7 @@ Minimum energy: -71.539353 Ha
 Optimal angle: 104.50°
 ```
 
-These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5\textdegree$) of water.
+These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5°$) of water.
 [Chemical bonding of water](https://en.wikipedia.org/wiki/Chemical_bonding_of_water)
 [Ground-state energy estimation of the water molecule on a trapped ion quantum computer](https://arxiv.org/abs/1902.10171)
 

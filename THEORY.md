@@ -2,6 +2,19 @@
 
 This document provides a detailed explanation of the **Variational Quantum Eigensolver (VQE)**, the **molecules**, **ansätze**, and **optimizers** used in this project.
 
+---
+
+## 📚 Table of Contents
+
+- [Molecules Studied](#molecules-studied)
+- [Background](#background)
+- [VQE Algorithm Overview](#vqe-algorithm-overview)
+- [Ansätz Construction](#ansätz-construction)
+- [Optimizers](#optimizers)
+- [References](#references)
+
+---
+
 ## Molecules Studied:
 
 | Molecule |   Properties Scanned  | Qubits Required |
