@@ -10,6 +10,17 @@ To read our main findings and results, see [RESULTS.md](RESULTS.md).
 
 ---
 
+## 📚 Table of Contents
+
+- [Project Overview](#project-overview)
+- [Technologies Used](#technologies-used)
+- [Project Structure](#project-structure)
+- [Usage](#usage)
+- [Methodology Overview](#methodology-overview)
+- [License & Author](#license--author)
+
+---
+
 ## Project Overview
 
 VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry problems.
