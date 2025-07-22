@@ -1,4 +1,17 @@
-# Theory
+# 🧠 VQE Theory & Methodology
+
+This document provides a detailed explanation of the **Variational Quantum Eigensolver (VQE)**, the **molecules**, **ansätze**, and **optimizers** used in this project.
+
+## Molecules Studied:
+
+| Molecule | Property Scanned       | Notes                             |
+|----------|------------------------|-----------------------------------|
+| H₂       | Ansatz & Optimizer     | Exact solvable reference          |
+| LiH      | Bond length variation  | 4 qubits (minimal basis), ionic   |
+| H₂O      | Bond angle variation   | Triatomic, more degrees of freedom|
+
+All simulations use the **STO-3G** basis set for consistency.
+Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the **Jordan-Wigner** transformation (via PennyLane's `qchem` module).
 
 ## Variational Principle
 
@@ -29,6 +42,7 @@ The VQE algorithm consists of:
 
 ## Ansatz Construction
 
+An ansatz defines the form of the quantum state using:
 - **Single Excitations** for orbital relaxation
 - **Double Excitations** for electron-electron correlation effects
 
