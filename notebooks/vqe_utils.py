@@ -1,6 +1,6 @@
 import pennylane as qml
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 # Define the Ansäzes
@@ -22,12 +22,28 @@ def minimal_ansatz(params, wires):
     qml.RY(params[0], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
     
-# Create list of Ansätzes
+# Create list of ansätzes
 ANSATZES = {
     "UCCSD": uccsd_ansatz,
     "RY-CZ": ry_cz_ansatz,
     "Minimal": minimal_ansatz,
 }
+
+# Create list of optimizers
+OPTIMIZERS = {
+        "Adam": qml.AdamOptimizer,
+        "GradientDescent": qml.GradientDescentOptimizer,
+        "Nesterov": qml.NesterovMomentumOptimizer,
+        "Adagrad": qml.AdagradOptimizer,
+        "Momentum": qml.MomentumOptimizer,
+        "SPSA": qml.SPSAOptimizer,
+    }
+
+
+def get_optimizer(name: str, stepsize: float = 0.2):
+    if name not in OPTIMIZERS:
+        raise ValueError(f"Optimizer '{name}' not recognized.")
+    return OPTIMIZERS[name](stepsize)
 
 
 # Define VQE circuit function
