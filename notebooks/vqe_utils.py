@@ -79,20 +79,46 @@ def run_vqe(cost_fn, init_params, optimizer, stepsize=0.2, max_iters=50):
     return params, energies
 
 
+# def excitation_ansatz(params, wires, hf_state, excitations, excitation_type="both"):
+#     qml.BasisState(hf_state, wires=wires)
+
+#     if excitation_type == "double":
+#         for i, exc in enumerate(excitations):
+#             qml.DoubleExcitation(params[i], wires=exc)
+#     elif excitation_type == "single":
+#         for i, exc in enumerate(excitations):
+#             qml.SingleExcitation(params[i], wires=exc)
+#     elif excitation_type == "both":
+#         singles, doubles = excitations
+#         for i, exc in enumerate(singles):
+#             qml.SingleExcitation(params[i], wires=exc)
+#         for j, exc in enumerate(doubles):
+#             qml.DoubleExcitation(params[len(singles) + j], wires=exc)
+#     else:
+#         raise ValueError("Invalid excitation_type")
+
 def excitation_ansatz(params, wires, hf_state, excitations, excitation_type="both"):
     qml.BasisState(hf_state, wires=wires)
 
-    if excitation_type == "double":
-        for i, exc in enumerate(excitations):
-            qml.DoubleExcitation(params[i], wires=exc)
-    elif excitation_type == "single":
-        for i, exc in enumerate(excitations):
-            qml.SingleExcitation(params[i], wires=exc)
-    elif excitation_type == "both":
-        singles, doubles = excitations
-        for i, exc in enumerate(singles):
-            qml.SingleExcitation(params[i], wires=exc)
-        for j, exc in enumerate(doubles):
-            qml.DoubleExcitation(params[len(singles) + j], wires=exc)
+    # Detect whether excitations is a flat list or a (singles, doubles) tuple
+    if excitation_type in ["single", "double"] and isinstance(excitations, list):
+        # Backward compatible mode: excitations is flat
+        if excitation_type == "single":
+            for i, exc in enumerate(excitations):
+                qml.SingleExcitation(params[i], wires=exc)
+        else:
+            for i, exc in enumerate(excitations):
+                qml.DoubleExcitation(params[i], wires=exc)
     else:
-        raise ValueError("Invalid excitation_type")
+        # New expected format
+        singles, doubles = excitations
+        i = 0
+        if excitation_type in ["single", "both"]:
+            for exc in singles:
+                qml.SingleExcitation(params[i], wires=exc)
+                i += 1
+        if excitation_type in ["double", "both"]:
+            for exc in doubles:
+                qml.DoubleExcitation(params[i], wires=exc)
+                i += 1
+
