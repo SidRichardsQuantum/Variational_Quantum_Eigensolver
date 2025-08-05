@@ -1,8 +1,8 @@
 # Variational Quantum Eigensolver
 
-This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Lithium Hydride (LiH)** and **Water (H₂O)** using **PennyLane** and **Python**.
-We demonstrate noiseless ground state energy calculations and eigenstate visualizations, using different ansätze approaches and optimisers.
-The optimum bond-length of LiH and bond-angle of water are found, by using the VQE to calculate the ground state akin to molecules with variable geometry.
+This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Dihydrogen (H₂)**, **Lithium Hydride (LiH)**, **Water (H₂O)**, and the **Trihydrogen Cation (H₃⁺)** using **PennyLane** and **Python**.  
+We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansätze** approaches and **optimisers**.  
+The optimum bond-length of LiH and bond-angle of water are determined, and excitation strategies for H₃⁺ are evaluated.
 
 For detailed theoretical explanations, see [THEORY.md](THEORY.md).
 
@@ -27,6 +27,7 @@ VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry prob
 This project implements VQE for:
 
 - **H₂ (Dihydrogen)**: Optimizer and ansätze benchmarking
+- **H₃⁺ (Trihydrogen Cation)**: Comparison of single, double, and UCCSD excitations
 - **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
 - **H₂O (Water)**: Energy variation with bond angle
 
@@ -51,6 +52,7 @@ variational_quantum_eigensolver/
     ├── images/                     # Directory of generated visualization plots
     ├── H2_Noiseless.ipynb          # Noiseless H₂ VQE implementation
     ├── H2_Ansatz_Comparison.ipynb  # Comparing ansätze for H₂
+    ├── H3+_Noiseless.ipynb         # Single vs. Double vs. UCCSD for H₃⁺
     ├── LiH_Noiseless.ipynb         # Noiseless LiH VQE implementation
     ├── LiH_Bond_Length.ipynb       # Optimum bond-length of LiH
     ├── H2O_Noiseless.ipynb         # Noiseless H₂O VQE implementation
@@ -90,17 +92,23 @@ jupyter notebook LiH_Noiseless.ipynb
 - Hartree-Fock reference state as initial guess
 - Jordan-Wigner transformation maps fermions to qubits
 
-3. Ansätze Construction: Single and double excitaions to maximise electron-electron correlation effects
+3. Ansätze Construction:
+
+- Single and/or double excitation circuits
+- Ansätze comparison for H₂
+- Full excitation comparison analysis for H₃⁺
 
 4. VQE Optimization:
 
-- Different optimisers Gradient Descent, Adam, etc...
+- Classical optimisers such as Adam, Gradient Descent, Nesterov, SPSA, etc...
 - Energy tracked at each iteration
+- Different optimisers compared for H₂
 
 5. Analysis & Visualization
 
 - Energy convergence plots
 - Quantum state amplitude distributions
+- Quantum circuit diagrams
 - Bond-lengths and angles against ground state energies
 
 ---
