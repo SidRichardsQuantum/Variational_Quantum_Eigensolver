@@ -27,36 +27,39 @@ VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry prob
 This project implements VQE for:
 
 - **H₂ (Dihydrogen)**: Optimizer and ansätze benchmarking
-- **H₃⁺ (Trihydrogen Cation)**: Comparison of single, double, and UCCSD excitations
+- **H₃⁺ (Trihydrogen Cation)**: Excitation and mapping comparisons
 - **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
 - **H₂O (Water)**: Energy variation with bond angle
 
 ## Technologies Used
 
 - **Python 3.8+**
-- **[PennyLane](https://pennylane.ai/)**: Quantum machine learning library
-- **[PennyLane-qchem](https://pennylane.ai/qml/demos/tutorial_qchem.html)**: Quantum chemistry extension
 - **NumPy**: Numerical computations
 - **Matplotlib**: Data visualization
+- **[PennyLane](https://pennylane.ai/)**: Quantum machine learning library
+- **[PennyLane-qchem](https://pennylane.ai/qml/demos/tutorial_qchem.html)**: Quantum chemistry extension
+- Scientific references: [arXiv papers](https://arxiv.org/search/?query=variational+quantum+eigensolver&searchtype=all)
 
 ## Project Structure
 
 ```
 variational_quantum_eigensolver/
-├── LICENSE                         # MIT license
-├── requirements.txt                # Dependencies
-├── README.md                       # This file 
-├── THEORY.md                       # Detailed theoretical background
-├── RESULTS.md                      # Results and analysis
-└── notebooks/                      # Jupyter notebooks written in Python
-    ├── images/                     # Directory of generated visualization plots
-    ├── H2_Noiseless.ipynb          # Noiseless H₂ VQE implementation
-    ├── H2_Ansatz_Comparison.ipynb  # Comparing ansätze for H₂
-    ├── H3+_Noiseless.ipynb         # Single vs. Double vs. UCCSD for H₃⁺
-    ├── LiH_Noiseless.ipynb         # Noiseless LiH VQE implementation
-    ├── LiH_Bond_Length.ipynb       # Optimum bond-length of LiH
-    ├── H2O_Noiseless.ipynb         # Noiseless H₂O VQE implementation
-    └── H2O_Bond_Angle.ipynb        # Optimum bond-angle of H₂O
+├── LICENSE                           # MIT license
+├── requirements.txt                  # Dependencies
+├── README.md                         # This file 
+├── THEORY.md                         # Detailed theoretical background
+├── RESULTS.md                        # Results and analysis
+└── notebooks/                        # Jupyter notebooks written in Python
+    ├── images/                       # Directory of generated visualization plots
+    ├── vqe_utils.py                  # Utilities file
+    ├── H2_Noiseless.ipynb            # Noiseless H₂ VQE implementation
+    ├── H2_Ansatz_Comparison.ipynb    # Comparing ansätze for H₂
+    ├── H3+_Noiseless.ipynb           # Single vs. Double vs. UCCSD for H₃⁺
+    ├── H3+_Mapping_Comparison.ipynb  # Mapping comparison for H₃⁺
+    ├── LiH_Noiseless.ipynb           # Noiseless LiH VQE implementation
+    ├── LiH_Bond_Length.ipynb         # Optimum bond-length of LiH
+    ├── H2O_Noiseless.ipynb           # Noiseless H₂O VQE implementation
+    └── H2O_Bond_Angle.ipynb          # Optimum bond-angle of H₂O
 ```
 
 ## Usage

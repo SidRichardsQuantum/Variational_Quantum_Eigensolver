@@ -9,7 +9,8 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 ## 📚 Table of Contents
 - [H₂ (Optimiser Comparison)](#h₂-optimiser-comparison)
 - [H₂ (Ansätze Comparison)](#h₂-ansätze-comparison)
-- [H₃⁺ Excitation Comparison](#h₃⁺-excitation-comparison)
+- [H₃⁺ (Excitation Comparison)](#h₃⁺-excitation-comparison)
+- [H₃⁺ (Mapping Comparison)](#h₃⁺-mapping-comparison)
 - [LiH](#lih)
 - [Optimal LiH Length](#optimal-lih-length)
 - [H₂O](#h₂o)
@@ -109,7 +110,7 @@ Although all ansätze reach similar energy minima, UCCSD and RY-CZ converge slig
 
 ### Visualization
 
-The simulation compares three ansätze types in a noiseless VQE run. Final ground state energies:
+The simulation compares three ansätz types in a noiseless VQE run. Final ground state energies:
 
 ```
 Single excitations only:
@@ -124,7 +125,7 @@ Final energy = -1.25028914 Ha
 
 ![H₃⁺ Excitation Comparison](images/H3+_Excitation_Comparison.png)
 
-The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansätze.
+The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansätz.
 
 The wavefunctions reveal a dominant contribution from the Hartree-Fock reference state, with notable amplitudes in correlated excited states. Example from UCCSD:
 
@@ -138,6 +139,40 @@ This decomposition showcases the entanglement and correlation introduced by high
 A quantum circuit diagram for the UCCSD ansätze is below:
 
 ![H₃⁺ Circuit Diagram](images/H3+_UCCSD_Circuit.png)
+
+## H₃⁺ Mapping Comparison
+
+### Set Up
+
+- **Molecular Geometry**: Slightly distorted triangular geometry
+- **Coordinates**:  
+  - H₁ = (0.000000,  1.000000,  0.000000)  
+  - H₂ = (–0.866025, –0.500000,  0.000000)  
+  - H₃ = (0.800000, –0.300000,  0.000000)
+- **Charge**: $+1$
+- **Electrons**: 2
+- **Ansätz**: UCCSD (Singles + Doubles)
+- **Optimizer**: `AdamOptimizer` with step size $0.2$
+- **Iterations**: $50$
+- **Mappings Compared**: `jordan_wigner`, `bravyi_kitaev`, `parity`
+
+### Visualization
+
+The simulation compares three fermion-to-qubit encodings using the same ansätz and optimizer.
+Final ground state energies:
+
+```
+jordan_wigner: -1.25860509 Ha
+bravyi_kitaev: -1.31943557 Ha
+parity:        -1.20493135 Ha
+```
+
+![H₃⁺ Mapping Comparison](notebooks/images/H3+_Mapping_Comparison.png)
+
+The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, though all mappings reach similar accuracy after $50$ iterations.
+
+Each encoding transforms the fermionic Hamiltonian differently, influencing qubit operator structure and gradient behavior.  
+This comparison highlights how even under identical ansätze, fermion-to-qubit mapping can affect convergence rate and minima.
 
 ## LiH
 

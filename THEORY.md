@@ -11,6 +11,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [VQE Algorithm Overview](#vqe-algorithm-overview)
 - [Ansätz Construction](#ansätz-construction)
 - [Optimizers](#optimizers)
+- [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
 - [References](#references)
 
 ---
@@ -23,6 +24,8 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 |    LiH   |      Bond length variation       |       $12$      |
 |    H₂O   |      Bond angle variation        |       $14$      |
 |    H₃⁺   |   Single vs. Double vs. UCCSD    |       $6$       |
+|    H₃⁺   |  Excitation & Mapping Comparison |       $6$       |
+
 
 All simulations use the **STO-3G** basis set for consistency.  
 Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the **Jordan-Wigner** transformation (via PennyLane's `qchem` module).
@@ -60,13 +63,13 @@ The VQE algorithm consists of:
 
 ## Ansätz Construction:
 
-An ansätze defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
+An ansätz defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
 It determines how expressive, efficient, and trainable your VQE circuit is.
 Different ansätze trade off physical accuracy, circuit depth, and compatibility with quantum hardware.
 
 #### UCCSD (Unitary Coupled Cluster Singles and Doubles)
 
-A chemistry-inspired ansätze derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
+A chemistry-inspired ansätz derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
 
 - Designed for capturing electron correlation from first principles
 - Exact for small systems like H₂ or H₃⁺ in minimal basis sets (e.g., STO-3G)
@@ -74,7 +77,7 @@ A chemistry-inspired ansätze derived from coupled-cluster theory. Includes sing
 
 #### $R_Y-C_Z$ Ansätz
 
-A hardware-efficient ansätze composed of layers alternating single-qubit rotations and entangling gates.
+A hardware-efficient ansätz composed of layers alternating single-qubit rotations and entangling gates.
 
 - Uses $R_Y$ rotations followed by a chain of $C_Z$ gates
 - Tunable number of layers (depth)
@@ -83,7 +86,7 @@ A hardware-efficient ansätze composed of layers alternating single-qubit rotati
 
 #### Minimal / One-Parameter Ansätz
 
-A manually constructed, problem-specific ansätze using very few parameters.
+A manually constructed, problem-specific ansätz using very few parameters.
 
 - Tailored for simple systems like H₂ in minimal basis
 - Uses a single $R_Y$ rotation and one entangling gate (e.g., CNOT)
@@ -141,12 +144,37 @@ Designed for noisy or hardware-executed circuits, where gradients are expensive 
 
 ---
 
+## Fermion-to-Qubit Mappings
+
+To simulate molecular Hamiltonians on quantum computers, second-quantized fermionic operators must be mapped to qubit operators.  
+This project compares three common mappings using the H₃⁺ molecule:
+
+- **Jordan-Wigner (JW)**  
+  Maps fermionic modes to qubits directly, preserving occupation order.  
+  Simple but introduces long Pauli string chains for highly nonlocal interactions.
+
+- **Bravyi-Kitaev (BK)**  
+  Balances between local occupation and parity information.  
+  Results in shorter average Pauli string lengths and fewer entangling gates in some cases.
+
+- **Parity Mapping**  
+  Encodes occupation parity rather than direct state, often reducing gate depth.  
+  Can introduce nontrivial entanglement and symmetry behavior.
+
+Each mapping transforms the Hamiltonian into a different structure of Pauli operators, which affects convergence, gradient norms, and optimization stability in VQE.
+
+(The same ansätz and optimizers is applied across all mappings to isolate the impact of encoding alone.)
+
+---
+
 ## References
 
 - [VQE](https://en.wikipedia.org/wiki/Variational_quantum_eigensolver)
 - [Hartree-Fock Method](https://en.wikipedia.org/wiki/Hartree–Fock_method)
-- [Ansätzes](https://docs.pennylane.ai/en/stable/code/qml.html)
+- [Ansätze](https://docs.pennylane.ai/en/stable/code/qml.html)
 - [Optimisers](https://docs.pennylane.ai/en/stable/introduction/interfaces.html)
+- [Quantum Chemistry with Fermion-to-Qubit Mappings](https://arxiv.org/abs/1701.08213)
+- [Variational Quantum Eigensolver Review](https://arxiv.org/abs/2001.03685)
 
 ---
 
