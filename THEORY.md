@@ -17,13 +17,14 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ## Molecules Studied:
 
-| Molecule |   Properties Scanned  | Qubits Required |
-|----------|-----------------------|-----------------|
-|    H₂    |   Ansätz & Optimizer  |       $4$       |
-|    LiH   | Bond length variation |       $12$      |
-|    H₂O   | Bond angle variation  |       $14$      |
+| Molecule | Properties Scanned / Benchmarked | Qubits Required |
+|----------|----------------------------------|-----------------|
+|    H₂    |   Ansätz & Optimizer Comparison  |       $4$       |
+|    LiH   |      Bond length variation       |       $12$      |
+|    H₂O   |      Bond angle variation        |       $14$      |
+|    H₃⁺   |   Single vs. Double vs. UCCSD    |       $6$       |
 
-All simulations use the **STO-3G** basis set for consistency.
+All simulations use the **STO-3G** basis set for consistency.  
 Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the **Jordan-Wigner** transformation (via PennyLane's `qchem` module).
 
 ## Background
@@ -55,7 +56,9 @@ The VQE algorithm consists of:
 3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
 
-### Ansätz Construction:
+---
+
+## Ansätz Construction:
 
 An ansätze defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
 It determines how expressive, efficient, and trainable your VQE circuit is.
@@ -66,8 +69,8 @@ Different ansätze trade off physical accuracy, circuit depth, and compatibility
 A chemistry-inspired ansätze derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
 
 - Designed for capturing electron correlation from first principles
-- Exact for small systems like H₂ in minimal basis sets (e.g., STO-3G)
-- Can become deep and resource-intensive for larger molecules
+- Exact for small systems like H₂ or H₃⁺ in minimal basis sets (e.g., STO-3G)
+- Used to compare excitation types (single vs. double vs. UCCSD) in **H₃⁺**
 
 #### $R_Y-C_Z$ Ansätz
 
@@ -87,7 +90,9 @@ A manually constructed, problem-specific ansätze using very few parameters.
 - Extremely shallow and interpretable
 - Useful for testing optimizers, energy landscapes, or learning curves
 
-### Optimizers:
+---
+
+## Optimizers:
 
 Classical optimizers are a critical component of the VQE algorithm, as they minimize the energy by adjusting circuit parameters $\theta$.
 
@@ -133,6 +138,8 @@ Designed for noisy or hardware-executed circuits, where gradients are expensive 
 - Estimates the gradient using random perturbations
 - Requires very few circuit evaluations per step
 - Performs well in realistic noisy quantum environments
+
+---
 
 ## References
 
