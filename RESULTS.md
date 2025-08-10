@@ -11,6 +11,7 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 - [H₂ (Ansätze Comparison)](#h₂-ansätze-comparison)
 - [H₃⁺ (Excitation Comparison)](#h₃⁺-excitation-comparison)
 - [H₃⁺ (Mapping Comparison)](#h₃⁺-mapping-comparison)
+- [H₃⁺ SSVQE](#h₃⁺-ssvqe)
 - [LiH](#lih)
 - [Optimal LiH Length](#optimal-lih-length)
 - [H₂O](#h₂o)
@@ -123,7 +124,7 @@ Single + Double (UCCSD):
 Final energy = -1.25028914 Ha
 ```
 
-![H₃⁺ Excitation Comparison](images/H3+_Excitation_Comparison.png)
+![H₃⁺ Excitation Comparison](notebooks/images/H3+_Excitation_Comparison.png)
 
 The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansätz.
 
@@ -138,7 +139,7 @@ This decomposition showcases the entanglement and correlation introduced by high
 
 A quantum circuit diagram for the UCCSD ansätze is below:
 
-![H₃⁺ Circuit Diagram](images/H3+_UCCSD_Circuit.png)
+![H₃⁺ Circuit Diagram](notebooks/images/H3+_UCCSD_Circuit.png)
 
 ## H₃⁺ Mapping Comparison
 
@@ -173,6 +174,39 @@ The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, th
 
 Each encoding transforms the fermionic Hamiltonian differently, influencing qubit operator structure and gradient behavior.  
 This comparison highlights how even under identical ansätze, fermion-to-qubit mapping can affect convergence rate and minima.
+
+## H₃⁺ SSVQE
+
+### Set Up
+
+- **Molecular Geometry**: Equilateral triangle ($0.87\ \text{Å}$ side length)
+- **Charge**: $+1$
+- **Electrons**: $2$
+- **Basis**: STO-3G
+- **Ansatz**: UCC-style singles + doubles (from `qchem.excitations`)
+- **Optimizer**: Adam with step size $0.4$
+- **Iterations**: $75$
+- **Penalty Weight**: $10 * | ⟨ \psi_0 | \psi_1 ⟩ |^2$
+
+### Visualization
+
+SSVQE was used to variationally optimize the ground and first excited states simultaneously, enforcing orthogonality between the states.  
+The final energies obtained were:
+
+```
+Ground state (E₀) = -1.25980889 Ha
+First excited state (E₁) = -0.55811374 Ha
+Excitation gap ΔE = 0.70169515 Ha
+```
+
+![H₃⁺ SSVQE Convergence](notebooks/images/H3+_SSVQE_Adam.png)
+
+The **ground state** is dominated by the Hartree–Fock configuration $|110000⟩$,  
+while the **first excited state** shifts amplitude toward $|100100⟩$ and other configurations, showing clear state separation:
+
+![H₃⁺ ψ₀ vs ψ₁ Decomposition](notebooks/images/H3+_SSVQE_State_Comparison.png)
+
+The orthogonality penalty successfully suppressed overlap between the states, producing distinct quantum states with a meaningful excitation energy gap.
 
 ## LiH
 
