@@ -12,6 +12,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [Ansätz Construction](#ansätz-construction)
 - [Optimizers](#optimizers)
 - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
+- [Excited State Methods in VQE](#excited-state-methods-in-vqe)
 - [References](#references)
 
 ---
@@ -164,6 +165,52 @@ This project compares three common mappings using the H₃⁺ molecule:
 Each mapping transforms the Hamiltonian into a different structure of Pauli operators, which affects convergence, gradient norms, and optimization stability in VQE.
 
 (The same ansätz and optimizers is applied across all mappings to isolate the impact of encoding alone.)
+
+---
+
+## Excited State Methods in VQE
+
+While the standard VQE algorithm is designed to find the **ground state** of a molecular Hamiltonian, many applications in quantum chemistry require access to **excited states** — for example, to predict **spectroscopic transitions**, **photoexcitation energies**, and **reaction pathways**.
+
+### Challenge
+
+The original VQE formulation finds the **lowest eigenvalue** of the Hamiltonian by variationally minimizing the energy:
+
+$E_0 = \min_{\theta} ⟨\psi(\theta)| H |\psi(\theta)⟩$
+
+This process does not directly provide excited states, and repeating VQE with orthogonality constraints is non-trivial.
+
+### Subspace-Search VQE (SSVQE)
+
+SSVQE is a variational method that finds **multiple eigenstates simultaneously** by:
+
+1. Preparing a **set of parameterized quantum states**:
+
+$\{ |\psi_0(\theta_0)⟩, \ |\psi_1(\theta_1)⟩, \ \dots \}$
+
+2. **Optimizing** all parameters to minimize a **weighted sum of expectation values**:
+
+$\mathcal{L} = \sum_i w_i ⟨\psi_i| H |\psi_i⟩$
+
+3. Adding **orthogonality penalties** to ensure distinct states:
+
+$\text{Penalty} \propto | ⟨\psi_i | \psi_j⟩ |^2$
+
+This enforces that each optimized state corresponds to a different eigenvector of the Hamiltonian.
+
+### Implementation Details for H₃⁺
+
+- **Ansatz**: UCCSD with both single and double excitations.
+- **States**: Two independent parameter sets (ψ₀ and ψ₁) initialized differently.
+- **Penalty Term**: Proportional to $| ⟨\psi_0|\psi_1⟩ |^2$ with a tunable multiplier.
+- **Optimizer**: Adam, step size tuned for stability and separation.
+- **Outcome**: Variational estimates of both the ground-state and first excited-state energies, with an accurate excitation gap.
+
+### Key Points
+
+- Allows **simultaneous** calculation of ground and excited states.
+- Optimization can become more challenging as the number of states increases.
+- Choice of ansatz and penalty strength critically affects convergence and state separation.
 
 ---
 

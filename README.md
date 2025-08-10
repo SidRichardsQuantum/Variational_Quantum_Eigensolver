@@ -27,7 +27,7 @@ VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry prob
 This project implements VQE for:
 
 - **H₂ (Dihydrogen)**: Optimizer and ansätze benchmarking
-- **H₃⁺ (Trihydrogen Cation)**: Excitation and mapping comparisons
+- **H₃⁺ (Trihydrogen Cation)**: Excitation, mapping comparisons and Subspace-Search VQE
 - **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
 - **H₂O (Water)**: Energy variation with bond angle
 
@@ -56,6 +56,7 @@ variational_quantum_eigensolver/
     ├── H2_Ansatz_Comparison.ipynb    # Comparing ansätze for H₂
     ├── H3+_Noiseless.ipynb           # Single vs. Double vs. UCCSD for H₃⁺
     ├── H3+_Mapping_Comparison.ipynb  # Mapping comparison for H₃⁺
+    ├── H3+_SSVQE_.ipynb              # SSVQE for H₃⁺
     ├── LiH_Noiseless.ipynb           # Noiseless LiH VQE implementation
     ├── LiH_Bond_Length.ipynb         # Optimum bond-length of LiH
     ├── H2O_Noiseless.ipynb           # Noiseless H₂O VQE implementation
