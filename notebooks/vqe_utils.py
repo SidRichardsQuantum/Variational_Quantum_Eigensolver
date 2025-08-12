@@ -1,5 +1,5 @@
 import pennylane as qml
-import numpy as np
+from pennylane import numpy as np
 # import matplotlib.pyplot as plt
 
 
@@ -24,7 +24,7 @@ def minimal_ansatz(params, wires):
     
 # Create list of ansätzes
 ANSATZES = {
-    "UCCSD": uccsd_ansatz,
+    "TwoQubit-RY-CNOT": uccsd_ansatz,
     "RY-CZ": ry_cz_ansatz,
     "Minimal": minimal_ansatz,
 }
@@ -66,59 +66,61 @@ def init_params(ansatz_name, num_wires):
 
 
 # Function that runs the VQE algorithm for a given optimizer and ansätz
-def run_vqe(cost_fn, init_params, optimizer, stepsize=0.2, max_iters=50):
-    opt = optimizer(stepsize) if isinstance(stepsize, float) else optimizer()
-    params = init_params
-    energies = []
+def init_params_for(ansatz_name, num_wires):
+    if ansatz_name in ["TwoQubit-RY-CNOT", "Minimal"]:
+        return 0.01 * np.random.randn(1, requires_grad=True)
+    elif ansatz_name == "RY-CZ":
+        return 0.01 * np.random.randn(num_wires, requires_grad=True)
+    raise ValueError("Unknown ansatz")
 
+
+def _normalize_optimizer(opt_like, stepsize: float):
+    # accept name | class | instance
+    if isinstance(opt_like, str):
+        return get_optimizer(opt_like, stepsize)
+    if isinstance(opt_like, type):
+        return opt_like(stepsize=stepsize)
+    return opt_like
+
+
+def run_vqe(cost_fn, initial_params, optimizer="Adam", stepsize=0.2, max_iters=50):
+    opt = _normalize_optimizer(optimizer, stepsize)
+    params = np.array(initial_params, requires_grad=True)
+    energies = []
     for _ in range(max_iters):
         params = opt.step(cost_fn, params)
-        energy = cost_fn(params)
-        energies.append(energy)
-
+        energies.append(cost_fn(params))
     return params, energies
 
 
-# def excitation_ansatz(params, wires, hf_state, excitations, excitation_type="both"):
-#     qml.BasisState(hf_state, wires=wires)
-
-#     if excitation_type == "double":
-#         for i, exc in enumerate(excitations):
-#             qml.DoubleExcitation(params[i], wires=exc)
-#     elif excitation_type == "single":
-#         for i, exc in enumerate(excitations):
-#             qml.SingleExcitation(params[i], wires=exc)
-#     elif excitation_type == "both":
-#         singles, doubles = excitations
-#         for i, exc in enumerate(singles):
-#             qml.SingleExcitation(params[i], wires=exc)
-#         for j, exc in enumerate(doubles):
-#             qml.DoubleExcitation(params[len(singles) + j], wires=exc)
-#     else:
-#         raise ValueError("Invalid excitation_type")
-
 def excitation_ansatz(params, wires, hf_state, excitations, excitation_type="both"):
-    qml.BasisState(hf_state, wires=wires)
+    qml.BasisState(np.array(hf_state, dtype=int), wires=wires)
 
-    # Detect whether excitations is a flat list or a (singles, doubles) tuple
+    # flat list mode for backward compatibility
     if excitation_type in ["single", "double"] and isinstance(excitations, list):
-        # Backward compatible mode: excitations is flat
         if excitation_type == "single":
+            if len(params) != len(excitations):
+                raise ValueError("params length must match number of single excitations")
             for i, exc in enumerate(excitations):
                 qml.SingleExcitation(params[i], wires=exc)
         else:
+            if len(params) != len(excitations):
+                raise ValueError("params length must match number of double excitations")
             for i, exc in enumerate(excitations):
                 qml.DoubleExcitation(params[i], wires=exc)
-    else:
-        # New expected format
-        singles, doubles = excitations
-        i = 0
-        if excitation_type in ["single", "both"]:
-            for exc in singles:
-                qml.SingleExcitation(params[i], wires=exc)
-                i += 1
-        if excitation_type in ["double", "both"]:
-            for exc in doubles:
-                qml.DoubleExcitation(params[i], wires=exc)
-                i += 1
+        return
 
+    # tuple mode: (singles, doubles)
+    singles, doubles = excitations
+    needed = (len(singles) if excitation_type in ["single", "both"] else 0) + \
+             (len(doubles) if excitation_type in ["double", "both"] else 0)
+    if len(params) != needed:
+        raise ValueError(f"params length {len(params)} != required {needed}")
+
+    i = 0
+    if excitation_type in ["single", "both"]:
+        for exc in singles:
+            qml.SingleExcitation(params[i], wires=exc); i += 1
+    if excitation_type in ["double", "both"]:
+        for exc in doubles:
+            qml.DoubleExcitation(params[i], wires=exc); i += 1
