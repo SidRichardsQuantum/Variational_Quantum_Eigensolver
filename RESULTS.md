@@ -51,7 +51,7 @@ SPSA:
 Final ground state energy = -0.89566722 Ha
 ```
 
-![H₂ Optimizer Comparison](notebooks/images/H2_optimiser_comparison.png)
+![H₂ Optimizer Comparison](notebooks/images/H2_Optimizer_Comparison.png)
 
 The best optimizer for this dihydrogen example is the Gradient Descent.
 Using this, the ground state is found:
@@ -62,7 +62,7 @@ Ground state of H₂:
 |ψ⟩ = -0.0585|0011> + 0.9983|1100>
 ```
 
-![H₂ Ground State](notebooks/images/H2_ground_state.png)
+![H₂ Ground State](notebooks/images/H2_Ground_State.png)
 
 ## H₂ Ansatze Comparison
 
