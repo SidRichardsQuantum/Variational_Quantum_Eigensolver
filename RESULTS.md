@@ -238,14 +238,14 @@ The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 ## Optimal LiH Length
 
 The Gradient Descent Optimizer was used to scan over a range of bond-lengths between the Li and H atoms.
-$20$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.0] Å$.
+$25$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.0] Å$.
 Plot output from `LiH_Bond_Length.ipynb`:
 
 ![Optimal Length](notebooks/images/LiH_Optimal_Bond_Length.png)
 
 ```
-Optimal bond length: 1.60 Å
-Minimum ground state energy: -5.59357194 Ha
+Optimal bond length: 1.66 Å
+Minimum ground state energy: -5.59345560 Ha
 ```
 
 ## H₂O
