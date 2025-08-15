@@ -1,7 +1,7 @@
 # Variational Quantum Eigensolver
 
 This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Dihydrogen (H₂)**, **Lithium Hydride (LiH)**, **Water (H₂O)**, and the **Trihydrogen Cation (H₃⁺)** using **PennyLane** and **Python**.  
-We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansätze** approaches and **optimisers**.  
+We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansatzes** approaches and **optimisers**.  
 The optimum bond-length of LiH and bond-angle of water are determined, and excitation strategies for H₃⁺ are evaluated.
 
 For detailed theoretical explanations, see [THEORY.md](THEORY.md).
@@ -26,14 +26,14 @@ To read our main findings and results, see [RESULTS.md](RESULTS.md).
 VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry problems.
 This project implements VQE for:
 
-- **H₂ (Dihydrogen)**: Optimizer and ansätze benchmarking
+- **H₂ (Dihydrogen)**: Optimizer and ansatzes benchmarking
 - **H₃⁺ (Trihydrogen Cation)**: Excitation, mapping comparisons and Subspace-Search VQE
 - **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
 - **H₂O (Water)**: Energy variation with bond angle
 
 ## Technologies Used
 
-- **Python 3.8+**
+- **Python 3.10+**
 - **NumPy**: Numerical computations
 - **Matplotlib**: Data visualization
 - **[PennyLane](https://pennylane.ai/)**: Quantum machine learning library
@@ -53,7 +53,7 @@ variational_quantum_eigensolver/
     ├── images/                       # Directory of generated visualization plots
     ├── vqe_utils.py                  # Utilities file
     ├── H2_Noiseless.ipynb            # Noiseless H₂ VQE implementation
-    ├── H2_Ansatz_Comparison.ipynb    # Comparing ansätze for H₂
+    ├── H2_Ansatz_Comparison.ipynb    # Comparing ansatzes for H₂
     ├── H3+_Noiseless.ipynb           # Single vs. Double vs. UCCSD for H₃⁺
     ├── H3+_Mapping_Comparison.ipynb  # Mapping comparison for H₃⁺
     ├── H3+_SSVQE.ipynb               # SSVQE for H₃⁺
@@ -96,10 +96,10 @@ jupyter notebook LiH_Noiseless.ipynb
 - Hartree-Fock reference state as initial guess
 - Jordan-Wigner transformation maps fermions to qubits
 
-3. Ansätze Construction:
+3. Ansatzes Construction:
 
 - Single and/or double excitation circuits
-- Ansätze comparison for H₂
+- Ansatzes comparison for H₂
 - Full excitation comparison analysis for H₃⁺
 
 4. VQE Optimization:
