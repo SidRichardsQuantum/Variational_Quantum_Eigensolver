@@ -1,6 +1,6 @@
 # 🧠 VQE Theory & Methodology
 
-This document provides a detailed explanation of the **Variational Quantum Eigensolver (VQE)**, the **molecules**, **ansätze**, and **optimizers** used in this project.
+This document provides a detailed explanation of the **Variational Quantum Eigensolver (VQE)**, the **molecules**, **ansatzes**, and **optimizers** used in this project.
 
 ---
 
@@ -9,7 +9,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [Molecules Studied](#molecules-studied)
 - [Background](#background)
 - [VQE Algorithm Overview](#vqe-algorithm-overview)
-- [Ansätz Construction](#ansätz-construction)
+- [Ansatz Construction](#ansatz-construction)
 - [Optimizers](#optimizers)
 - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
 - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
@@ -19,17 +19,16 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ## Molecules Studied:
 
-| Molecule | Properties Scanned / Benchmarked | Qubits Required |
-|----------|----------------------------------|-----------------|
-|    H₂    |   Ansätz & Optimizer Comparison  |       $4$       |
-|    LiH   |      Bond length variation       |       $12$      |
-|    H₂O   |      Bond angle variation        |       $14$      |
-|    H₃⁺   |   Single vs. Double vs. UCCSD    |       $6$       |
-|    H₃⁺   |  Excitation & Mapping Comparison |       $6$       |
+| Molecule |     Properties Scanned / Benchmarked     | Qubits Required |
+|----------|------------------------------------------|-----------------|
+|    H₂    |       Ansatz & Optimizer Comparison      |       $4$       |
+|    LiH   |              Bond length scan            |       $12$      |
+|    H₂O   |              Bond angle scan             |       $14$      |
+|    H₃⁺   | Excitation & Mapping Comparisons & SSVQE |       $6$       |
 
 
 All simulations use the **STO-3G** basis set for consistency.  
-Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the **Jordan-Wigner** transformation (via PennyLane's `qchem` module).
+Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the Jordan–Wigner, Bravyi–Kitaev or Parity transformations (via PennyLane's `qchem` module).
 
 ## Background
 
@@ -62,32 +61,32 @@ The VQE algorithm consists of:
 
 ---
 
-## Ansätz Construction:
+## Ansatz Construction:
 
-An ansätz defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
+An ansatz defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
 It determines how expressive, efficient, and trainable your VQE circuit is.
-Different ansätze trade off physical accuracy, circuit depth, and compatibility with quantum hardware.
+Different ansatze trade off physical accuracy, circuit depth, and compatibility with quantum hardware.
 
 #### UCCSD (Unitary Coupled Cluster Singles and Doubles)
 
-A chemistry-inspired ansätz derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
+A chemistry-inspired ansatz derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
 
 - Designed for capturing electron correlation from first principles
 - Exact for small systems like H₂ or H₃⁺ in minimal basis sets (e.g., STO-3G)
 - Used to compare excitation types (single vs. double vs. UCCSD) in **H₃⁺**
 
-#### $R_Y-C_Z$ Ansätz
+#### $R_Y-C_Z$ Ansatz
 
-A hardware-efficient ansätz composed of layers alternating single-qubit rotations and entangling gates.
+A hardware-efficient ansatz composed of layers alternating single-qubit rotations and entangling gates.
 
 - Uses $R_Y$ rotations followed by a chain of $C_Z$ gates
 - Tunable number of layers (depth)
 - Good expressibility for small and medium systems
 - Easier to implement on near-term hardware
 
-#### Minimal / One-Parameter Ansätz
+#### Minimal / One-Parameter Ansatz
 
-A manually constructed, problem-specific ansätz using very few parameters.
+A manually constructed, problem-specific ansatz using very few parameters.
 
 - Tailored for simple systems like H₂ in minimal basis
 - Uses a single $R_Y$ rotation and one entangling gate (e.g., CNOT)
@@ -164,7 +163,7 @@ This project compares three common mappings using the H₃⁺ molecule:
 
 Each mapping transforms the Hamiltonian into a different structure of Pauli operators, which affects convergence, gradient norms, and optimization stability in VQE.
 
-(The same ansätz and optimizers is applied across all mappings to isolate the impact of encoding alone.)
+(The same ansatz and optimizers are applied across all mappings to isolate the impact of encoding alone.)
 
 ---
 
@@ -218,7 +217,7 @@ This enforces that each optimized state corresponds to a different eigenvector o
 
 - [VQE](https://en.wikipedia.org/wiki/Variational_quantum_eigensolver)
 - [Hartree-Fock Method](https://en.wikipedia.org/wiki/Hartree–Fock_method)
-- [Ansätze](https://docs.pennylane.ai/en/stable/code/qml.html)
+- [Ansatzes](https://docs.pennylane.ai/en/stable/code/qml.html)
 - [Optimisers](https://docs.pennylane.ai/en/stable/introduction/interfaces.html)
 - [Quantum Chemistry with Fermion-to-Qubit Mappings](https://arxiv.org/abs/1701.08213)
 - [Variational Quantum Eigensolver Review](https://arxiv.org/abs/2001.03685)

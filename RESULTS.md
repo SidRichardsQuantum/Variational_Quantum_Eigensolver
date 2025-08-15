@@ -199,7 +199,7 @@ First excited state (E₁) = -0.55811374 Ha
 Excitation gap ΔE = 0.70169515 Ha
 ```
 
-![H₃⁺ SSVQE Convergence](notebooks/images/H3+_SSVQE_Adam.png)
+![H₃⁺ SSVQE Adam Convergence](notebooks/images/H3+_SSVQE_Adam.png)
 
 The **ground state** is dominated by the Hartree–Fock configuration $|110000⟩$,  
 while the **first excited state** shifts amplitude toward $|100100⟩$ and other configurations, showing clear state separation:
@@ -220,7 +220,7 @@ The orthogonality penalty successfully suppressed overlap between the states, pr
 
 `GradientDescentOptimizer` with step-size $0.1$ successfully converges at ground state energy $-7.67957954 Ha$:
 
-![LiH Convergence](notebooks/images/LiH_convergence.png)
+![LiH Gradient Descent](notebooks/images/LiH_Gradient_Descent.png)
 
 The calculated wavefunction for the ground state of LiH is:
 
@@ -233,7 +233,7 @@ The calculated wavefunction for the ground state of LiH is:
 
 The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
-![LiH Ground State](notebooks/images/LiH_ground_state.png)
+![LiH Ground State](notebooks/images/LiH_Ground_State.png)
 
 ## Optimal LiH Length
 
@@ -241,7 +241,7 @@ The Gradient Descent Optimizer was used to scan over a range of bond-lengths bet
 $25$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.1] Å$.
 Plot output from `LiH_Bond_Length.ipynb`:
 
-![Optimal Length](notebooks/images/LiH_Optimal_Bond_Length.png)
+![LiH Bond Length Scan](notebooks/images/LiH_Bond_Length_Scan.png)
 
 ```
 Optimal bond length: 1.66 Å
@@ -261,7 +261,7 @@ Minimum ground state energy: -5.59345560 Ha
 
 `AdamOptimizer`  with step-size $0.1$ successfully converges at ground state energy $-72.87712785 Ha$:
 
-![H₂O Convergence](notebooks/images/H2O_convergence.png)
+![H₂O Adam Convergence](notebooks/images/H2O_Adam.png)
 
 The calculated wavefunction for the ground state of water is:
 
@@ -274,7 +274,7 @@ The calculated wavefunction for the ground state of water is:
 
 The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
-![H₂O Ground State](notebooks/images/H2O_ground_state.png)
+![H₂O Ground State](notebooks/images/H2O_Ground_State.png)
 
 ## Optimal H₂O Angle
 
@@ -282,7 +282,7 @@ The Adam optimizer was used to find the angle between the two hydrogens in water
 $10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]°$.
 Plot output from `H2O_Bond_Angle.ipynb`:
 
-![Optimal H₂O Angle](notebooks/images/Water_Optimal_Angle.png)
+![H₂O Bond Angle Scan](notebooks/images/H2O_Bond_Angle_Scan.png)
 
 ```
 Minimum energy: -71.539353 Ha
