@@ -7,10 +7,10 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 ---
 
 ## 📚 Table of Contents
-- [H₂ (Optimiser Comparison)](#h₂-optimiser-comparison)
-- [H₂ (Ansätze Comparison)](#h₂-ansätze-comparison)
-- [H₃⁺ (Excitation Comparison)](#h₃⁺-excitation-comparison)
-- [H₃⁺ (Mapping Comparison)](#h₃⁺-mapping-comparison)
+- [H₂ Optimiser Comparison](#h₂-optimiser-comparison)
+- [H₂ Ansatze Comparison](#h₂-ansatze-comparison)
+- [H₃⁺ Excitation Comparison](#h₃⁺-excitation-comparison)
+- [H₃⁺ Mapping Comparison](#h₃⁺-mapping-comparison)
 - [H₃⁺ SSVQE](#h₃⁺-ssvqe)
 - [LiH](#lih)
 - [Optimal LiH Length](#optimal-lih-length)
@@ -19,7 +19,7 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 
 ---
 
-## H₂ (Optimiser Comparison)
+## H₂ Optimiser Comparison
 
 ### Set Up
 
@@ -64,24 +64,24 @@ Ground state of H₂:
 
 ![H₂ Ground State](notebooks/images/H2_ground_state.png)
 
-## H₂ (Ansätze Comparison)
+## H₂ Ansatze Comparison
 
 ### Set Up
 
 - **Bond Length**: $0.7414 Å$
 - **Optimizer**: `AdamOptimizer` with step size $0.2$
 - **Iterations**: $40$
-- **Ansätze Compared**: `UCCSD`, `RY-CZ`, `Minimal`
+- **Ansatzes Compared**: `UCCSD`, `RY-CZ`, `Minimal`
 
 ### Visualization
 
-The following ansätze were tested in a noiseless simulation:
+The following ansatzes were tested in a noiseless simulation:
 
 - **UCCSD**: A chemically motivated circuit including single and double excitations.
 - **$R_Y-C_Z$**: A hardware-efficient structure using rotation and $C_Z$ entanglement layers.
-- **Minimal**: A single-parameter ansätze tailored for H₂.
+- **Minimal**: A single-parameter ansatzes tailored for H₂.
 
-All three ansätze successfully converged to near ground-state energies within $40$ iterations:
+All three ansatzes successfully converged to near ground-state energies within $40$ iterations:
 
 ```
 UCCSD:
@@ -94,9 +94,9 @@ Minimal:
 Final energy = -0.84822983 Ha
 ```
 
-![H₂ Ansätze Comparison](notebooks/images/H2_Ansatz_Comparison.png)
+![H₂ Ansatzes Comparison](notebooks/images/H2_Ansatz_Comparison.png)
 
-Although all ansätze reach similar energy minima, UCCSD and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
+Although all ansatzes reach similar energy minima, UCCSD and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
 
 ## H₃⁺ Excitation Comparison
 
@@ -111,7 +111,7 @@ Although all ansätze reach similar energy minima, UCCSD and RY-CZ converge slig
 
 ### Visualization
 
-The simulation compares three ansätz types in a noiseless VQE run. Final ground state energies:
+The simulation compares three ansatze types in a noiseless VQE run. Final ground state energies:
 
 ```
 Single excitations only:
@@ -126,7 +126,7 @@ Final energy = -1.25028914 Ha
 
 ![H₃⁺ Excitation Comparison](notebooks/images/H3+_Excitation_Comparison.png)
 
-The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansätz.
+The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansatze.
 
 The wavefunctions reveal a dominant contribution from the Hartree-Fock reference state, with notable amplitudes in correlated excited states. Example from UCCSD:
 
@@ -137,7 +137,7 @@ The wavefunctions reveal a dominant contribution from the Hartree-Fock reference
 
 This decomposition showcases the entanglement and correlation introduced by higher-order excitations. The Hartree-Fock state $|110000⟩$ is again dominant, but its amplitude is reduced relative to smaller molecules due to increased multi-reference character.
 
-A quantum circuit diagram for the UCCSD ansätze is below:
+A quantum circuit diagram for the UCCSD ansatzes is below:
 
 ![H₃⁺ Circuit Diagram](notebooks/images/H3+_UCCSD_Circuit.png)
 
@@ -152,14 +152,14 @@ A quantum circuit diagram for the UCCSD ansätze is below:
   - H₃ = (0.800000, –0.300000,  0.000000)
 - **Charge**: $+1$
 - **Electrons**: 2
-- **Ansätz**: UCCSD (Singles + Doubles)
+- **Ansatze**: UCCSD (Singles + Doubles)
 - **Optimizer**: `AdamOptimizer` with step size $0.2$
 - **Iterations**: $50$
 - **Mappings Compared**: `jordan_wigner`, `bravyi_kitaev`, `parity`
 
 ### Visualization
 
-The simulation compares three fermion-to-qubit encodings using the same ansätz and optimizer.
+The simulation compares three fermion-to-qubit encodings using the same ansatze and optimizer.
 Final ground state energies:
 
 ```
@@ -173,13 +173,13 @@ parity:        -1.20493135 Ha
 The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, though all mappings reach similar accuracy after $50$ iterations.
 
 Each encoding transforms the fermionic Hamiltonian differently, influencing qubit operator structure and gradient behavior.  
-This comparison highlights how even under identical ansätze, fermion-to-qubit mapping can affect convergence rate and minima.
+This comparison highlights how even under identical ansatzes, fermion-to-qubit mapping can affect convergence rate and minima.
 
 ## H₃⁺ SSVQE
 
 ### Set Up
 
-- **Molecular Geometry**: Equilateral triangle ($0.87\ \text{Å}$ side length)
+- **Molecular Geometry**: Equilateral triangle ($0.87 Å$ side length)
 - **Charge**: $+1$
 - **Electrons**: $2$
 - **Basis**: STO-3G
@@ -238,7 +238,7 @@ The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 ## Optimal LiH Length
 
 The Gradient Descent Optimizer was used to scan over a range of bond-lengths between the Li and H atoms.
-$25$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.0] Å$.
+$25$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.1] Å$.
 Plot output from `LiH_Bond_Length.ipynb`:
 
 ![Optimal Length](notebooks/images/LiH_Optimal_Bond_Length.png)
