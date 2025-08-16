@@ -44,11 +44,12 @@ This project implements VQE for:
 
 ```
 variational_quantum_eigensolver/
-├── LICENSE                           # MIT license
-├── requirements.txt                  # Dependencies
 ├── README.md                         # This file 
 ├── THEORY.md                         # Detailed theoretical background
 ├── RESULTS.md                        # Results and analysis
+├── LICENSE                           # MIT license
+├── requirements.txt                  # Dependencies
+├── .gitignore                        # Git ignore rules (untracked files/artifacts)
 └── notebooks/                        # Jupyter notebooks written in Python
     ├── images/                       # Directory of generated visualization plots
     ├── vqe_utils.py                  # Utilities file
@@ -70,22 +71,35 @@ variational_quantum_eigensolver/
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
+git clone https://github.com/SidRichardsQuantum/variational_quantum_eigensolver.git
 cd variational_quantum_eigensolver
 ```
 
 2. Install dependencies:
 
 ```bash
-pip install pennylane matplotlib numpy scipy
+pip install -r requirements.txt
 ```
 
 3. Run the VQE simulations:
 
 ```bash
-# Lithium Hydride
-jupyter notebook LiH_Noiseless.ipynb
+# Lithium Hydride (LiH)
+jupyter notebook notebooks/LiH_Noiseless.ipynb
+
+# Runs a noiseless VQE with a double–excitation UCC ansatz and the gradient descent optimizer
+# Outputs convergence plots and the final ground state amplitudes
 ```
+
+### Results Preview
+
+Running `notebooks/LiH_Noiseless.ipynb` produces:
+
+- **Convergence of VQE energy** (noiseless, LiH, double excitation ansatz)
+- **Final ground state energy** close to the expected Hartree–Fock reference
+- **Ground state amplitudes** plotted as a bar chart
+
+![LiH VQE Convergence](notebooks/images/LiH_Gradient_Descent.png)
 
 ## Methodology Overview
 
