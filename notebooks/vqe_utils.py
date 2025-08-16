@@ -1,5 +1,60 @@
 import pennylane as qml
 from pennylane import numpy as np
+import json, hashlib, os, glob
+from typing import Any, Dict
+
+def _round_floats(x: Any, ndigits: int = 8):
+    """Recursively round floats / arrays / lists for stable hashing."""
+    # Handle plain Python floats and NumPy scalars (duck-typed via .item)
+    if isinstance(x, float):
+        return round(x, ndigits)
+    try:
+        # NumPy scalar
+        if hasattr(x, "item") and isinstance(x.item(), float):
+            return round(float(x), ndigits)
+    except Exception:
+        pass
+    # NumPy arrays -> tolist, then recurse
+    if hasattr(x, "tolist"):
+        return _round_floats(x.tolist(), ndigits)
+    # Lists / tuples -> recurse elementwise
+    if isinstance(x, (list, tuple)):
+        return type(x)(_round_floats(v, ndigits) for v in x)
+    return x
+
+def make_run_config_dict(
+    symbols, coordinates, basis: str, ansatz_desc: str,
+    optimizer_name: str, stepsize: float, max_iterations: int, seed: int
+) -> Dict[str, Any]:
+    """Canonical config for hashing & cache keys."""
+    return {
+        "symbols": list(symbols),
+        "geometry": _round_floats(coordinates, 8),
+        "basis": basis,
+        "ansatz": ansatz_desc,
+        "optimizer": {
+            "name": optimizer_name,
+            "stepsize": float(stepsize),
+            "iterations_planned": int(max_iterations),
+        },
+        "seed": int(seed),
+    }
+
+def run_signature(cfg: Dict[str, Any]) -> str:
+    """Stable short hash of the config (12 hex chars)."""
+    payload = json.dumps(cfg, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+def find_existing_run(runs_dir: str, sig: str):
+    """Return newest matching JSON for this signature, or None."""
+    pattern = os.path.join(runs_dir, f"*__{sig}.json")
+    matches = sorted(glob.glob(pattern))
+    return matches[-1] if matches else None
+
+def build_run_filename(runs_dir: str, prefix: str, optimizer_name: str, seed: int, sig: str) -> str:
+    """Consistent file naming helper, e.g. H2_noiseless_Adam_s0__abc123def456.json"""
+    safe_opt = optimizer_name.replace(" ", "")
+    return os.path.join(runs_dir, f"{prefix}_{safe_opt}_s{seed}__{sig}.json")
 
 # ---- Ansatzes ----
 def two_qubit_ry_cnot(params, wires):
