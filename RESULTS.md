@@ -290,7 +290,9 @@ Optimal angle: 104.50°
 ```
 
 These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5°$) of water.
+
 [Chemical bonding of water](https://en.wikipedia.org/wiki/Chemical_bonding_of_water)
+
 [Ground-state energy estimation of the water molecule on a trapped ion quantum computer](https://arxiv.org/abs/1902.10171)
 
 ---
