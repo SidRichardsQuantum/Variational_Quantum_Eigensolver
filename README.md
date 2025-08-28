@@ -101,6 +101,8 @@ Running `notebooks/LiH_Noiseless.ipynb` produces:
 
 ![LiH VQE Convergence](notebooks/images/LiH_Gradient_Descent.png)
 
+![LiH Ground State](notebooks/images/LiH_Ground_State.png)
+
 ## Methodology Overview
 
 1. Molecular Setup: generated using PennyLane's `qchem` module
