@@ -45,18 +45,39 @@ def run_signature(cfg: Dict[str, Any]) -> str:
     payload = json.dumps(cfg, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
-def find_existing_run(runs_dir: str, sig: str):
-    """Return newest matching JSON for this signature, or None."""
-    pattern = os.path.join(runs_dir, f"*__{sig}.json")
-    matches = sorted(glob.glob(pattern))
+RUNS_DIR    = "runs"
+RESULTS_DIR = "results"
+IMG_DIR = "images"
+
+def ensure_dirs():
+    os.makedirs(RUNS_DIR, exist_ok=True)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(IMG_DIR, exist_ok=True)
+
+def find_existing_run(runs_dir, sig):
+    # look in results/ first (persisted), then runs/ (local cache)
+    pattern_results = os.path.join(RESULTS_DIR, f"*__{sig}.json")
+    pattern_runs    = os.path.join(runs_dir,    f"*__{sig}.json")
+    matches = sorted(glob.glob(pattern_results) + glob.glob(pattern_runs))
     return matches[-1] if matches else None
+
+def save_run_record(fname_runs, record):
+    # write to runs/
+    with open(fname_runs, "w") as f:
+        json.dump(record, f, indent=2)
+    # mirror into results/ with same basename
+    base = os.path.basename(fname_runs)
+    fname_results = os.path.join(RESULTS_DIR, base)
+    if not os.path.exists(fname_results):
+        with open(fname_results, "w") as f:
+            json.dump(record, f, indent=2)
+    return fname_results
 
 def build_run_filename(runs_dir: str, prefix: str, optimizer_name: str, seed: int, sig: str) -> str:
     """Consistent file naming helper, e.g. H2_noiseless_Adam_s0__abc123def456.json"""
     safe_opt = optimizer_name.replace(" ", "")
     return os.path.join(runs_dir, f"{prefix}_{safe_opt}_s{seed}__{sig}.json")
 
-# ---- Ansatzes ----
 def two_qubit_ry_cnot(params, wires):
     """Toy 2-qubit entangler; NOT chemical UCCSD."""
     qml.RY(params[0], wires=wires[0])
