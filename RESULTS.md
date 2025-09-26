@@ -279,14 +279,14 @@ The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 ## Optimal H₂O Angle
 
 The Adam optimizer was used to find the angle between the two hydrogens about the oxygen.
-$50$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]°$.
+$20$ maximum iterations and a stepsize of $0.2$ were used, over $10$ bond-angles in the range $[100, 109]°$.
 Plot output from `H2O_Bond_Angle.ipynb`:
 
 ![H₂O Bond Angle Scan](notebooks/images/H2O_Bond_Angle_Scan.png)
 
 ```
-Minimum energy: -71.539353 Ha
-Optimal angle: 104.50°
+Minimum energy: -70.119419 Ha
+Optimal angle: 104.00°
 ```
 
 These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5°$) of water.
