@@ -48,7 +48,7 @@ Momentum:
 Final ground state energy = -0.89801009 Ha
 
 SPSA:
-Final ground state energy = -0.89566722 Ha
+Final ground state energy = -0.89576313 Ha
 ```
 
 ![H₂ Optimizer Comparison](notebooks/images/H2_Optimizer_Comparison.png)
@@ -70,33 +70,33 @@ Ground state of H₂:
 
 - **Bond Length**: $0.7414 Å$
 - **Optimizer**: `AdamOptimizer` with step size $0.2$
-- **Iterations**: $40$
-- **Ansatzes Compared**: `UCCSD`, `RY-CZ`, `Minimal`
+- **Iterations**: $80$
+- **Ansatzes Compared**: `TwoQubit-RY-CNOT`, `RY-CZ`, `Minimal`
 
 ### Visualization
 
 The following ansatzes were tested in a noiseless simulation:
 
-- **UCCSD**: A chemically motivated circuit including single and double excitations.
+- **TwoQubit-RY-CNOT**: A chemically motivated circuit including single and double excitations.
 - **$R_Y-C_Z$**: A hardware-efficient structure using rotation and $C_Z$ entanglement layers.
 - **Minimal**: A single-parameter ansatzes tailored for H₂.
 
 All three ansatzes successfully converged to near ground-state energies within $40$ iterations:
 
 ```
-UCCSD:
-Final energy = -0.87975978 Ha
+TwoQubit-RY-CNOT:
+Final energy = -0.88770766 Ha
 
 RY-CZ:
-Final energy = -0.87936449 Ha
+Final energy = -0.88769420 Ha
 
 Minimal:
-Final energy = -0.84822983 Ha
+Final energy = -0.88810382 Ha
 ```
 
 ![H₂ Ansatzes Comparison](notebooks/images/H2_Ansatz_Comparison.png)
 
-Although all ansatzes reach similar energy minima, UCCSD and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
+Although all ansatzes reach similar energy minima, TwoQubit-RY-CNOT and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
 
 ## H₃⁺ Excitation Comparison
 
@@ -115,13 +115,13 @@ The simulation compares three ansatze types in a noiseless VQE run. Final ground
 
 ```
 Single excitations only:
-Final energy = -1.24811821 Ha
+Final energy = -1.24434441 Ha
 
 Double excitations only:
-Final energy = -1.25027788 Ha
+Final energy = -1.27005538 Ha
 
 Single + Double (UCCSD):
-Final energy = -1.25028914 Ha
+Final energy = -1.27001939 Ha
 ```
 
 ![H₃⁺ Excitation Comparison](notebooks/images/H3+_Excitation_Comparison.png)
@@ -131,8 +131,7 @@ The best convergence and lowest energy are achieved when both single and double 
 The wavefunctions reveal a dominant contribution from the Hartree-Fock reference state, with notable amplitudes in correlated excited states. Example from UCCSD:
 
 ```
-|ψ⟩ = 0.9813|110000⟩ - 0.0806|100010⟩ - 0.0773|100100⟩ + 0.0667|010001⟩
-    - 0.0577|010100⟩ + 0.0481|110011⟩ + 0.0332|110100⟩ + 0.0226|100001⟩
+|ψ⟩ = -0.0883|000011⟩ + -0.0821|001100⟩ + 0.9927|110000⟩
 ```
 
 This decomposition showcases the entanglement and correlation introduced by higher-order excitations. The Hartree-Fock state $|110000⟩$ is again dominant, but its amplitude is reduced relative to smaller molecules due to increased multi-reference character.
@@ -163,9 +162,9 @@ The simulation compares three fermion-to-qubit encodings using the same ansatze 
 Final ground state energies:
 
 ```
-jordan_wigner: -1.25860509 Ha
-bravyi_kitaev: -1.31943557 Ha
-parity:        -1.20493135 Ha
+jordan_wigner: -1.25867803 Ha
+bravyi_kitaev: -0.67410221 Ha
+parity:        -0.67413491 Ha
 ```
 
 ![H₃⁺ Mapping Comparison](notebooks/images/H3+_Mapping_Comparison.png)
@@ -179,13 +178,13 @@ This comparison highlights how even under identical ansatzes, fermion-to-qubit m
 
 ### Set Up
 
-- **Molecular Geometry**: Equilateral triangle ($0.87 Å$ side length)
+- **Molecular Geometry**: Equilateral triangle
 - **Charge**: $+1$
 - **Electrons**: $2$
 - **Basis**: STO-3G
 - **Ansatz**: UCC-style singles + doubles (from `qchem.excitations`)
 - **Optimizer**: Adam with step size $0.4$
-- **Iterations**: $75$
+- **Iterations**: $100$
 - **Penalty Weight**: $10 * | ⟨ \psi_0 | \psi_1 ⟩ |^2$
 
 ### Visualization
@@ -194,9 +193,9 @@ SSVQE was used to variationally optimize the ground and first excited states sim
 The final energies obtained were:
 
 ```
-Ground state (E₀) = -1.25980889 Ha
-First excited state (E₁) = -0.55811374 Ha
-Excitation gap ΔE = 0.70169515 Ha
+Final Ground State Energy (E₀):  -1.25054229 Ha
+Final Excited State Energy (E₁): -0.58759689 Ha
+Excitation Energy ΔE = E₁ - E₀:   0.66294540 Ha
 ```
 
 ![H₃⁺ SSVQE Adam Convergence](notebooks/images/H3+_SSVQE_Adam.png)
@@ -218,17 +217,17 @@ The orthogonality penalty successfully suppressed overlap between the states, pr
 
 ### Visualization
 
-`GradientDescentOptimizer` with step-size $0.1$ successfully converges at ground state energy $-7.67957954 Ha$:
+`GradientDescentOptimizer` with step-size $0.2$ successfully converges at ground state energy $-7.67972341 Ha$:
 
 ![LiH Gradient Descent](notebooks/images/LiH_Gradient_Descent.png)
 
 The calculated wavefunction for the ground state of LiH is:
 
 ```
-|ψ⟩ = 0.9930|111100000000⟩ - 0.0969|110000000011⟩ 
-    - 0.0334|110000001100⟩ - 0.0334|110000110000⟩ 
-    - 0.0317|110001000010⟩ + 0.0317|110010000001⟩ 
-    - 0.0123|110011000000⟩
+|ψ⟩ = - 0.1010|110000000011⟩ - 0.0393|110000001100⟩
+      - 0.0393|110000110000⟩ - 0.0365|110001000010⟩
+      + 0.0365|110010000001⟩ - 0.0155|110011000000⟩
+      + 0.9918|111100000000⟩
 ```
 
 The Hartree-Fock state $|111100000000⟩$ is the most dominant.
@@ -259,17 +258,18 @@ Minimum ground state energy: -5.59345560 Ha
 
 ### Visualization
 
-`AdamOptimizer`  with step-size $0.1$ successfully converges at ground state energy $-72.87712785 Ha$:
+`AdamOptimizer`  with step-size $0.2$ successfully converges at ground state energy $-72.85526883516486 Ha$:
 
 ![H₂O Adam Convergence](notebooks/images/H2O_Adam.png)
 
 The calculated wavefunction for the ground state of water is:
 
 ```
-|ψ⟩ = 0.9979|11111111110000⟩ - 0.0323|11110011110011⟩
-    - 0.0244|11111100110011⟩ - 0.0211|11111111001100⟩
-    + 0.0171|11100111110110⟩ - 0.0160|11001111111100⟩
-    + 0.0156|11011011111001⟩ - 0.0105|11110011111100⟩
+|ψ⟩ = - 0.0112|11001111111100⟩ + 0.0171|11011011111001⟩ + 0.0117|11011111110010⟩
+      - 0.0226|11110011110011⟩ - 0.0279|11111100110011⟩ + 0.0123|11111101101100⟩
+      + 0.0110|11111110010110⟩ + 0.0122|11111110011100⟩ + 0.0223|11111110110100⟩
+      - 0.0130|11111111001100⟩ - 0.0161|11111111011000⟩ - 0.0104|11111111100100⟩
+      + 0.9970|11111111110000⟩
 ```
 
 The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
@@ -278,8 +278,8 @@ The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
 ## Optimal H₂O Angle
 
-The Adam optimizer was used to find the angle between the two hydrogens in water.
-$10$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]°$.
+The Adam optimizer was used to find the angle between the two hydrogens about the oxygen.
+$50$ maximum iterations and a stepsize of $0.2$ were used, over $5$ bond-angles in the range $[100, 109]°$.
 Plot output from `H2O_Bond_Angle.ipynb`:
 
 ![H₂O Bond Angle Scan](notebooks/images/H2O_Bond_Angle_Scan.png)
