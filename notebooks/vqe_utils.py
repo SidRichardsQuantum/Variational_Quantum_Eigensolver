@@ -24,7 +24,8 @@ def _round_floats(x: Any, ndigits: int = 8):
 
 def make_run_config_dict(
     symbols, coordinates, basis: str, ansatz_desc: str,
-    optimizer_name: str, stepsize: float, max_iterations: int, seed: int
+    optimizer_name: str, stepsize: float, max_iterations: int, seed: int,
+    noisy: bool, depolarizing_prob: float, amplitude_damping_prob: float
 ) -> Dict[str, Any]:
     """Canonical config for hashing & cache keys."""
     return {
@@ -38,6 +39,9 @@ def make_run_config_dict(
             "iterations_planned": int(max_iterations),
         },
         "seed": int(seed),
+        "noisy": noisy,
+        "depolarizing_prob": float(depolarizing_prob),
+        "amplitude_damping_prob": float(amplitude_damping_prob),
     }
 
 def run_signature(cfg: Dict[str, Any]) -> str:
