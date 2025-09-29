@@ -23,11 +23,19 @@ def _round_floats(x: Any, ndigits: int = 8):
     return x
 
 def make_run_config_dict(
-    symbols, coordinates, basis: str, ansatz_desc: str,
-    optimizer_name: str, stepsize: float, max_iterations: int, seed: int,
-    noisy: bool, depolarizing_prob: float, amplitude_damping_prob: float
+    symbols,
+    coordinates,
+    basis: str,
+    ansatz_desc: str,
+    optimizer_name: str,
+    stepsize: float,
+    max_iterations: int,
+    seed: int,
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
 ) -> Dict[str, Any]:
-    """Canonical config for hashing & cache keys."""
+    """Canonical config for hashing & cache keys, now includes noise info."""
     return {
         "symbols": list(symbols),
         "geometry": _round_floats(coordinates, 8),
