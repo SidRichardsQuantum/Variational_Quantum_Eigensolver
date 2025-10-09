@@ -124,7 +124,7 @@ Single + Double (UCCSD):
 Final energy = -1.27001939 Ha
 ```
 
-![H₃⁺ Excitation Comparison](notebooks/images/H3+_Excitation_Comparison.png)
+![H₃⁺ Excitation Comparison](notebooks/images/H3plus_Excitation_Comparison.png)
 
 The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansatze.
 
@@ -138,7 +138,7 @@ This decomposition showcases the entanglement and correlation introduced by high
 
 A quantum circuit diagram for the UCCSD ansatzes is below:
 
-![H₃⁺ Circuit Diagram](notebooks/images/H3+_UCCSD_Circuit.png)
+![H₃⁺ Circuit Diagram](notebooks/images/H3plus_UCCSD_Circuit.png)
 
 ## H₃⁺ Mapping Comparison
 
@@ -167,7 +167,7 @@ bravyi_kitaev: -0.67410221 Ha
 parity:        -0.67413491 Ha
 ```
 
-![H₃⁺ Mapping Comparison](notebooks/images/H3+_Mapping_Comparison.png)
+![H₃⁺ Mapping Comparison](notebooks/images/H3plus_Mapping_Comparison.png)
 
 The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, though all mappings reach similar accuracy after $50$ iterations.
 
@@ -198,12 +198,12 @@ Final Excited State Energy (E₁): -0.58759689 Ha
 Excitation Energy ΔE = E₁ - E₀:   0.66294540 Ha
 ```
 
-![H₃⁺ SSVQE Adam Convergence](notebooks/images/H3+_SSVQE_Adam.png)
+![H₃⁺ SSVQE Adam Convergence](notebooks/images/H3plus_SSVQE_Adam.png)
 
 The **ground state** is dominated by the Hartree–Fock configuration $|110000⟩$,  
 while the **first excited state** shifts amplitude toward $|100100⟩$ and other configurations, showing clear state separation:
 
-![H₃⁺ ψ₀ vs ψ₁ Decomposition](notebooks/images/H3+_SSVQE_State_Comparison.png)
+![H₃⁺ ψ₀ vs ψ₁ Decomposition](notebooks/images/H3plus_SSVQE_State_Comparison.png)
 
 The orthogonality penalty successfully suppressed overlap between the states, producing distinct quantum states with a meaningful excitation energy gap.
 
