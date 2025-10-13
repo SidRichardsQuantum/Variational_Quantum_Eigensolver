@@ -59,9 +59,7 @@ The VQE algorithm consists of:
 3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
 
----
-
-## Ansatz Construction:
+### Ansatz Construction:
 
 An ansatz defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
 It determines how expressive, efficient, and trainable your VQE circuit is.
@@ -93,9 +91,7 @@ A manually constructed, problem-specific ansatz using very few parameters.
 - Extremely shallow and interpretable
 - Useful for testing optimizers, energy landscapes, or learning curves
 
----
-
-## Optimizers:
+### Optimizers:
 
 Classical optimizers are a critical component of the VQE algorithm, as they minimize the energy by adjusting circuit parameters $\theta$.
 
@@ -142,9 +138,7 @@ Designed for noisy or hardware-executed circuits, where gradients are expensive 
 - Requires very few circuit evaluations per step
 - Performs well in realistic noisy quantum environments
 
----
-
-## Fermion-to-Qubit Mappings
+### Fermion-to-Qubit Mappings
 
 To simulate molecular Hamiltonians on quantum computers, second-quantized fermionic operators must be mapped to qubit operators.  
 This project compares three common mappings using the H₃⁺ molecule:
@@ -165,13 +159,11 @@ Each mapping transforms the Hamiltonian into a different structure of Pauli oper
 
 (The same ansatz and optimizers are applied across all mappings to isolate the impact of encoding alone.)
 
----
-
-## Excited State Methods in VQE
+### Excited State Methods in VQE
 
 While the standard VQE algorithm is designed to find the **ground state** of a molecular Hamiltonian, many applications in quantum chemistry require access to **excited states** — for example, to predict **spectroscopic transitions**, **photoexcitation energies**, and **reaction pathways**.
 
-### Challenge
+#### Challenge
 
 The original VQE formulation finds the **lowest eigenvalue** of the Hamiltonian by variationally minimizing the energy:
 
@@ -179,7 +171,7 @@ $E_0 = \min_{\theta} ⟨\psi(\theta)| H |\psi(\theta)⟩$
 
 This process does not directly provide excited states, and repeating VQE with orthogonality constraints is non-trivial.
 
-### Subspace-Search VQE (SSVQE)
+#### Subspace-Search VQE (SSVQE)
 
 SSVQE is a variational method that finds **multiple eigenstates simultaneously** by:
 
@@ -210,8 +202,6 @@ This enforces that each optimized state corresponds to a different eigenvector o
 - Allows **simultaneous** calculation of ground and excited states.
 - Optimization can become more challenging as the number of states increases.
 - Choice of ansatz and penalty strength critically affects convergence and state separation.
-
----
 
 ## References
 

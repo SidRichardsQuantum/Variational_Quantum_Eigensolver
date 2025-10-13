@@ -82,7 +82,7 @@ pip install -r requirements.txt
 
 ```bash
 # Lithium Hydride (LiH)
-jupyter notebook notebooks/LiH_Noiseless.ipynb
+jupyter notebook notebooks/LiH/LiH_Noiseless.ipynb
 
 # Runs a noiseless VQE with a double–excitation UCC ansatz and the gradient descent optimizer
 # Outputs convergence plots and the final ground state amplitudes
@@ -90,7 +90,7 @@ jupyter notebook notebooks/LiH_Noiseless.ipynb
 
 ### Results Preview
 
-Running `notebooks/LiH_Noiseless.ipynb` produces:
+Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
 
 - **Convergence of VQE energy** (noiseless, LiH, double excitation ansatz)
 - **Final ground state energy** close to the expected Hartree–Fock reference
