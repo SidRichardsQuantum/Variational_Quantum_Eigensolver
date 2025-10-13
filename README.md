@@ -43,30 +43,22 @@ This project implements VQE for:
 ## Project Structure
 
 ```
-variational_quantum_eigensolver/
-├── README.md                            # This file 
-├── THEORY.md                            # Detailed theoretical background
-├── RESULTS.md                           # Results and analysis
-├── LICENSE                              # MIT license
-├── requirements.txt                     # Dependencies
-├── .gitignore                           # Git ignore rules (untracked files/artifacts)
-└── notebooks/                           # Jupyter notebooks written in Python
-    ├── images/                          # Directory of generated visualization plots
-    ├── vqe_utils.py                     # Utilities file
-    ├── H2_Noisy.ipynb                   # Noisy H₂ VQE
-    ├── H2_Noiseless.ipynb               # Noiseless H₂ VQE
-    ├── H2_Ansatz_Comparison.ipynb       # Comparing ansatzes for H₂
-    ├── H2_Noisy_vs_Noiseless.ipynb      # Optimiser/ansatz fidelity comparison
-    ├── H3plus_Noisy.ipynb               # Noisy H₃⁺ VQE
-    ├── H3plus_Noiseless.ipynb           # Single vs. Double vs. UCCSD for H₃⁺
-    ├── H3plus_Mapping_Comparison.ipynb  # Mapping comparison for H₃⁺
-    ├── H3plus_SSVQE.ipynb               # SSVQE for H₃⁺
-    ├── H3plus_Noisy_vs_Noiseless.ipynb  # Optimiser/ansatz fidelity comparison
-    ├── LiH_Noisy.ipynb                  # Noisy LiH VQE
-    ├── LiH_Noiseless.ipynb              # Noiseless LiH VQE
-    ├── LiH_Bond_Length.ipynb            # Optimum bond-length of LiH
-    ├── H2O_Noiseless.ipynb              # Noiseless H₂O VQE
-    └── H2O_Bond_Angle.ipynb             # Optimum bond-angle of H₂O
+Variational_Quantum_Eigensolver/
+├── README.md         # This file
+├── THEORY.md         # Theoretical background and mathematical formulation
+├── RESULTS.md        # Consolidated results and analysis
+├── LICENSE           # MIT license
+├── requirements.txt  # Python dependencies
+├── .gitignore        # Git ignore rules
+├── src/              # Source code
+│   └── vqe_utils.py  # Core VQE utility functions (shared by notebooks)
+└── notebooks/        # Jupyter notebooks for molecule-specific studies
+    ├── H2/           # H₂ simulations (noisy, noiseless, ansatz comparison, etc.)
+    ├── H2O/          # H₂O simulations (bond angle, noiseless runs)
+    ├── H3plus/       # H₃⁺ simulations (mappings, SSVQE, noise analysis)
+    ├── LiH/          # LiH simulations (bond length, noisy vs. noiseless)
+    ├── images/       # Generated visualization plots
+    └── results/      # Saved numerical and energy results
 ```
 
 ## Usage
