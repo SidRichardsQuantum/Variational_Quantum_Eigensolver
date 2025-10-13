@@ -53,8 +53,9 @@ def run_signature(cfg: Dict[str, Any]) -> str:
     payload = json.dumps(cfg, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
-RESULTS_DIR = "results"
-IMG_DIR = "images"
+BASE_NOTEBOOKS_DIR = os.path.join(os.path.dirname(__file__), "..", "notebooks")
+RESULTS_DIR = os.path.join(BASE_NOTEBOOKS_DIR, "results")
+IMG_DIR = os.path.join(BASE_NOTEBOOKS_DIR, "images")
 
 def ensure_dirs():
     os.makedirs(RESULTS_DIR, exist_ok=True)
