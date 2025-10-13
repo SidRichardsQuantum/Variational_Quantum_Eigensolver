@@ -20,5 +20,4 @@ Thumbs.db
 *.log
 
 # Store cached VQE run results
-# (But not the results/ directory)
-runs/
+notebooks/results/
