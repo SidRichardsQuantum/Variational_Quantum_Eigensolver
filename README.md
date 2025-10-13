@@ -56,7 +56,7 @@ Variational_Quantum_Eigensolver/
     ├── H2/           # H₂ simulations (noisy, noiseless, ansatz comparison, etc.)
     ├── H2O/          # H₂O simulations (bond angle, noiseless runs)
     ├── H3plus/       # H₃⁺ simulations (mappings, SSVQE, noise analysis)
-    ├── LiH/          # LiH simulations (bond length, noisy vs. noiseless)
+    ├── LiH/          # LiH simulations (bond length, noiseless runs)
     ├── images/       # Generated visualization plots
     └── results/      # Saved numerical and energy results
 ```
