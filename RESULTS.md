@@ -9,9 +9,11 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 ## 📚 Table of Contents
 - [H₂ Optimiser Comparison](#h₂-optimiser-comparison)
 - [H₂ Ansatze Comparison](#h₂-ansatze-comparison)
+- [H₂ Noisy VQE](#h₂-noisy-vqe)
 - [H₃⁺ Excitation Comparison](#h₃⁺-excitation-comparison)
 - [H₃⁺ Mapping Comparison](#h₃⁺-mapping-comparison)
 - [H₃⁺ SSVQE](#h₃⁺-ssvqe)
+- [H₃⁺ Noisy VQE](#h₃⁺-noisy-vqe)
 - [LiH](#lih)
 - [Optimal LiH Length](#optimal-lih-length)
 - [H₂O](#h₂o)
@@ -349,9 +351,10 @@ Optimal angle: 104.00°
 
 These values are very close to the true ground state energy ($\approx -75 Ha$) and bond-angle ($\approx 104.5°$) of water.
 
-[Chemical bonding of water](https://en.wikipedia.org/wiki/Chemical_bonding_of_water)
+### Optimal Angle References
 
-[Ground-state energy estimation of the water molecule on a trapped ion quantum computer](https://arxiv.org/abs/1902.10171)
+- [Chemical bonding of water](https://en.wikipedia.org/wiki/Chemical_bonding_of_water)
+- [Ground-state energy estimation of the water molecule on a trapped ion quantum computer](https://arxiv.org/abs/1902.10171)
 
 ---
 

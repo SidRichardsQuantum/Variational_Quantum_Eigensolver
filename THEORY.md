@@ -13,6 +13,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [Optimizers](#optimizers)
 - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
 - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+- [Noise Types](#noise-types)
 - [References](#references)
 
 ---
@@ -30,14 +31,16 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 All simulations use the **STO-3G** basis set for consistency.  
 Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the Jordan–Wigner, Bravyi–Kitaev or Parity transformations (via PennyLane's `qchem` module).
 
+---
+
 ## Background
 
 ### Variational Principle
 
 The variational principle states that for any trial wavefunction $|\psi⟩$, the expectation value of the Hamiltonian is an upper bound to the true ground state energy:
-```
-E₀ ≤ ⟨ψ|H|ψ⟩
-```
+
+$$E₀ ≤ ⟨ψ|H|ψ⟩$$
+
 where:
 - $E_0$ is the ground state energy
 - $|\psi⟩$ is any normalized wavefunction
@@ -46,9 +49,9 @@ where:
 ### Hartree-Fock
 
 The Hartree-Fock state is written as the tensor product of a qubit state $\phi$ for every electron orbital:
-```
-|HF⟩ = |φ₁φ₂...φₙ⟩
-```
+
+$$|HF⟩ = |φ₁φ₂...φₙ⟩$$
+
 For LiH with $4$ electrons in $12$ orbitals, the HF reference state is ```|111100000000⟩```, which describes electrons occupying the four lowest energy orbital states.
 
 ## VQE Algorithm Overview
@@ -58,6 +61,8 @@ The VQE algorithm consists of:
 2. **Measurement**: Measure expectation value $⟨\psi(\theta)| H |\psi(\theta)⟩$
 3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
+
+---
 
 ### Ansatz Construction:
 
@@ -90,6 +95,8 @@ A manually constructed, problem-specific ansatz using very few parameters.
 - Uses a single $R_Y$ rotation and one entangling gate (e.g., CNOT)
 - Extremely shallow and interpretable
 - Useful for testing optimizers, energy landscapes, or learning curves
+
+---
 
 ### Optimizers:
 
@@ -138,6 +145,8 @@ Designed for noisy or hardware-executed circuits, where gradients are expensive 
 - Requires very few circuit evaluations per step
 - Performs well in realistic noisy quantum environments
 
+---
+
 ### Fermion-to-Qubit Mappings
 
 To simulate molecular Hamiltonians on quantum computers, second-quantized fermionic operators must be mapped to qubit operators.  
@@ -159,6 +168,8 @@ Each mapping transforms the Hamiltonian into a different structure of Pauli oper
 
 (The same ansatz and optimizers are applied across all mappings to isolate the impact of encoding alone.)
 
+---
+
 ### Excited State Methods in VQE
 
 While the standard VQE algorithm is designed to find the **ground state** of a molecular Hamiltonian, many applications in quantum chemistry require access to **excited states** — for example, to predict **spectroscopic transitions**, **photoexcitation energies**, and **reaction pathways**.
@@ -167,7 +178,7 @@ While the standard VQE algorithm is designed to find the **ground state** of a m
 
 The original VQE formulation finds the **lowest eigenvalue** of the Hamiltonian by variationally minimizing the energy:
 
-$E_0 = \min_{\theta} ⟨\psi(\theta)| H |\psi(\theta)⟩$
+$$E_0 = \min_{\theta} ⟨\psi(\theta)| H |\psi(\theta)⟩$$
 
 This process does not directly provide excited states, and repeating VQE with orthogonality constraints is non-trivial.
 
@@ -175,21 +186,17 @@ This process does not directly provide excited states, and repeating VQE with or
 
 SSVQE is a variational method that finds **multiple eigenstates simultaneously** by:
 
-1. Preparing a **set of parameterized quantum states**:
-
-$\{ |\psi_0(\theta_0)⟩, \ |\psi_1(\theta_1)⟩, \ \dots \}$
+1. Preparing a **set of parameterized quantum states** $\{ |\psi_0(\theta_0)⟩, \ |\psi_1(\theta_1)⟩, \ \dots \}$
 
 2. **Optimizing** all parameters to minimize a **weighted sum of expectation values**:
 
-$\mathcal{L} = \sum_i w_i ⟨\psi_i| H |\psi_i⟩$
+$$\mathcal{L} = \sum_i w_i ⟨\psi_i| H |\psi_i⟩$$
 
-3. Adding **orthogonality penalties** to ensure distinct states:
-
-$\text{Penalty} \propto | ⟨\psi_i | \psi_j⟩ |^2$
+3. Adding **orthogonality penalties** to ensure distinct states with $\text{Penalty} \propto | ⟨\psi_i | \psi_j⟩ |^2$
 
 This enforces that each optimized state corresponds to a different eigenvector of the Hamiltonian.
 
-### Implementation Details for H₃⁺
+#### Implementation Details for H₃⁺
 
 - **Ansatz**: UCCSD with both single and double excitations.
 - **States**: Two independent parameter sets (ψ₀ and ψ₁) initialized differently.
@@ -197,11 +204,55 @@ This enforces that each optimized state corresponds to a different eigenvector o
 - **Optimizer**: Adam, step size tuned for stability and separation.
 - **Outcome**: Variational estimates of both the ground-state and first excited-state energies, with an accurate excitation gap.
 
-### Key Points
+#### Key Points
 
 - Allows **simultaneous** calculation of ground and excited states.
 - Optimization can become more challenging as the number of states increases.
 - Choice of ansatz and penalty strength critically affects convergence and state separation.
+
+---
+
+### Noise Types
+
+In real quantum hardware, noise arises from imperfect gates and environmental interactions.
+This notebook models two primary noise channels using PennyLane’s `default.mixed` simulator to study their effect on VQE convergence and accuracy.
+
+#### Depolarizing Noise
+
+Models random qubit errors that drive each subsystem toward a mixed state with probability $p$:
+
+$$\mathcal{E}_{\text{dep}}(\rho) = (1 - p) \rho + \frac{p}{3}(X \rho X + Y \rho Y + Z \rho Z)$$
+
+- Represents uniform gate and readout errors
+- Applied independently to each qubit
+- Causes global decoherence and loss of entanglement fidelity
+
+#### Amplitude Damping
+
+Models **energy relaxation**, where excited states decay to the ground state $|0⟩$ with probability $p$:
+
+$$\mathcal{E}_{\text{amp}}(\rho) = E_0 \rho E_0^\dagger + E_1 \rho E_1^\dagger$$
+
+where
+
+$$E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-p} \end{pmatrix},
+\quad
+E_1 = \begin{pmatrix} 0 & \sqrt{p} \\ 0 & 0 \end{pmatrix}$$
+
+- Mimics spontaneous emission or thermal relaxation
+- Applied independently to each qubit
+- Introduces asymmetric noise and energy bias toward the ground state
+
+### Evaluation Metrics
+
+Noise strengths ($p \in [0, 0.1]$) are varied systematically to evaluate:
+
+- **Energy error** — deviation from the noiseless ground-state energy
+- **Fidelity** — overlap between noisy and noiseless final states: $F(|\psi_0⟩, \rho) = ⟨\psi_0| \rho | \psi_0⟩$
+
+These metrics quantify the robustness of each **ansatz** and **optimizer** against realistic, per-qubit noise processes, independent of molecular size or qubit count.
+
+---
 
 ## References
 
