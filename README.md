@@ -108,6 +108,7 @@ Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
 
 - Hartree-Fock reference state as initial guess
 - Jordan-Wigner transformation maps fermions to qubits
+- Mapping comparison for H₃⁺
 
 3. Ansatzes Construction:
 
@@ -126,7 +127,7 @@ Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
 - Energy convergence plots
 - Quantum state amplitude distributions
 - Quantum circuit diagrams
-- Bond-lengths and angles against ground state energies
+- Bond-lengths or angles against ground state energies
 
 ---
 

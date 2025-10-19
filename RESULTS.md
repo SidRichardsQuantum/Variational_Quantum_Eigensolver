@@ -64,7 +64,7 @@ Ground state of H₂:
 
 ![H₂ Ground State](notebooks/images/H2_Ground_State.png)
 
-## H₂ Ansatze Comparison
+## H₂ Ansatz Comparison
 
 ### Set Up
 
@@ -97,6 +97,34 @@ Final energy = -0.88810382 Ha
 ![H₂ Ansatzes Comparison](notebooks/images/H2_Ansatz_Comparison.png)
 
 Although all ansatzes reach similar energy minima, TwoQubit-RY-CNOT and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
+
+## H₂ Noisy VQE
+
+Six noise probabilities in the range $[0.0, 0.1]$ were used to compare how resilient different optimizers and ansatzes are to depolarizing or amplitude damping noise.
+
+![H₂ Noisy Convergence](notebooks/images/H2_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
+
+The reference energy above is the noiseless optimized final energy.
+Depolarizing noise probability is proportional to final energy (as we will also see in the next plot).
+Increasing noise strength also reduces the oscillations in convergence.
+
+In the next three plots below, five seeds were used to calculate averages and standard deviations for more accurate results.
+The plot below shows the fidelities of different optimizers under depolarizing noise.
+
+![H₂ Noisy Optimisers](notebooks/images/H2_Noise_Error_Optimizer_Comparison_TwoQubit-RY-CNOT.png)
+
+There were no noticeable differences in final energies reached between the different optimizers, for any depolarizing noise strength.
+
+![H₂ Noisy Ansatzes](notebooks/images/H2_Noise_Error_Ansatz_Comparison_Adam.png)
+
+The TwoQubit-RY-CNOT and Minimal ansatzes had the most resilience to depolarising noise, by consistenly having the greatest fidelities with the smallest standard deviations.
+The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
+
+![H₂ Noise Types](notebooks/images/H2_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
+
+Depolarizing noise had a more robust effect on fidelity and energy error, than amplitude damping noise, for all noise levels.
+
+---
 
 ## H₃⁺ Excitation Comparison
 
@@ -207,6 +235,34 @@ while the **first excited state** shifts amplitude toward $|100100⟩$ and other
 
 The orthogonality penalty successfully suppressed overlap between the states, producing distinct quantum states with a meaningful excitation energy gap.
 
+## H₃⁺ Noisy VQE
+
+Five noise probabilities in the range $[0.0, 0.1]$ were used to compare how resilient different optimizers and ansatzes are to depolarizing or amplitude damping noise.
+
+![H₃⁺ Noisy Convergence](notebooks/images/H3plus_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
+
+The reference energy above is the noiseless optimized final energy.
+Similarly to the H₂ results, depolarizing noise probability is proportional to final energy, and increasing noise strength slightly reduces the oscillations in convergence.
+
+In the next three plots below, three seeds were used to calculate averages and standard deviations for more accurate results.
+The plot below shows the fidelities of different optimizers under depolarizing noise.
+
+![H₃⁺ Noisy Optimisers](notebooks/images/H3plus_Noise_Error_Optimizer_Comparison_TwoQubit-RY-CNOT.png)
+
+Again, there were no noticeable differences between the different optimizers for H₃⁺.
+
+![H₃⁺ Noisy Ansatzes](notebooks/images/H3plus_Noise_Error_Ansatz_Comparison_Adam.png)
+
+The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
+TwoQubit-RY-CNOT and Minimal ansatzes were both most resilient to depolarising noise.
+
+![H₃⁺ Noise Types](notebooks/images/H3plus_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
+
+Similarly to the H₂ results, depolarizing noise had a more robust effect on fidelity than amplitude damping noise.
+However, amplitude damping gave larger energy errors despite being more fidelitous
+
+---
+
 ## LiH
 
 ### Set Up
@@ -246,6 +302,8 @@ Plot output from `LiH_Bond_Length.ipynb`:
 Optimal bond length: 1.66 Å
 Minimum ground state energy: -5.59345560 Ha
 ```
+
+---
 
 ## H₂O
 
