@@ -47,11 +47,11 @@ def run_signature(cfg: Dict[str, Any]) -> str:
 # --- directories ---
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
-IMAGES_DIR = os.path.join(BASE_DIR, "images")
+IMG_DIR = os.path.join(BASE_DIR, "images")
 
 def ensure_dirs():
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    os.makedirs(IMAGES_DIR, exist_ok=True)
+    os.makedirs(IMG_DIR, exist_ok=True)
 
 def _to_serializable(obj: Any):
     """Convert tensors/numpy objects recursively into Python types for JSON."""
