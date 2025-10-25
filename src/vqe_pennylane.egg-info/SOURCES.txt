@@ -1,0 +1,8 @@
+LICENSE
+README.md
+pyproject.toml
+src/vqe_pennylane.egg-info/PKG-INFO
+src/vqe_pennylane.egg-info/SOURCES.txt
+src/vqe_pennylane.egg-info/dependency_links.txt
+src/vqe_pennylane.egg-info/requires.txt
+src/vqe_pennylane.egg-info/top_level.txt
