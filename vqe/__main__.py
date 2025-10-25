@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 from .core import run_vqe
 from vqe.visualize import plot_convergence
-from vqe.core import run_vqe_noise_sweep, run_vqe_optimizer_comparison, run_vqe_ansatz_comparison, run_vqe_multi_seed_noise
+from vqe.core import run_vqe_noise_sweep, run_vqe_optimizer_comparison, run_vqe_ansatz_comparison, run_vqe_multi_seed_noise, run_vqe_geometry_scan
 
 
 def main():
@@ -108,6 +108,27 @@ def main():
         help="Force recomputation even if cached results exist.",
     )
 
+    parser.add_argument(
+        "--scan-geometry",
+        type=str,
+        help="Perform a VQE geometry scan (e.g. H2_BOND or H2O_ANGLE)."
+    )
+    
+    parser.add_argument(
+        "--range",
+        nargs=3,
+        type=float,
+        metavar=("START", "END", "NUM"),
+        help="Parameter range for geometry scan, e.g. 100 110 5 for angles, or 0.5 1.5 10 for bond lengths."
+    )
+    
+    parser.add_argument(
+        "--param-name",
+        type=str,
+        default="angle",
+        help="Geometry parameter to vary (angle or bond)."
+    )
+
     args = parser.parse_args()
 
     if args.multi_seed_noise:
@@ -117,6 +138,20 @@ def main():
             optimizer_name=args.optimizer,
             steps=args.steps,
             noise_type=args.noise_type,
+            force=args.force,
+        )
+        exit()
+
+    if args.scan_geometry:
+        start, end, num = args.range
+        values = np.linspace(start, end, int(num))
+        run_vqe_geometry_scan(
+            molecule=args.scan_geometry,
+            param_name=args.param_name,
+            param_values=values,
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=args.steps,
             force=args.force,
         )
         exit()

@@ -32,18 +32,22 @@ def run_vqe(
 
     # --- Build config signature and check cache ---
     H, qubits, symbols, coordinates, basis = build_hamiltonian(molecule)
+
+    # Get the ansatz function
+    ansatz_fn = get_ansatz(ansatz_name)
+
     cfg = make_run_config_dict(
-        symbols,
-        coordinates,
-        basis,
-        ansatz_name,
-        optimizer_name,
-        0.4,
-        n_steps,
-        0,
-        noisy,
-        depolarizing_prob,
-        amplitude_damping_prob,
+    symbols,
+    coordinates,
+    basis,
+    ansatz_name,
+    optimizer_name,
+    0.4,
+    n_steps,
+    0,
+    noisy,
+    depolarizing_prob,
+    amplitude_damping_prob,
     )
     sig = run_signature(cfg)
     prefix = f"{molecule}_{optimizer_name}_s0__{sig}"
@@ -56,15 +60,13 @@ def run_vqe(
             record = json.load(f)
         return record["result"]
 
-    # --- Prepare circuit ---
-    ansatz_fn = get_ansatz(ansatz_name)
     dev_name = "default.mixed" if noisy else "default.qubit"
     diff_method = "finite-diff" if noisy else "parameter-shift"
     dev = qml.device(dev_name, wires=qubits)
 
     @qml.qnode(dev, diff_method=diff_method)
     def circuit(params):
-        ansatz_fn(params, wires=range(qubits))
+        ansatz_fn(params, wires=range(qubits), symbols=symbols, coordinates=coordinates, basis=basis)
         if noisy:
             for w in range(qubits):
                 if depolarizing_prob > 0:
@@ -344,3 +346,69 @@ def run_vqe_multi_seed_noise(
     )
 
     print(f"\n✅ Multi-seed noise study complete for {molecule}")
+
+
+def run_vqe_geometry_scan(
+    molecule="H2O_ANGLE",
+    param_name="angle",
+    param_values=None,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=30,
+    seeds=None,
+    force=False,
+):
+    """Run VQE across a range of molecular geometries (e.g. bond angles or lengths)."""
+    import matplotlib.pyplot as plt
+    from .hamiltonian import generate_geometry
+
+    if param_values is None:
+        raise ValueError("param_values must be specified as a list or array")
+
+    seeds = seeds or [0]
+    results = []
+
+    for param_value in param_values:
+        print(f"\n⚙️ Running geometry: {param_name} = {param_value:.2f}")
+        energies_for_param = []
+
+        for seed in seeds:
+            np.random.seed(seed)
+            symbols, coordinates = generate_geometry(molecule, param_value)
+
+            res = run_vqe(
+                molecule=molecule,
+                n_steps=steps,
+                ansatz_name=ansatz_name,
+                optimizer_name=optimizer_name,
+                noisy=False,
+                plot=False,
+                seed=seed,
+                force=force,
+            )
+            energies_for_param.append(res["energy"])
+
+        mean_E = np.mean(energies_for_param)
+        std_E = np.std(energies_for_param)
+        results.append((param_value, mean_E, std_E))
+        print(f"  → Mean E = {mean_E:.6f} ± {std_E:.6f} Ha")
+
+    # --- Plot ---
+    params, means, stds = zip(*results)
+    plt.errorbar(params, means, yerr=stds, fmt="o-", capsize=4)
+    plt.xlabel(f"{param_name.capitalize()} (° or Å)")
+    plt.ylabel("Ground State Energy (Ha)")
+    plt.title(f"{molecule} Energy vs. {param_name.capitalize()} ({ansatz_name}, {optimizer_name})")
+    plt.grid(True)
+    plt.tight_layout()
+    from .io_utils import IMG_DIR, os
+    os.makedirs(IMG_DIR, exist_ok=True)
+    fname = f"{molecule}_Scan_{param_name}_{ansatz_name}_{optimizer_name}.png"
+    plt.savefig(f"{IMG_DIR}/{fname}", dpi=300)
+    plt.close()
+    print(f"\n📉 Saved geometry-scan plot to {IMG_DIR}/{fname}")
+
+    min_idx = np.argmin(means)
+    print(f"Minimum energy: {means[min_idx]:.6f} ± {stds[min_idx]:.6f} at {param_name}={params[min_idx]:.2f}")
+
+    return results
