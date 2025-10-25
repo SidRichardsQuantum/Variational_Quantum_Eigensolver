@@ -14,6 +14,20 @@ def main():
     )
 
     parser.add_argument(
+        "--ansatz", "-a",
+        type=str,
+        default="StronglyEntanglingLayers",
+        help="Ansatz to use (default: StronglyEntanglingLayers)"
+    )
+
+    parser.add_argument(
+        "--optimizer", "-o",
+        type=str,
+        default="GradientDescent",
+        help="Optimizer to use (default: GradientDescent)"
+    )
+
+    parser.add_argument(
         "--steps", "-s",
         type=int,
         default=50,
@@ -29,9 +43,34 @@ def main():
     args = parser.parse_args()
 
     print(f"🔹 Running VQE for {args.molecule} with {args.steps} steps")
-    result = run_vqe(args.molecule, args.steps, args.plot)
+    print(f"   Ansatz: {args.ansatz} | Optimizer: {args.optimizer}")
+
+    result = run_vqe(
+        molecule=args.molecule,
+        n_steps=args.steps,
+        plot=args.plot,
+        ansatz_name=args.ansatz,
+        optimizer_name=args.optimizer
+    )
+
+    # Clean up tensor display for CLI output
+    def _to_serializable(obj):
+        if hasattr(obj, "item"):
+            try:
+                return float(obj.item())
+            except Exception:
+                pass
+        if isinstance(obj, (list, tuple)):
+            return [_to_serializable(v) for v in obj]
+        if isinstance(obj, dict):
+            return {k: _to_serializable(v) for k, v in obj.items()}
+        return obj
+
+    clean_result = _to_serializable(result)
+
     print("\nFinal Result:")
-    print(result)
+    print(clean_result)
+
 
 if __name__ == "__main__":
     main()
