@@ -33,43 +33,33 @@ def hardware_efficient_ansatz(params, wires):
 
 
 # 🧬 UCCSD ansatz definition (must come BEFORE ANSATZES)
+# inside uccsd_ansatz
 def uccsd_ansatz(params, wires, symbols=None, coordinates=None, basis="sto-3g"):
-    """UCCSD-style ansatz using singles and doubles excitations (portable implementation)."""
-    if symbols is None or coordinates is None:
-        symbols = ["H", "H"]
-        coordinates = np.array([[0.0, 0.0, 0.0],
-                                [0.0, 0.0, 0.74]])
-
-    # Number of qubits equals number of wires (active spin orbitals)
+    """UCCSD-style ansatz using singles and doubles excitations."""
     spin_orbitals = len(wires)
 
-    # Build molecule safely (version-agnostic)
-    try:
-        mol = qchem.Molecule(symbols, coordinates, charge=0)
-    except TypeError:
-        mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
+    # Avoid rebuilding molecule if it's already computed once per run
+    key = tuple(symbols) + tuple(coordinates.flatten())
+    if not hasattr(uccsd_ansatz, "_cache"):
+        uccsd_ansatz._cache = {}
+    if key not in uccsd_ansatz._cache:
+        try:
+            mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
+        except TypeError:
+            mol = qchem.Molecule(symbols, coordinates, charge=0)
+        electrons = mol.n_electrons
+        singles, doubles = qchem.excitations(electrons, spin_orbitals)
+        hf_state = qchem.hf_state(electrons, spin_orbitals)
+        uccsd_ansatz._cache[key] = (singles, doubles, hf_state)
+    else:
+        singles, doubles, hf_state = uccsd_ansatz._cache[key]
 
-    electrons = mol.n_electrons
-    singles, doubles = qchem.excitations(electrons, spin_orbitals)
-    hf_state = qchem.hf_state(electrons, spin_orbitals)
-
-    # Prepare Hartree–Fock reference
     qml.BasisState(hf_state, wires=wires)
 
-    # --- Manual UCCSD operator construction (like your old notebooks) ---
     n_singles = len(singles)
     n_doubles = len(doubles)
-    if len(params) != n_singles + n_doubles:
-        raise ValueError(
-            f"Number of parameters ({len(params)}) must equal number of excitations "
-            f"({n_singles + n_doubles}: {n_singles} singles + {n_doubles} doubles)."
-        )
-
-    # Apply single excitations
     for i, s in enumerate(singles):
         qml.SingleExcitation(params[i], wires=s)
-
-    # Apply double excitations
     for j, d in enumerate(doubles):
         qml.DoubleExcitation(params[n_singles + j], wires=d)
 

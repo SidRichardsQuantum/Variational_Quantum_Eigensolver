@@ -74,6 +74,20 @@ def run_vqe(
             record = json.load(f)
         return record["result"]
 
+    import inspect
+
+    def call_ansatz(ansatz_fn, params, wires, symbols, coordinates, basis):
+        """Call ansatz with appropriate arguments depending on its signature."""
+        sig = inspect.signature(ansatz_fn).parameters
+        kwargs = {}
+        if "symbols" in sig:
+            kwargs["symbols"] = symbols
+        if "coordinates" in sig:
+            kwargs["coordinates"] = coordinates
+        if "basis" in sig:
+            kwargs["basis"] = basis
+        return ansatz_fn(params, wires=wires, **kwargs)
+
     # --- Device and QNode setup ---
     dev_name = "default.mixed" if noisy else "default.qubit"
     diff_method = "finite-diff" if noisy else "parameter-shift"
@@ -81,7 +95,7 @@ def run_vqe(
 
     @qml.qnode(dev, diff_method=diff_method)
     def circuit(params):
-        ansatz_fn(params, wires=range(qubits), symbols=symbols, coordinates=coordinates, basis=basis)
+        call_ansatz(ansatz_fn, params, range(qubits), symbols, coordinates, basis)
         if noisy:
             for w in range(qubits):
                 if depolarizing_prob > 0:
@@ -91,8 +105,8 @@ def run_vqe(
         return qml.expval(H)
 
     @qml.qnode(dev, diff_method=diff_method)
-    def get_state(params):
-        ansatz_fn(params, wires=range(qubits), symbols=symbols, coordinates=coordinates, basis=basis)
+    def get_state(params):  
+        call_ansatz(ansatz_fn, params, range(qubits), symbols, coordinates, basis)
         if noisy:
             for w in range(qubits):
                 if depolarizing_prob > 0:
@@ -352,18 +366,17 @@ def run_vqe_multi_seed_noise(
 # GEOMETRY SCANS
 # ================================================================
 def run_vqe_geometry_scan(
-    molecule="H2O_ANGLE",
-    param_name="angle",
-    param_values=None,
-    ansatz_name="UCCSD",
+    molecule="H2_BOND",          # or "LiH_BOND", "H2O_ANGLE"
+    param_name="bond",           # "bond" or "angle"
+    param_values=None,           # iterable of floats
+    ansatz_name="UCCSD",         # or "UCC-D" for speed on LiH
     optimizer_name="Adam",
     steps=30,
     seeds=None,
     force=False,
 ):
-    """Run VQE across a range of molecular geometries (e.g. bond angles or lengths),
-    reusing cached results when available.
-    """
+    """Scan a geometry parameter (bond length or angle) and plot mean±std energy."""
+    import matplotlib.pyplot as plt
 
     if param_values is None:
         raise ValueError("param_values must be specified as a list or array")
@@ -371,94 +384,50 @@ def run_vqe_geometry_scan(
     seeds = seeds or [0]
     results = []
 
-    for param_value in param_values:
-        print(f"\n⚙️ Running geometry: {param_name} = {param_value:.2f}")
-        symbols, coordinates = generate_geometry(molecule, param_value)
-        energies_for_param = []
+    for val in param_values:
+        print(f"\n⚙️ Running geometry: {param_name} = {val:.3f}")
+        symbols, coordinates = generate_geometry(molecule, val)
 
+        energies_for_val = []
         for seed in seeds:
             np.random.seed(seed)
-
-            # ---- check for existing cached run ----
-            cfg = make_run_config_dict(
-                symbols,
-                coordinates,
-                "sto-3g",
-                ansatz_name,
-                optimizer_name,
-                0.4,
-                steps,
-                seed,
-                noisy=False,
-                depolarizing_prob=0.0,
-                amplitude_damping_prob=0.0,
-            )
-            sig = run_signature(cfg)
-            from .io_utils import build_run_filename
-            fname = build_run_filename(
-                f"{molecule}_{param_name}_{param_value:.3f}",
-                optimizer_name,
-                seed,
-                sig,
-            )
-            existing = find_existing_run(sig)
-
-            if existing and not force:
-                print(f"📂 Using cached result: {existing}")
-                with open(existing) as f:
-                    rec = json.load(f)
-                E = float(rec["result"]["energy"])
-                energies_for_param.append(E)
-                continue
-
-            # ---- perform VQE if not cached ----
             res = run_vqe(
-                molecule=molecule,
+                molecule=molecule,                 # name still used in filename/signature
                 n_steps=steps,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
-                symbols=symbols,
+                symbols=symbols,                   # <- pass explicit geometry
                 coordinates=coordinates,
                 noisy=False,
                 plot=False,
                 seed=seed,
-                force=force,
+                force=force,                       # re-run if desired
             )
+            energies_for_val.append(res["energy"])
 
-            # save lightweight record (mirrors notebook behaviour)
-            record = {
-                "config": cfg,
-                "result": res,
-                "metadata": {param_name: float(param_value)},
-            }
-            persisted = save_run_record(fname, record)
-            print(f"💾 Saved geometry run to {persisted}")
-
-            energies_for_param.append(res["energy"])
-
-        # ---- aggregate mean & std across seeds ----
-        mean_E = np.mean(energies_for_param)
-        std_E = np.std(energies_for_param)
-        results.append((param_value, mean_E, std_E))
+        mean_E = float(np.mean(energies_for_val))
+        std_E  = float(np.std(energies_for_val))
+        results.append((val, mean_E, std_E))
         print(f"  → Mean E = {mean_E:.6f} ± {std_E:.6f} Ha")
 
-    # ---- plot energy profile ----
+    # Plot
     params, means, stds = zip(*results)
     plt.errorbar(params, means, yerr=stds, fmt="o-", capsize=4)
-    plt.xlabel(f"{param_name.capitalize()} (° or Å)")
+    plt.xlabel(f"{param_name.capitalize()} (Å or °)")
     plt.ylabel("Ground State Energy (Ha)")
     plt.title(f"{molecule} Energy vs. {param_name.capitalize()} ({ansatz_name}, {optimizer_name})")
-    plt.grid(True)
+    plt.grid(True, alpha=0.3)
     plt.tight_layout()
+
     os.makedirs(IMG_DIR, exist_ok=True)
     fname = f"{molecule}_Scan_{param_name}_{ansatz_name}_{optimizer_name}.png"
     plt.savefig(f"{IMG_DIR}/{fname}", dpi=300)
     plt.close()
     print(f"\n📉 Saved geometry-scan plot to {IMG_DIR}/{fname}")
 
-    # ---- report optimal geometry ----
-    min_idx = np.argmin(means)
-    print(f"Minimum energy: {means[min_idx]:.6f} ± {stds[min_idx]:.6f} at {param_name}={params[min_idx]:.2f}")
+    # Report min
+    min_idx = int(np.argmin(means))
+    print(f"Minimum energy: {means[min_idx]:.6f} ± {stds[min_idx]:.6f} at {param_name}={params[min_idx]:.3f}")
 
     return results
 
