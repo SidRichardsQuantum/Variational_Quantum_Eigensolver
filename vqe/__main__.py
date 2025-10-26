@@ -2,7 +2,14 @@ import argparse
 import numpy as np
 from .core import run_vqe
 from vqe.visualize import plot_convergence
-from vqe.core import run_vqe_noise_sweep, run_vqe_optimizer_comparison, run_vqe_ansatz_comparison, run_vqe_multi_seed_noise, run_vqe_geometry_scan
+from vqe.core import (
+    run_vqe_noise_sweep,
+    run_vqe_optimizer_comparison,
+    run_vqe_ansatz_comparison,
+    run_vqe_multi_seed_noise,
+    run_vqe_geometry_scan,
+    run_vqe_mapping_comparison,
+)
 
 
 def main():
@@ -129,7 +136,31 @@ def main():
         help="Geometry parameter to vary (angle or bond)."
     )
 
+    parser.add_argument(
+        "--mapping-comparison",
+        action="store_true",
+        help="Compare Jordan–Wigner, Bravyi–Kitaev, and Parity mappings."
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Random seed for reproducibility (default: 0)"
+    )
+
     args = parser.parse_args()
+
+    if args.mapping_comparison:
+        run_vqe_mapping_comparison(
+            molecule=args.molecule,
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=args.steps,
+            seed=args.seed,
+            force=args.force,
+        )
+        return
 
     if args.multi_seed_noise:
         run_vqe_multi_seed_noise(

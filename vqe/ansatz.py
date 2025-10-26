@@ -126,8 +126,12 @@ def init_params(
     symbols=None,
     coordinates=None,
     basis="sto-3g",
+    seed: int = 0,
 ):
     """Initialize parameters based on ansatz structure, including UCCSD and UCC-D."""
+    
+    np.random.seed(seed)
+
     if ansatz_name in ["TwoQubit-RY-CNOT", "Minimal"]:
         vals = scale * np.random.randn(1)
 
