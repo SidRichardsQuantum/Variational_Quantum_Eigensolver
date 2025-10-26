@@ -3,7 +3,7 @@ Name: vqe-pennylane
 Version: 0.1.0
 Summary: Lightweight Variational Quantum Eigensolver built on PennyLane
 Author-email: Sid Richards <siddrichards@hotmail.co.uk>
-License: MIT
+License-Expression: MIT
 Project-URL: Homepage, https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown

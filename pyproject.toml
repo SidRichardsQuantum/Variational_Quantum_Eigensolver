@@ -4,12 +4,25 @@ version = "0.1.0"
 description = "Lightweight Variational Quantum Eigensolver built on PennyLane"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.9"
-dependencies = ["pennylane>=0.42", "numpy", "matplotlib"]
+dependencies = [
+    "pennylane>=0.42",
+    "numpy",
+    "matplotlib"
+]
+
+# 👇 Add a CLI command: you can now run `vqe` from the terminal
+[project.scripts]
+vqe = "vqe.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
+
+# 👇 Tell setuptools exactly what to package (avoid the earlier error)
+[tool.setuptools.packages.find]
+include = ["vqe*"]
+exclude = ["notebooks*", "images*", "results*"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
