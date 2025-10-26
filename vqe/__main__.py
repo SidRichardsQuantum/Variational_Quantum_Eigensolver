@@ -149,7 +149,34 @@ def main():
         help="Random seed for reproducibility (default: 0)"
     )
 
+    parser.add_argument(
+        "--ssvqe",
+        action="store_true",
+        help="Run two-state SSVQE (ground + first excited) with an orthogonality penalty."
+    )
+
+    parser.add_argument(
+        "--penalty-weight",
+        type=float,
+        default=10.0,
+        help="Penalty weight for the |⟨ψ0|ψ1⟩|^2 overlap term in SSVQE."
+    )
+
     args = parser.parse_args()
+
+    if args.ssvqe:
+        from vqe.ssvqe import run_ssvqe
+        res = run_ssvqe(
+            molecule=args.molecule,
+            optimizer_name=args.optimizer,
+            steps=args.steps,
+            stepsize=0.4,
+            penalty_weight=args.penalty_weight,
+            seed=args.seed,
+            plot=args.plot,
+            force=args.force,
+        )
+        return
 
     if args.mapping_comparison:
         run_vqe_mapping_comparison(

@@ -153,3 +153,18 @@ def plot_noise_statistics(
     plt.savefig(path, dpi=300)
     plt.close()
     print(f"\n📉 Saved noise-statistics plot to: {path}")
+
+
+def plot_ssvqe_convergence(molecule, E0_list, E1_list, optimizer_name="Adam"):
+    import matplotlib.pyplot as plt, os
+    from .io_utils import IMG_DIR
+    plt.figure(figsize=(8, 6))
+    plt.plot(range(1, len(E0_list)+1), E0_list, label="Ground (E₀)")
+    plt.plot(range(1, len(E1_list)+1), E1_list, label="1st Excited (E₁)")
+    plt.xlabel("Iteration"); plt.ylabel("Energy (Ha)")
+    plt.title(f"{molecule} SSVQE Convergence ({optimizer_name})")
+    plt.legend(); plt.grid(True); plt.tight_layout()
+    os.makedirs(IMG_DIR, exist_ok=True)
+    path = os.path.join(IMG_DIR, f"{molecule.replace('+','plus')}_SSVQE_{optimizer_name}.png")
+    plt.savefig(path, dpi=300); plt.close()
+    print(f"\n📉 Saved SSVQE convergence plot to: {path}")

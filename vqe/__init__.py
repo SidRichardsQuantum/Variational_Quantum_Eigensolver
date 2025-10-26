@@ -49,3 +49,6 @@ __all__ = [
     "plot_ansatz_comparison",
     "plot_noise_statistics",
 ]
+
+from .ssvqe import run_ssvqe
+__all__.append("run_ssvqe")
