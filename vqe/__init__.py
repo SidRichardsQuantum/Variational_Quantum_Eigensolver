@@ -52,3 +52,11 @@ __all__ = [
 
 from .ssvqe import run_ssvqe
 __all__.append("run_ssvqe")
+
+from .engine import make_device, build_ansatz, build_optimizer
+from .ssvqe import run_ssvqe
+
+__all__ += [
+    "make_device", "build_ansatz", "build_optimizer",
+    "run_ssvqe",
+]

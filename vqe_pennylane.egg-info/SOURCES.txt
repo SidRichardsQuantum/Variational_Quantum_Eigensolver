@@ -6,9 +6,11 @@ vqe/__init__.py
 vqe/__main__.py
 vqe/ansatz.py
 vqe/core.py
+vqe/engine.py
 vqe/hamiltonian.py
 vqe/io_utils.py
 vqe/optimizer.py
+vqe/ssvqe.py
 vqe/visualize.py
 vqe_pennylane.egg-info/PKG-INFO
 vqe_pennylane.egg-info/SOURCES.txt

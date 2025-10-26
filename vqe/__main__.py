@@ -168,14 +168,22 @@ def main():
         from vqe.ssvqe import run_ssvqe
         res = run_ssvqe(
             molecule=args.molecule,
+            ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=args.steps,
-            stepsize=0.4,
-            penalty_weight=args.penalty_weight,
+            stepsize=0.4,                         # or expose as --stepsize if you want
+            penalty_weight=getattr(args, "penalty_weight", 10.0),
             seed=args.seed,
+            noisy=args.noisy,
+            depolarizing_prob=args.depolarizing_prob,
+            amplitude_damping_prob=args.amplitude_damping_prob,
             plot=args.plot,
             force=args.force,
         )
+        print("\nFinal (SSVQE):")
+        # Avoid dumping huge arrays:
+        preview = { **res, "final_params": f"[{len(res['final_params'])} states; each {len(res['final_params'][0])} params]" }
+        print(preview)
         return
 
     if args.mapping_comparison:

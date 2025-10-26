@@ -1,0 +1,94 @@
+{
+  "config": {
+    "symbols": [
+      "H",
+      "H"
+    ],
+    "geometry": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.7414
+      ]
+    ],
+    "basis": "sto-3g",
+    "ansatz": "SSVQE(RY-CZ) 2-state",
+    "optimizer": {
+      "name": "GradientDescent",
+      "stepsize": 0.4,
+      "iterations_planned": 5
+    },
+    "seed": 0,
+    "noisy": false,
+    "depolarizing_prob": 0.0,
+    "amplitude_damping_prob": 0.0,
+    "penalty_weight": 5.0
+  },
+  "result": {
+    "energies_per_state": [
+      [
+        0.7135084895014908,
+        0.7134012120599257,
+        0.7132396939593804,
+        0.7129946366348742,
+        0.7126205254317189
+      ],
+      [
+        0.7135084895014908,
+        0.7134012120599257,
+        0.7132396939593804,
+        0.712994636634874,
+        0.7126205254317187
+      ]
+    ],
+    "final_params": [
+      [
+        0.05392577930519079,
+        0.012231913053954109,
+        0.015416750056696018,
+        0.03529949748943082
+      ],
+      [
+        0.05392577930520328,
+        0.01223191305393155,
+        0.015416750056673988,
+        0.03529949748942629
+      ]
+    ],
+    "config": {
+      "symbols": [
+        "H",
+        "H"
+      ],
+      "geometry": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.7414
+        ]
+      ],
+      "basis": "sto-3g",
+      "ansatz": "SSVQE(RY-CZ) 2-state",
+      "optimizer": {
+        "name": "GradientDescent",
+        "stepsize": 0.4,
+        "iterations_planned": 5
+      },
+      "seed": 0,
+      "noisy": false,
+      "depolarizing_prob": 0.0,
+      "amplitude_damping_prob": 0.0,
+      "penalty_weight": 5.0
+    }
+  }
+}

@@ -168,3 +168,20 @@ def plot_ssvqe_convergence(molecule, E0_list, E1_list, optimizer_name="Adam"):
     path = os.path.join(IMG_DIR, f"{molecule.replace('+','plus')}_SSVQE_{optimizer_name}.png")
     plt.savefig(path, dpi=300); plt.close()
     print(f"\n📉 Saved SSVQE convergence plot to: {path}")
+
+
+def plot_ssvqe_convergence_multi(molecule, energies_per_state, labels=None, ansatz_name="UCCSD", optimizer_name="Adam"):
+    import matplotlib.pyplot as plt, os
+    from .io_utils import IMG_DIR
+    if labels is None:
+        labels = [f"E{i}" for i in range(len(energies_per_state))]
+    plt.figure(figsize=(8, 6))
+    for k, E in enumerate(energies_per_state):
+        plt.plot(range(1, len(E)+1), E, label=labels[k])
+    plt.xlabel("Iteration"); plt.ylabel("Energy (Ha)")
+    plt.title(f"{molecule} SSVQE Convergence ({ansatz_name}, {optimizer_name})")
+    plt.legend(); plt.grid(True); plt.tight_layout()
+    os.makedirs(IMG_DIR, exist_ok=True)
+    path = os.path.join(IMG_DIR, f"{molecule.replace('+','plus')}_SSVQE_{ansatz_name}_{optimizer_name}.png")
+    plt.savefig(path, dpi=300); plt.close()
+    print(f"\n📉 Saved SSVQE convergence (multi) plot to: {path}")
