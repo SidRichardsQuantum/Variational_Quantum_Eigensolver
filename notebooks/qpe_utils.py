@@ -199,7 +199,7 @@ def save_qpe_result(result):
     key = signature_hash(
         result["molecule"],
         result["n_ancilla"],
-        1.0,
+        result["t"],
         result["noise"],
         result["shots"],
     )
