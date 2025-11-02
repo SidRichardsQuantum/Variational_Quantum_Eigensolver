@@ -16,11 +16,11 @@ def ensure_dirs():
 
 
 # Noise Model
-def apply_noise_all(wires, p_depol=0.0, p_amp=0.0):
+def apply_noise_all(wires, p_dep=0.0, p_amp=0.0):
     """Apply depolarizing / amplitude damping noise to all given wires."""
     for w in wires:
-        if p_depol > 0.0:
-            qml.DepolarizingChannel(p_depol, wires=w)
+        if p_dep > 0.0:
+            qml.DepolarizingChannel(p_dep, wires=w)
         if p_amp > 0.0:
             qml.AmplitudeDamping(p_amp, wires=w)
 
@@ -60,7 +60,7 @@ def controlled_powered_evolution(
         if noise_params:
             apply_noise_all(
                 wires=system_wires + [control_wire],
-                p_depol=noise_params.get("p_depol", 0.0),
+                p_dep=noise_params.get("p_dep", 0.0),
                 p_amp=noise_params.get("p_amp", 0.0),
             )
 
@@ -108,7 +108,7 @@ def run_qpe(
                 if noise_params:
                     apply_noise_all(
                         wires=system_wires + [a],
-                        p_depol=noise_params.get("p_depol", 0.0),
+                        p_dep=noise_params.get("p_dep", 0.0),
                         p_amp=noise_params.get("p_amp", 0.0),
                     )
 
@@ -219,12 +219,15 @@ def load_qpe_result(molecule, hash_key):
 
 # Plotting QPE Results
 def plot_qpe_distribution(result):
+    """Bar plot of ancilla probability distribution (in ket notation)."""
     probs = result["probs"]
     items = sorted(probs.items(), key=lambda kv: (-kv[1], kv[0]))
-    xs, ys = zip(*items) if items else ([], [])
+    xs = [f"|{b}⟩" for b, _ in items]
+    ys = [p for _, p in items]
+
     plt.figure(figsize=(8, 4))
     plt.bar(xs, ys)
-    plt.xlabel("Ancilla bitstring (MSB→LSB)")
+    plt.xlabel("Ancilla register state")
     plt.ylabel("Probability")
     plt.title(
         f"QPE Phase Distribution – {result['molecule']} "
@@ -232,7 +235,10 @@ def plot_qpe_distribution(result):
     )
     plt.xticks(rotation=45)
     plt.tight_layout()
-    fname = os.path.join(IMG_DIR, f"{result['molecule']}_QPE_{result['n_ancilla']}q.png")
+
+    fname = os.path.join(
+        IMG_DIR, f"{result['molecule']}_QPE_{result['n_ancilla']}q.png"
+    )
     plt.savefig(fname, dpi=200)
     plt.show()
     print(f"Saved plot → {fname}")
@@ -281,3 +287,9 @@ def phase_to_energy_unwrapped(phase: float, t: float, ref_energy: float | None =
         energy = min(candidates, key=lambda x: abs(x - ref_energy))
 
     return energy
+
+
+def save_qpe_plot(name: str):
+    """Return full image path in the QPE plots directory and ensure directory exists."""
+    ensure_dirs()
+    return os.path.join(IMG_DIR, f"{name}")
