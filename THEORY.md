@@ -9,10 +9,11 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [Molecules Studied](#molecules-studied)
 - [Background](#background)
 - [VQE Algorithm Overview](#vqe-algorithm-overview)
-- [Ansatz Construction](#ansatz-construction)
-- [Optimizers](#optimizers)
-- [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
-- [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+  - [Ansatz Construction](#ansatz-construction)
+  - [Optimizers](#optimizers)
+  - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
+  - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+- [Quantum Phase Estimation](#quantum-phase-estimation)
 - [Noise Types](#noise-types)
 - [References](#references)
 
@@ -212,12 +213,76 @@ This enforces that each optimized state corresponds to a different eigenvector o
 
 ---
 
-### Noise Types
+## Quantum Phase Estimation
+
+The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting **eigenvalues** of unitary operators.  
+In the context of quantum chemistry, QPE can be used to determine the **electronic ground-state energy** of a molecule by estimating the eigenenergies of the **time-evolution operator**.
+
+### QPE Background
+
+For a given Hamiltonian $H$, we define the unitary operator:
+
+$$U = e^{-i H t}$$
+
+If $|\psi⟩$ is an eigenstate of $H$ with eigenvalue $E$, then:
+
+$$U |\psi⟩ = e^{-iEt} |\psi⟩ = e^{2\pi i \theta} |\psi⟩,$$
+
+where
+
+$$\theta = -\frac{E t}{2\pi}.$$
+
+The goal of QPE is to estimate the phase $\theta$, which directly encodes the **energy eigenvalue** through:
+
+$$E = -\frac{2\pi \theta}{t}.$$
+
+This approach differs fundamentally from VQE:
+- **VQE**: Iteratively minimizes $⟨\psi(\theta)| H |\psi(\theta)⟩$ variationally.  
+- **QPE**: Measures the eigenphase of $U = e^{-i H t}$ directly through interference.
+
+### QPE Overview
+
+QPE operates by coupling a register of $n$ qubits, which encodes the phase information, to a second register, which encodes the molecular information.
+
+1. **Initialize**:
+   - Prepare the second register in an approximate eigenstate, such as the Hartree–Fock state $|HF⟩$.
+   - Initialize the first register in the state $|0⟩^{\otimes n}$.
+
+2. **Create Superposition**:
+   - Apply Hadamard gates to the first register to produce:
+    $$\frac{1}{2^{n/2}} \sum_{k=0}^{2^n-1} |k⟩.$$
+
+3. **Controlled Unitary Operations**:
+   - Apply a sequence of controlled time-evolutions $U^{2^k}$, where each qubit in the first register controls a different power of $U$:
+    $$\prod_{k=0}^{n-1} \text{C-}U^{2^k}.$$
+   - These operations entangle the phase and molecular information.
+
+4. **Inverse Quantum Fourier Transform (IQFT)**:
+   - Apply the IQFT on the first register to convert the accumulated phase into a binary representation.
+
+5. **Measurement**:
+   - Measure the first register.  
+   - The resulting bitstring corresponds to a binary fraction approximating the eigenphase $\theta$.
+
+6. **Energy Recovery**:
+   - The measured phase is converted to the molecular energy:
+    $$E = -\frac{2\pi \theta}{t}.$$
+
+#### Key Points
+
+The inclusion of QPE in this project complements the variational studies by demonstrating:
+- Exact phase–energy relationships
+- Effects of decoherence on eigenvalue extraction
+- Precision trade-offs between ancilla count, evolution time, and noise strength
+
+---
+
+## Noise Types
 
 In real quantum hardware, noise arises from imperfect gates and environmental interactions.
 This notebook models two primary noise channels using PennyLane’s `default.mixed` simulator to study their effect on VQE convergence and accuracy.
 
-#### Depolarizing Noise
+### Depolarizing Noise
 
 Models random qubit errors that drive each subsystem toward a mixed state with probability $p$:
 
@@ -227,7 +292,7 @@ $$\mathcal{E}_{\text{dep}}(\rho) = (1 - p) \rho + \frac{p}{3}(X \rho X + Y \rho 
 - Applied independently to each qubit
 - Causes global decoherence and loss of entanglement fidelity
 
-#### Amplitude Damping
+### Amplitude Damping
 
 Models **energy relaxation**, where excited states decay to the ground state $|0⟩$ with probability $p$:
 
@@ -262,6 +327,9 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
 - [Optimisers](https://docs.pennylane.ai/en/stable/introduction/interfaces.html)
 - [Quantum Chemistry with Fermion-to-Qubit Mappings](https://arxiv.org/abs/1701.08213)
 - [Variational Quantum Eigensolver Review](https://arxiv.org/abs/2001.03685)
+- [Quantum measurements and the Abelian Stabilizer Problem](https://arxiv.org/abs/quant-ph/9511026)
+- [Simulated Quantum Computation of Molecular Energies](https://doi.org/10.1126/science.1113479)
+- [QPE](https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm)
 
 ---
 

@@ -17,7 +17,7 @@ To read our main findings and results, see [RESULTS.md](RESULTS.md).
 - [Project Structure](#project-structure)
 - [Usage](#usage)
 - [Methodology Overview](#methodology-overview)
-- [License & Author](#license--author)
+- [Quantum Phase Estimation](#quantum-phase-estimation)
 
 ---
 
@@ -128,6 +128,11 @@ Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
 - Quantum state amplitude distributions
 - Quantum circuit diagrams
 - Bond-lengths or angles against ground state energies
+
+## Quantum Phase Estimation
+
+The **Quantum Phase Estimation (QPE)** algorithm is implemented in this project as a complementary approach to the VQE.  
+While VQE variationally minimizes the energy using hybrid quantum–classical optimization, QPE directly extracts eigenenergies from the phase of the unitary time-evolution operator.
 
 ---
 
