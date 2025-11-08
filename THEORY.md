@@ -21,13 +21,12 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ## Molecules Studied:
 
-| Molecule |     Properties Scanned / Benchmarked     | Qubits Required |
-|----------|------------------------------------------|-----------------|
-|    H₂    |       Ansatz & Optimizer Comparison      |       $4$       |
-|    LiH   |              Bond length scan            |       $12$      |
-|    H₂O   |              Bond angle scan             |       $14$      |
-|    H₃⁺   | Excitation & Mapping Comparisons & SSVQE |       $6$       |
-
+| Molecule | Properties Investigated                         | Qubits |
+|:---------:|:------------------------------------------------|:-------:|
+| **H₂**    | Ansatz and Optimizer Comparison                 | 4 |
+| **LiH**   | Bond-Length Scan                                | 12 |
+| **H₂O**   | Bond-Angle Scan                                 | 14 |
+| **H₃⁺**   | Excitation, Mapping Comparisons, and SSVQE      | 6 |
 
 All simulations use the **STO-3G** basis set for consistency.  
 Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the Jordan–Wigner, Bravyi–Kitaev or Parity transformations (via PennyLane's `qchem` module).

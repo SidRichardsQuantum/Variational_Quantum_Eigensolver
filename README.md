@@ -44,21 +44,52 @@ This project implements VQE for:
 
 ```
 Variational_Quantum_Eigensolver/
+├── LICENSE           # MIT license
 ├── README.md         # This file
 ├── THEORY.md         # Theoretical background and mathematical formulation
 ├── RESULTS.md        # Consolidated results and analysis
-├── LICENSE           # MIT license
+├── pyproject.toml    # For packaging
 ├── requirements.txt  # Python dependencies
 ├── .gitignore        # Git ignore rules
-├── src/              # Source code
-│   └── vqe_utils.py  # Core VQE utility functions (shared by notebooks)
-└── notebooks/        # Jupyter notebooks for molecule-specific studies
-    ├── H2/           # H₂ simulations (noisy, noiseless, ansatz comparison, etc.)
-    ├── H2O/          # H₂O simulations (bond angle, noiseless runs)
-    ├── H3plus/       # H₃⁺ simulations (mappings, SSVQE, noise analysis)
-    ├── LiH/          # LiH simulations (bond length, noiseless runs)
-    ├── images/       # Generated visualization plots
-    └── results/      # Saved numerical and energy results
+│
+├── vqe/                  # Packaged VQE implementation
+│   ├── __init__.py
+│   ├── core.py
+│   ├── engine.py
+│   ├── optimizer.py
+│   ├── io_utils.py
+│   ├── visualize.py
+│   ├── ansatz.py
+│   ├── ssvqe.py
+│   └── images/           # (Temporary)
+│
+├── qpe/                  # (In progress) Packaged QPE implementation
+│   └── __init__.py
+│
+├── notebooks/            # Jupyter notebooks for molecule-specific studies
+│   ├── vqe/
+│   │   ├── H2/           # H₂ simulations (noisy, noiseless, ansatz comparison, etc.)
+│   │   ├── H2O/          # H₂O simulations (bond angle, noiseless runs)
+│   │   ├── H3plus/       # H₃⁺ simulations (mappings, SSVQE, noise analysis)
+│   │   ├── LiH/          # LiH simulations (bond length, noiseless runs)
+│   │   └── vqe_utils.py  # Core VQE utility functions
+│   └── qpe/
+│       ├── H2/
+│       └── qpe_utils.py  # Core QPE utility functions
+│
+├── data/                 # Stored numerical results and generated plots
+│   ├── vqe/
+│   │   ├── results/      # Saved numerical and energy JSON files
+│   │   └── images/       # Generated visualization plots
+│   └── qpe/
+│       ├── results/      # Saved numerical and energy JSON files
+│       └── images/       # Generated visualization plots
+│
+├── package tests/        # Unit and reproducibility tests
+│   ├── test_reproducibility.py
+│   └── test_ssvqe_general.py
+│
+└── package results/      # Cached packaged output (JSON experiment records)
 ```
 
 ## Usage
@@ -82,7 +113,7 @@ pip install -r requirements.txt
 
 ```bash
 # Lithium Hydride (LiH)
-jupyter notebook notebooks/LiH/LiH_Noiseless.ipynb
+jupyter notebook notebooks/vqe/LiH/LiH_Noiseless.ipynb
 
 # Runs a noiseless VQE with a double–excitation UCC ansatz and the gradient descent optimizer
 # Outputs convergence plots and the final ground state amplitudes
@@ -90,15 +121,15 @@ jupyter notebook notebooks/LiH/LiH_Noiseless.ipynb
 
 ### Results Preview
 
-Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
+Running `notebooks/vqe/LiH/LiH_Noiseless.ipynb` produces:
 
 - **Convergence of VQE energy** (noiseless, LiH, double excitation ansatz)
 - **Final ground state energy** close to the expected Hartree–Fock reference
 - **Ground state amplitudes** plotted as a bar chart
 
-![LiH VQE Convergence](notebooks/images/LiH_Gradient_Descent.png)
+![LiH VQE Convergence](data/vqe/images/LiH_Gradient_Descent.png)
 
-![LiH Ground State](notebooks/images/LiH_Ground_State.png)
+![LiH Ground State](data/vqe/images/LiH_Ground_State.png)
 
 ## Methodology Overview
 
@@ -132,7 +163,25 @@ Running `notebooks/LiH/LiH_Noiseless.ipynb` produces:
 ## Quantum Phase Estimation
 
 The **Quantum Phase Estimation (QPE)** algorithm is implemented in this project as a complementary approach to the VQE.  
-While VQE variationally minimizes the energy using hybrid quantum–classical optimization, QPE directly extracts eigenenergies from the phase of the unitary time-evolution operator.
+While VQE variationally minimizes the energy using hybrid quantum–classical optimization, QPE directly extracts eigenenergies from the phase of the unitary time-evolution operator  
+$U = e^{-iHt}$.
+
+This implementation includes:
+
+- **Noiseless and noisy simulations** of H₂  
+- **Parameter sweeps** over evolution time and ancilla qubit count  
+- **Noise models** for depolarizing and amplitude damping channels  
+- **Caching** of results and figures for reproducibility  
+- **Phase-to-energy reconstruction** with automatic aliasing correction
+
+Example notebooks:
+
+- `notebooks/qpe/H2/H2_QPE_Noiseless.ipynb`
+- `notebooks/qpe/H2/H2_QPE_Noisy.ipynb`
+
+Output plots (saved in `data/qpe/images/`) visualize ancilla distributions and how measured energies depend on evolution time or noise level.
+
+![H₂ QPE Distribution](data/qpe/images/H2_QPE_4q.png)
 
 ---
 
