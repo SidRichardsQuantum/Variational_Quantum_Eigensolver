@@ -1,23 +1,76 @@
-# Byte-compiled / cache
+# -------------------------------------------------------------------
+# Python build and cache files
+# -------------------------------------------------------------------
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*.so
 *.pyd
+*.pyo
+*.pkl
+*.pdb
 
-# Jupyter checkpoints
+# Byte-compiled and temporary notebooks
 .ipynb_checkpoints/
+*.ipynb_checkpoints/
 
-# Virtual environments
-.venv/
-env/
+# -------------------------------------------------------------------
+# Package build artifacts
+# -------------------------------------------------------------------
+*.egg-info/
+*.egg
+build/
+dist/
+*.spec
+
+# -------------------------------------------------------------------
+# Environment and editor files
+# -------------------------------------------------------------------
+.env
+.venv
 venv/
-
-# OS files
+ENV/
+env/
+*.swp
+*.swo
+*.bak
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+*.code-workspace
 
-# Logs
+# -------------------------------------------------------------------
+# Data and experiment results
+# -------------------------------------------------------------------
+# Ignore numerical result files (JSON, CSV, logs) but keep plots/images
+data/**/*.json
+data/**/*.csv
+data/**/*.txt
+data/**/*.log
+
+# Explicitly keep any images, figures, or plots
+!data/**/*.png
+!data/**/*.jpg
+!data/**/*.jpeg
+!data/**/*.svg
+!data/**/*.pdf
+
+# -------------------------------------------------------------------
+# Package results (JSON outputs)
+# -------------------------------------------------------------------
+package results/**/*.json
+!package results/.gitkeep
+
+# -------------------------------------------------------------------
+# Test cache files
+# -------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
 *.log
 
-# Store cached VQE run results
-notebooks/results/
+# -------------------------------------------------------------------
+# Jupyter notebook outputs (optional)
+# -------------------------------------------------------------------
+*.nbconvert.ipynb
+*.nbconvert.*
