@@ -1,7 +1,12 @@
 LICENSE
 README.md
 pyproject.toml
-tests/test_reproducibility.py
+qpe/__init__.py
+qpe/__main__.py
+qpe/core.py
+qpe/io_utils.py
+qpe/noise.py
+qpe/visualize.py
 vqe/__init__.py
 vqe/__main__.py
 vqe/ansatz.py
@@ -12,6 +17,13 @@ vqe/io_utils.py
 vqe/optimizer.py
 vqe/ssvqe.py
 vqe/visualize.py
+vqe/images/H2_BOND_Scan_bond_UCCSD_Adam.png
+vqe/images/H2_Combined_Noise_Error_Adam_RY-CZ.png
+vqe/images/H2_Mapping_Convergence_UCCSD_Adam.png
+vqe/images/H2_VQE_Convergence.png
+vqe/images/H3+_Mapping_Convergence_UCCSD_Adam.png
+vqe/images/H3plus_SSVQE_GradientDescent.png
+vqe/images/LiH_BOND_Scan_bond_RY-CZ_Adam.png
 vqe_pennylane.egg-info/PKG-INFO
 vqe_pennylane.egg-info/SOURCES.txt
 vqe_pennylane.egg-info/dependency_links.txt

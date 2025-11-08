@@ -1,29 +1,37 @@
 [project]
 name = "vqe-pennylane"
-version = "0.1.0"
-description = "Lightweight Variational Quantum Eigensolver built on PennyLane"
+version = "0.2.0"
+description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
-license = "MIT"
+license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = [
     "pennylane>=0.42",
     "numpy",
-    "matplotlib"
+    "matplotlib",
+    "scipy",
+    "openfermionpyscf"
 ]
-
-# 👇 Add a CLI command: you can now run `vqe` from the terminal
-[project.scripts]
-vqe = "vqe.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
 
-# 👇 Tell setuptools exactly what to package (avoid the earlier error)
-[tool.setuptools.packages.find]
-include = ["vqe*"]
-exclude = ["notebooks*", "images*", "results*"]
+# ---- Setuptools config ----
+[tool.setuptools]
+packages = ["vqe", "qpe"]
 
+# Include non-code assets like images and results folders if needed
+[tool.setuptools.package-data]
+"vqe" = ["images/*"]
+"qpe" = ["images/*"]
+
+# ---- Editable build config ----
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+# ---- Console script entry points ----
+[project.scripts]
+qpe = "qpe.__main__:main"
+vqe = "vqe.__main__:main"

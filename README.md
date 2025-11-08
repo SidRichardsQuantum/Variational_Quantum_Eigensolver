@@ -1,7 +1,7 @@
 # Variational Quantum Eigensolver
 
 This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Dihydrogen (H₂)**, **Lithium Hydride (LiH)**, **Water (H₂O)**, and the **Trihydrogen Cation (H₃⁺)** using **PennyLane** and **Python**.  
-We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansatzes** approaches and **optimisers**.  
+We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansatzes** approaches, classical **optimisers** and **qubit mappings**.
 The optimum bond-length of LiH and bond-angle of water are determined, and excitation strategies for H₃⁺ are evaluated.
 
 For detailed theoretical explanations, see [THEORY.md](THEORY.md).
@@ -61,7 +61,7 @@ Variational_Quantum_Eigensolver/
 │   ├── visualize.py
 │   ├── ansatz.py
 │   ├── ssvqe.py
-│   └── images/           # (Temporary)
+│   └── images/           # (May be temporary)
 │
 ├── qpe/                  # (In progress) Packaged QPE implementation
 │   └── __init__.py

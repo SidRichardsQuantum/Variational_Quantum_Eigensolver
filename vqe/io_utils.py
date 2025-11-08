@@ -45,9 +45,9 @@ def run_signature(cfg: Dict[str, Any]) -> str:
 
 
 # --- directories ---
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-RESULTS_DIR = os.path.join(BASE_DIR, "results")
-IMG_DIR = os.path.join(BASE_DIR, "images")
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+RESULTS_DIR = os.path.join(BASE_DIR, "package results")
+IMG_DIR = os.path.join(BASE_DIR, "vqe", "images")
 
 def ensure_dirs():
     os.makedirs(RESULTS_DIR, exist_ok=True)
