@@ -8,7 +8,7 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 
 ## 📚 Table of Contents
 - [H₂ Optimiser Comparison](#h₂-optimiser-comparison)
-- [H₂ Ansatze Comparison](#h₂-ansatze-comparison)
+- [H₂ ansatz Comparison](#h₂-ansatze-comparison)
 - [H₂ Noisy VQE](#h₂-noisy-vqe)
 - [H₂ Noiseless QPE](#h₂-noiseless-qpe)
 - [H₂ Noisy QPE](#h₂-noisy-qpe)
@@ -33,7 +33,7 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 
 ### Visualization
 
-Every optimiser with step size $0.2$, successfully converts at ground state energies:
+Every optimiser, with step-size $0.2$, successfully converge to:
 
 ```
 Adam:
@@ -75,7 +75,7 @@ Ground state of H₂:
 ### Set Up
 
 - **Bond Length**: $0.7414 Å$
-- **Optimizer**: `AdamOptimizer` with step size $0.2$
+- **Optimizer**: `AdamOptimizer` with step-size $0.2$
 - **Iterations**: $80$
 - **Ansatzes Compared**: `TwoQubit-RY-CNOT`, `RY-CZ`, `Minimal`
 
@@ -85,7 +85,7 @@ The following ansatzes were tested in a noiseless simulation:
 
 - **TwoQubit-RY-CNOT**: A chemically motivated circuit including single and double excitations.
 - **$R_Y-C_Z$**: A hardware-efficient structure using rotation and $C_Z$ entanglement layers.
-- **Minimal**: A single-parameter ansatzes tailored for H₂.
+- **Minimal**: A single-parameter ansatz tailored for H₂.
 
 All three ansatzes successfully converged to near ground-state energies within $40$ iterations:
 
@@ -125,7 +125,7 @@ There were no noticeable differences in final energies reached between the diffe
 
 ![H₂ Noisy Ansatzes](data/vqe/images/H2_Noise_Error_Ansatz_Comparison_Adam.png)
 
-The TwoQubit-RY-CNOT and Minimal ansatzes had the most resilience to depolarising noise, by consistenly having the greatest fidelities with the smallest standard deviations.
+The TwoQubit-RY-CNOT and Minimal ansatzes had the most resilience to depolarizing noise, by consistently having the greatest fidelities with the smallest standard deviations.
 The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
 
 ![H₂ Noise Types](data/vqe/images/H2_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
@@ -168,16 +168,16 @@ This corresponds to the encoded ground-state phase from the unitary evolution $U
 
 Increasing the number of ancillas enhances phase precision.  
 The energy estimate oscillates due to finite resolution, with bin width
-$$\Delta E = \frac{2\pi}{t * 2^n}$$
+$$\Delta E = \frac{2\pi}{t 2^n}$$
 
-![Energy vs ancillas](data/qpe/images/H2_QPE_NoiseLess_vsAncilla.png)
+![Energy vs ancillas](data/qpe/images/H2_QPE_Noiseless_Ancilla.png)
 
 #### Evolution Time
 
 Longer evolution times improve phase resolution but risk aliasing if $|E| > \pi t$.  
 The optimal $t$ balances resolution and unambiguous phase mapping.
 
-![Energy vs evolution time](data/qpe/images/H2_QPE_NoiseLess_vsTime.png)
+![Energy vs evolution time](data/qpe/images/H2_QPE_Noiseless_Time.png)
 
 ### Discussion
 
@@ -200,22 +200,23 @@ Both channels were applied independently to all active wires.
 
 ### Example: Moderate Noise
 
-For $p_{dep}=0.01$ and $p_{amp}=0.0$:
+For $p_{dep}=0.1$ and $p_{amp}=0.0$:
 
 ```
-Most probable state: |0100⟩
-Estimated phase: 0.125000
-Estimated energy: -0.78539816 Ha
-ΔE (QPE − HF): 0.103025 Ha
+Most probable state: |0001⟩
+Estimated phase: 0.062500
+Estimated energy: -0.39269908 Ha
+ΔE (QPE − HF): +0.49572396 Ha
 ```
 
 ![H₂ QPE distribution (noisy)](data/qpe/images/H2_QPE_4q.png)
 
-The peak broadens compared to the noiseless case, with probability weight distributed across nearby bitstrings, indicating partial phase decoherence.
+There is no lone state that is significantly more probable than the rest.
+Depolarizing noise has caused information to be lost, as the ground state appears to be more randomised.
 
 ### Depolarizing Noise Sweep
 
-A sweep from $p_{dep}=0.0$ to $0.1$ (amplitude damping fixed at 0) shows only mild energy bias, but a gradual loss of peak sharpness.  
+A sweep from $p_{dep}=0.0$ to $0.1$ (amplitude damping fixed at $0$) shows only mild energy bias, but a gradual loss of peak sharpness.  
 The plots below show **mean ± standard deviation** over **5 seeds**, highlighting the stochastic variability of noisy simulations.
 
 ![Energy vs depolarizing noise](data/qpe/images/H2_QPE_Dep_Energy_avg.png)
@@ -258,13 +259,13 @@ Averaging over multiple seeds reveals both the **bias** and **variance** introdu
 - **Molecular Geometry**: Equilateral triangle ($1.0 Å$ side length)
 - **Charge**: $+1$
 - **Electrons**: 2
-- **Optimizer**: `Adam` with step size $0.2$
+- **Optimizer**: `Adam` with step-size $0.2$
 - **Iterations**: $50$ per excitation type
 - **Excitations Compared**: Single, Double, Both (UCCSD)
 
 ### Visualization
 
-The simulation compares three ansatze types in a noiseless VQE run. Final ground state energies:
+The simulation compares three ansatz types in a noiseless VQE run. Final ground state energies:
 
 ```
 Single excitations only:
@@ -307,13 +308,13 @@ A quantum circuit diagram for the UCCSD ansatzes is below:
 - **Charge**: $+1$
 - **Electrons**: 2
 - **Ansatze**: UCCSD (Singles + Doubles)
-- **Optimizer**: `AdamOptimizer` with step size $0.2$
+- **Optimizer**: `AdamOptimizer` with step-size $0.2$
 - **Iterations**: $50$
 - **Mappings Compared**: `jordan_wigner`, `bravyi_kitaev`, `parity`
 
 ### Visualization
 
-The simulation compares three fermion-to-qubit encodings using the same ansatze and optimizer.
+The simulation compares three fermion-to-qubit encodings using the same ansatz and optimizer.
 Final ground state energies:
 
 ```
@@ -340,7 +341,7 @@ This comparison highlights how even under identical ansatzes, fermion-to-qubit m
 - **Electrons**: $2$
 - **Basis**: STO-3G
 - **Ansatz**: UCC-style singles + doubles (from `qchem.excitations`)
-- **Optimizer**: Adam with step size $0.4$
+- **Optimizer**: Adam with step-size $0.4$
 - **Iterations**: $100$
 - **Penalty Weight**: $10 * | ⟨ \psi_0 | \psi_1 ⟩ |^2$
 
@@ -385,7 +386,7 @@ Again, there were no noticeable differences between the different optimizers for
 ![H₃⁺ Noisy Ansatzes](data/vqe/images/H3plus_Noise_Error_Ansatz_Comparison_Adam.png)
 
 The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
-TwoQubit-RY-CNOT and Minimal ansatzes were both most resilient to depolarising noise.
+TwoQubit-RY-CNOT and Minimal ansatzes were both most resilient to depolarizing noise.
 
 ![H₃⁺ Noise Types](data/vqe/images/H3plus_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
 
@@ -449,7 +450,7 @@ Minimum ground state energy: -5.59345560 Ha
 
 ### Visualization
 
-`AdamOptimizer`  with step-size $0.2$ successfully converges at ground state energy $-72.85526883516486 Ha$:
+`AdamOptimizer` with step-size $0.2$ successfully converges at ground state energy $-72.85526883516486 Ha$:
 
 ![H₂O Adam Convergence](data/vqe/images/H2O_Adam.png)
 
