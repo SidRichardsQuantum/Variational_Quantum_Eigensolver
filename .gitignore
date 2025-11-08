@@ -61,6 +61,13 @@ data/**/*.log
 package results/**/*.json
 !package results/.gitkeep
 
+# ✅ NEW — Ignore generated plots from qpe/images and vqe/images
+# (you keep the directories themselves tracked)
+qpe/images/**/*.png
+vqe/images/**/*.png
+!qpe/images/.gitkeep
+!vqe/images/.gitkeep
+
 # -------------------------------------------------------------------
 # Test cache files
 # -------------------------------------------------------------------
