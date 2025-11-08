@@ -3,15 +3,19 @@ from pennylane import numpy as np
 from pennylane import qchem
 import os, json, hashlib, time
 import matplotlib.pyplot as plt
-from notebooks.vqe.vqe_utils import set_seed
+from vqe.vqe_utils import set_seed
 
-ROOT_DIR = os.path.abspath(os.path.join(os.getcwd(), ".."))
-DATA_DIR = os.path.join(ROOT_DIR, "data", "qpe_results")
-IMG_DIR = os.path.join(ROOT_DIR, "plots", "qpe")
 
+# Directories
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data", "qpe")
+RESULTS_DIR = os.path.join(DATA_DIR, "results")
+IMG_DIR = os.path.join(DATA_DIR, "images")
+
+# Ensure required directories exist
 def ensure_dirs():
     """Ensure required directories exist (parallel to VQE)."""
-    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(RESULTS_DIR, exist_ok=True)
     os.makedirs(IMG_DIR, exist_ok=True)
 
 
@@ -164,7 +168,7 @@ def run_qpe(
 
     return result
 
-
+# Phase / Energy Conversion
 def bits_to_phase(bitstring):
     """Convert binary string (MSB→LSB) to phase ∈ [0,1)."""
     phase = 0.0
@@ -172,6 +176,7 @@ def bits_to_phase(bitstring):
         phase += int(b) / (2 ** (i + 1))
     return phase
 
+# Energy from phase
 def phase_to_energy(phase, t):
     """Compute energy (Ha) from measured phase."""
     E = 2 * np.pi * phase / t
@@ -189,10 +194,12 @@ def signature_hash(molecule, n_ancilla, t, noise, shots):
     )
     return hashlib.md5(signature.encode()).hexdigest()
 
+# Cache path
 def cache_path(molecule, hash_key):
     """Build cache file path."""
-    return os.path.join(DATA_DIR, f"{molecule}_QPE_{hash_key}.json")
+    return os.path.join(RESULTS_DIR, f"{molecule}_QPE_{hash_key}.json")
 
+# Save QPE result
 def save_qpe_result(result):
     """Save QPE result to JSON (parallels save_vqe_result)."""
     ensure_dirs()
@@ -208,6 +215,7 @@ def save_qpe_result(result):
         json.dump(result, f, indent=2)
     print(f"Saved QPE result → {path}")
 
+# Load QPE result
 def load_qpe_result(molecule, hash_key):
     """Load cached QPE result if available."""
     path = cache_path(molecule, hash_key)
@@ -258,6 +266,7 @@ def hartree_fock_energy(hamiltonian, hf_state):
     return circuit()
 
 
+# Bitstring to phase
 def bitstring_to_phase(bits: str, msb_first: bool = True) -> float:
     """Convert a 0/1 string to fractional phase in [0,1)."""
     b = bits if msb_first else bits[::-1]
@@ -267,6 +276,7 @@ def bitstring_to_phase(bits: str, msb_first: bool = True) -> float:
     return float(frac)
 
 
+# Energy from phase with unwrapping
 def phase_to_energy_unwrapped(phase: float, t: float, ref_energy: float | None = None) -> float:
     """Convert phase → energy and unwrap sign convention to match physics."""
     # Base (always positive for phase in [0,1))
@@ -288,7 +298,7 @@ def phase_to_energy_unwrapped(phase: float, t: float, ref_energy: float | None =
 
     return energy
 
-
+# Save QPE plot
 def save_qpe_plot(name: str):
     """Return full image path in the QPE plots directory and ensure directory exists."""
     ensure_dirs()

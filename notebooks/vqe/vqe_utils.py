@@ -3,6 +3,19 @@ from pennylane import numpy as np
 import json, hashlib, os, glob
 from typing import Any, Dict
 
+
+# Directories
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+DATA_DIR = os.path.join(BASE_DIR, "data", "vqe")
+RESULTS_DIR = os.path.join(DATA_DIR, "results")
+IMG_DIR = os.path.join(DATA_DIR, "images")
+
+# Ensure required directories exist
+def ensure_dirs():
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    os.makedirs(IMG_DIR, exist_ok=True)
+
+# Helper to round floats for stable hashing
 def _round_floats(x: Any, ndigits: int = 8):
     """Recursively round floats / arrays / lists for stable hashing."""
     if isinstance(x, float):
@@ -18,6 +31,7 @@ def _round_floats(x: Any, ndigits: int = 8):
         return type(x)(_round_floats(v, ndigits) for v in x)
     return x
 
+# Config dict for a VQE run
 def make_run_config_dict(
     symbols,
     coordinates,
@@ -48,25 +62,20 @@ def make_run_config_dict(
         "amplitude_damping_prob": float(amplitude_damping_prob),
     }
 
+# Run signature
 def run_signature(cfg: Dict[str, Any]) -> str:
     """Stable short hash of the config (12 hex chars)."""
     payload = json.dumps(cfg, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
 
-BASE_NOTEBOOKS_DIR = os.path.join(os.path.dirname(__file__), "..", "notebooks")
-RESULTS_DIR = os.path.join(BASE_NOTEBOOKS_DIR, "results")
-IMG_DIR = os.path.join(BASE_NOTEBOOKS_DIR, "images")
-
-def ensure_dirs():
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    os.makedirs(IMG_DIR, exist_ok=True)
-
+# Find existing run
 def find_existing_run(sig):
     """Look for an existing results file matching the signature."""
     pattern_results = os.path.join(RESULTS_DIR, f"*__{sig}.json")
     matches = sorted(glob.glob(pattern_results))
     return matches[-1] if matches else None
 
+# Save run record
 def save_run_record(record_name_prefix, record):
     """Save run record directly into results/."""
     ensure_dirs()
@@ -75,11 +84,13 @@ def save_run_record(record_name_prefix, record):
         json.dump(record, f, indent=2)
     return fname_results
 
+# File naming
 def build_run_filename(prefix: str, optimizer_name: str, seed: int, sig: str) -> str:
     """Consistent file naming helper, e.g. H2_noiseless_Adam_s0__abc123def456.json"""
     safe_opt = optimizer_name.replace(" ", "")
     return f"{prefix}_{safe_opt}_s{seed}__{sig}"
 
+# Ansatz definitions
 def two_qubit_ry_cnot(params, wires):
     """Toy 2-qubit entangler; NOT chemical UCCSD."""
     qml.RY(params[0], wires=wires[0])
@@ -114,6 +125,7 @@ OPTIMIZERS = {
     "SPSA": qml.SPSAOptimizer,
 }
 
+# Optimizer retrieval
 def get_optimizer(name: str, stepsize: float = 0.2):
     if name not in OPTIMIZERS:
         raise ValueError(f"Optimizer '{name}' not recognized.")
@@ -122,6 +134,7 @@ def get_optimizer(name: str, stepsize: float = 0.2):
     except TypeError:
         return OPTIMIZERS[name](stepsize)
 
+# Parameter initialization
 def init_params(ansatz_name: str, num_wires: int, scale=0.01, requires_grad=True):
     if ansatz_name in ["TwoQubit-RY-CNOT", "Minimal"]:
         vals = scale * np.random.randn(1)
@@ -131,6 +144,7 @@ def init_params(ansatz_name: str, num_wires: int, scale=0.01, requires_grad=True
         raise ValueError(f"Unknown ansatz '{ansatz_name}'")
     return np.array(vals, requires_grad=requires_grad)
 
+# VQE circuit creation
 def create_vqe_circuit(ansatz_fn, hamiltonian, dev, wires):
     @qml.qnode(dev)
     def circuit(params):
@@ -138,6 +152,7 @@ def create_vqe_circuit(ansatz_fn, hamiltonian, dev, wires):
         return qml.expval(hamiltonian)
     return circuit
 
+# Normalize optimizer input
 def _normalize_optimizer(opt_like, stepsize: float):
     if isinstance(opt_like, str):
         return get_optimizer(opt_like, stepsize)
@@ -148,6 +163,7 @@ def _normalize_optimizer(opt_like, stepsize: float):
             return opt_like(stepsize)
     return opt_like
 
+# Run VQE
 def run_vqe(cost_fn, initial_params, optimizer="Adam", stepsize=0.2, max_iters=50, record_initial=True):
     opt = _normalize_optimizer(optimizer, stepsize)
     params = np.array(initial_params, requires_grad=True)
@@ -160,9 +176,11 @@ def run_vqe(cost_fn, initial_params, optimizer="Adam", stepsize=0.2, max_iters=5
         energies.append(cost_fn(params))
     return params, energies
 
+# Set random seed
 def set_seed(seed=0):
     np.random.seed(seed)
 
+# Excitation ansatz
 def excitation_ansatz(params, wires, hf_state, excitations, excitation_type="both"):
     qml.BasisState(np.array(hf_state, dtype=int), wires=wires)
     if excitation_type in ["single", "double"] and isinstance(excitations, list):
