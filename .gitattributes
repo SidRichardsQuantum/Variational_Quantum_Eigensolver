@@ -1,0 +1,35 @@
+# -------------------------------------------------------------------
+# Line endings — normalize everything to LF
+# -------------------------------------------------------------------
+* text=auto eol=lf
+
+# -------------------------------------------------------------------
+# Jupyter notebooks
+# Show as notebooks on GitHub (not raw JSON)
+# -------------------------------------------------------------------
+*.ipynb linguist-language=Jupyter Notebook diff=ipynb
+
+# -------------------------------------------------------------------
+# Binary files (don’t diff, don’t try to merge)
+# -------------------------------------------------------------------
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg binary
+*.pdf binary
+*.pkl binary
+*.json binary
+*.npz binary
+
+# -------------------------------------------------------------------
+# Hide data / result folders from language statistics
+# -------------------------------------------------------------------
+data/** linguist-vendored
+package results/** linguist-vendored
+qpe/images/** linguist-vendored
+vqe/images/** linguist-vendored
+
+# -------------------------------------------------------------------
+# Python source files (explicit highlighting)
+# -------------------------------------------------------------------
+*.py linguist-language=Python
