@@ -19,7 +19,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ---
 
-## Molecules Studied:
+## Molecules Studied
 
 | Molecule | Properties Investigated                         | Qubits |
 |:---------:|:------------------------------------------------|:-------:|
@@ -39,7 +39,7 @@ Molecular Hamiltonians are constructed using **second quantization** and mapped 
 
 The variational principle states that for any trial wavefunction $|\psi⟩$, the expectation value of the Hamiltonian is an upper bound to the true ground state energy:
 
-$$E₀ ≤ ⟨ψ|H|ψ⟩$$
+$$E₀ ≤ ⟨\psi|H|\psi⟩$$
 
 where:
 - $E_0$ is the ground state energy
@@ -64,7 +64,7 @@ The VQE algorithm consists of:
 
 ---
 
-### Ansatz Construction:
+### Ansatz Construction
 
 An ansatz defines the functional form of the trial quantum state $|\psi(\theta)⟩$.
 It determines how expressive, efficient, and trainable your VQE circuit is.
@@ -72,7 +72,7 @@ Different ansatze trade off physical accuracy, circuit depth, and compatibility 
 
 #### UCCSD (Unitary Coupled Cluster Singles and Doubles)
 
-A chemistry-inspired ansatz derived from coupled-cluster theory. Includes single and double excitations applied in a unitary, Trotterized form.
+A chemistry-inspired ansatz derived from coupled-cluster theory. Includes single and double excitations applied as a unitary, Trotterized operator.
 
 - Designed for capturing electron correlation from first principles
 - Exact for small systems like H₂ or H₃⁺ in minimal basis sets (e.g., STO-3G)
@@ -98,7 +98,7 @@ A manually constructed, problem-specific ansatz using very few parameters.
 
 ---
 
-### Optimizers:
+### Optimizers
 
 Classical optimizers are a critical component of the VQE algorithm, as they minimize the energy by adjusting circuit parameters $\theta$.
 
@@ -199,8 +199,8 @@ This enforces that each optimized state corresponds to a different eigenvector o
 #### Implementation Details for H₃⁺
 
 - **Ansatz**: UCCSD with both single and double excitations.
-- **States**: Two independent parameter sets (ψ₀ and ψ₁) initialized differently.
-- **Penalty Term**: Proportional to $| ⟨\psi_0|\psi_1⟩ |^2$ with a tunable multiplier.
+- **States**: Two independent parameter sets ($\psi_0$ and $\psi_1$) initialized differently.
+- **Penalty Term**: Proportional to $|⟨\psi_0|\psi_1⟩|^2$ with a tunable multiplier.
 - **Optimizer**: Adam, step size tuned for stability and separation.
 - **Outcome**: Variational estimates of both the ground-state and first excited-state energies, with an accurate excitation gap.
 
@@ -214,8 +214,9 @@ This enforces that each optimized state corresponds to a different eigenvector o
 
 ## Quantum Phase Estimation
 
-The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting **eigenvalues** of unitary operators.  
-In the context of quantum chemistry, QPE can be used to determine the **electronic ground-state energy** of a molecule by estimating the eigenenergies of the **time-evolution operator**.
+The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting eigenvalues of unitary operators.  
+In the context of quantum chemistry, QPE can be used to determine the electronic ground-state energy of a molecule by estimating the eigenenergies of the time-evolution operator.
+QPE is implemented for H₂ as a reference system, exploring both noiseless and noisy phase estimation under controlled depolarizing and amplitude damping channels.
 
 ### QPE Background
 
@@ -265,7 +266,7 @@ QPE operates by coupling a register of $n$ qubits, which encodes the phase infor
 
 6. **Energy Recovery**:
    - The measured phase is converted to the molecular energy:
-    $$E = -\frac{2\pi \theta}{t}.$$
+    $$E = -\frac{2\pi\theta}{t}.$$
 
 #### Key Points
 
@@ -283,9 +284,9 @@ This notebook models two primary noise channels using PennyLane’s `default.mix
 
 ### Depolarizing Noise
 
-Models random qubit errors that drive each subsystem toward a mixed state with probability $p$:
+Models random qubit errors that drive each subsystem toward a mixed state with probability $p_{\text{dep}}$:
 
-$$\mathcal{E}_{\text{dep}}(\rho) = (1 - p) \rho + \frac{p}{3}(X \rho X + Y \rho Y + Z \rho Z)$$
+$$\mathcal{E}_{\text{dep}}(\rho) = (1 - p_{\text{dep}}) \rho + \frac{p_{\text{dep}}}{3}(X \rho X + Y \rho Y + Z \rho Z)$$
 
 - Represents uniform gate and readout errors
 - Applied independently to each qubit
@@ -293,15 +294,15 @@ $$\mathcal{E}_{\text{dep}}(\rho) = (1 - p) \rho + \frac{p}{3}(X \rho X + Y \rho 
 
 ### Amplitude Damping
 
-Models **energy relaxation**, where excited states decay to the ground state $|0⟩$ with probability $p$:
+Models **energy relaxation**, where excited states decay to the ground state $|0⟩$ with probability $p_{\text{amp}}$:
 
 $$\mathcal{E}_{\text{amp}}(\rho) = E_0 \rho E_0^\dagger + E_1 \rho E_1^\dagger$$
 
 where
 
-$$E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-p} \end{pmatrix},
+$$E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-p_{\text{amp}}} \end{pmatrix},
 \quad
-E_1 = \begin{pmatrix} 0 & \sqrt{p} \\ 0 & 0 \end{pmatrix}$$
+E_1 = \begin{pmatrix} 0 & \sqrt{p_{\text{amp}}} \\ 0 & 0 \end{pmatrix}$$
 
 - Mimics spontaneous emission or thermal relaxation
 - Applied independently to each qubit
@@ -309,7 +310,7 @@ E_1 = \begin{pmatrix} 0 & \sqrt{p} \\ 0 & 0 \end{pmatrix}$$
 
 ### Evaluation Metrics
 
-Noise strengths ($p \in [0, 0.1]$) are varied systematically to evaluate:
+Noise strengths ($p_{\text{dep}}, p_{\text{amp}} \in [0, 0.1]$) are varied systematically to evaluate:
 
 - **Energy error** — deviation from the noiseless ground-state energy
 - **Fidelity** — overlap between noisy and noiseless final states: $F(|\psi_0⟩, \rho) = ⟨\psi_0| \rho | \psi_0⟩$
