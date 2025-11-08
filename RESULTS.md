@@ -10,6 +10,8 @@ Basis state indices are converted from binary to decimal for shorter/clearer axi
 - [H₂ Optimiser Comparison](#h₂-optimiser-comparison)
 - [H₂ Ansatze Comparison](#h₂-ansatze-comparison)
 - [H₂ Noisy VQE](#h₂-noisy-vqe)
+- [H₂ Noiseless QPE](#h₂-noiseless-qpe)
+- [H₂ Noisy QPE](#h₂-noisy-qpe)
 - [H₃⁺ Excitation Comparison](#h₃⁺-excitation-comparison)
 - [H₃⁺ Mapping Comparison](#h₃⁺-mapping-comparison)
 - [H₃⁺ SSVQE](#h₃⁺-ssvqe)
@@ -66,6 +68,8 @@ Ground state of H₂:
 
 ![H₂ Ground State](notebooks/images/H2_Ground_State.png)
 
+---
+
 ## H₂ Ansatz Comparison
 
 ### Set Up
@@ -100,6 +104,8 @@ Final energy = -0.88810382 Ha
 
 Although all ansatzes reach similar energy minima, TwoQubit-RY-CNOT and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
 
+---
+
 ## H₂ Noisy VQE
 
 Six noise probabilities in the range $[0.0, 0.1]$ were used to compare how resilient different optimizers and ansatzes are to depolarizing or amplitude damping noise.
@@ -125,6 +131,119 @@ The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greates
 ![H₂ Noise Types](notebooks/images/H2_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
 
 Depolarizing noise had a more robust effect on fidelity and energy error, than amplitude damping noise, for all noise levels.
+
+---
+
+## H₂ Noiseless QPE
+
+### Set Up
+
+- **Bond Length**: $0.7414 Å$
+- **Basis**: STO-3G
+- **Ancillas**: $n=4$
+- **Evolution time**: $t=1.0$
+- **Trotter steps**: 2
+- **Shots**: 1000
+- **Reference (HF) Energy**: $-0.88842304 \text{Ha}$
+
+### Noiseless Simulation
+
+The noiseless QPE simulation for H₂ produces a sharp probability peak centered at the most probable ancilla register state:
+
+- **Most probable state**: $|0100⟩$  
+- **Estimated phase**: $0.125000$  
+- **Estimated energy**: $-0.78539816\text{Ha}$  
+- **ΔE (QPE − HF)**: $+0.1030\text{Ha}$
+
+![H₂ QPE distribution (noiseless)](notebooks/plots/qpe/H2_QPE_4q.png)
+
+As shown above, the ancilla register exhibits a clear, single dominant peak.  
+This corresponds to the encoded ground-state phase from the unitary evolution $U = e^{-iHt}$.
+
+### Parameter Sweeps
+
+#### Number of Ancilla Qubits
+
+Increasing the number of ancillas enhances phase precision.  
+The energy estimate oscillates due to finite resolution, with bin width
+$$\Delta E = \frac{2\pi}{t * 2^n}$$
+
+![Energy vs ancillas](notebooks/plots/qpe/H2_QPE_NoiseLess_vsAncilla.png)
+
+#### Evolution Time
+
+Longer evolution times improve phase resolution but risk aliasing if $|E| > \pi t$.  
+The optimal $t$ balances resolution and unambiguous phase mapping.
+
+![Energy vs evolution time](notebooks/plots/qpe/H2_QPE_NoiseLess_vsTime.png)
+
+### Discussion
+
+- **Accuracy:** The QPE-derived energy ($-0.7854\text{Ha}$) matches the correct phase branch near the HF reference.  
+- **Resolution:** Increasing $n$ or $t$ improves granularity of measurable energies.  
+- **Comparison to VQE:**  
+  - VQE optimizes a parameterized state to *approximate* the ground state.  
+  - QPE directly *measures* the eigenphase, yielding deterministic energies when coherence allows.  
+  - On NISQ hardware, VQE remains more practical, while QPE benchmarks algorithmic precision and phase resolution.
+
+---
+
+## H₂ Noisy QPE
+
+To study noise resilience, simple quantum channels were added after each controlled evolution step:
+- **Depolarizing noise** with probability $p_{dep}$
+- **Amplitude damping** with probability $p_{amp}$
+
+Both channels were applied independently to all active wires.
+
+### Example: Moderate Noise
+
+For $p_{dep}=0.01$ and $p_{amp}=0.0$:
+
+- **Most probable state**: $|0100⟩$
+- **Estimated phase**: $0.125000$
+- **Estimated energy**: $-0.78539816\text{Ha}$
+- **ΔE (QPE − HF)**: $+0.103025\text{Ha}$
+
+![H₂ QPE distribution (noisy)](notebooks/plots/qpe/H2_QPE_4q.png)
+
+The peak broadens compared to the noiseless case, with probability weight distributed across nearby bitstrings, indicating partial phase decoherence.
+
+### Depolarizing Noise Sweep
+
+A sweep from $p_{dep}=0.0$ to $0.1$ (amplitude damping fixed at 0) shows only mild energy bias, but a gradual loss of peak sharpness.  
+The plots below show **mean ± standard deviation** over **5 seeds**, highlighting the stochastic variability of noisy simulations.
+
+![Energy vs depolarizing noise](notebooks/plots/qpe/H2_QPE_Dep_Energy_avg.png)
+
+![Peak probability vs depolarizing noise](notebooks/plots/qpe/H2_QPE_Dep_Peak_avg.png)
+
+- The **energy** remains close to the noiseless estimate for small $p_{dep}$ but exhibits increasing spread as noise grows.  
+- The **peak probability** decreases steadily, following an approximately exponential decay, showing that depolarizing noise mainly reduces measurement confidence rather than biasing the energy.
+
+### Amplitude-Damping Noise Sweep
+
+With depolarizing noise fixed to zero, amplitude damping ($p_{amp}\in[0,0.1]$) introduces stronger bias toward higher apparent energies and reduced contrast in ancilla measurements.  
+Again, the plots represent **mean ± standard deviation** over **5 seeds**.
+
+![Energy vs amplitude damping](notebooks/plots/qpe/H2_QPE_Amp_Energy_avg.png)
+
+![Peak probability vs amplitude damping](notebooks/plots/qpe/H2_QPE_Amp_Peak_avg.png)
+
+- At low $p_{amp}$, the estimated energy remains near the noiseless result.  
+- Beyond $p_{amp}\approx0.07$, dissipation dominates, pushing the apparent energy upward while the peak probability collapses toward zero.  
+- This shows amplitude damping both **biases** and **decoheres** the measured eigenphase.
+
+### Discussion
+
+| Effect | Observation | Impact |
+|:--|:--|:--|
+| **Depolarizing noise** | Randomizes phase information across states | Increases variance (error bars), reduces peak contrast |
+| **Amplitude damping** | Pulls population toward $\|0⟩$ | Systematically biases energy upward, reduces probability of the correct eigenphase |
+| **Overall** | QPE is highly sensitive to both depolarization and dissipation | Reinforces the need for error-mitigation and fault-tolerant phase estimation |
+
+These results confirm that QPE accurately extracts eigenenergies in ideal conditions but **degrades predictably with increasing noise**.  
+Averaging over multiple seeds reveals both the **bias** and **variance** introduced by noise channels, offering a realistic benchmark for comparing **variational (VQE)** and **interferometric (QPE)** quantum chemistry methods on NISQ hardware.
 
 ---
 
@@ -170,6 +289,8 @@ A quantum circuit diagram for the UCCSD ansatzes is below:
 
 ![H₃⁺ Circuit Diagram](notebooks/images/H3plus_UCCSD_Circuit.png)
 
+---
+
 ## H₃⁺ Mapping Comparison
 
 ### Set Up
@@ -204,6 +325,8 @@ The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, th
 Each encoding transforms the fermionic Hamiltonian differently, influencing qubit operator structure and gradient behavior.  
 This comparison highlights how even under identical ansatzes, fermion-to-qubit mapping can affect convergence rate and minima.
 
+---
+
 ## H₃⁺ SSVQE
 
 ### Set Up
@@ -236,6 +359,8 @@ while the **first excited state** shifts amplitude toward $|100100⟩$ and other
 ![H₃⁺ ψ₀ vs ψ₁ Decomposition](notebooks/images/H3plus_SSVQE_State_Comparison.png)
 
 The orthogonality penalty successfully suppressed overlap between the states, producing distinct quantum states with a meaningful excitation energy gap.
+
+---
 
 ## H₃⁺ Noisy VQE
 
@@ -292,6 +417,8 @@ The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
 ![LiH Ground State](notebooks/images/LiH_Ground_State.png)
 
+---
+
 ## Optimal LiH Length
 
 The Gradient Descent Optimizer was used to scan over a range of bond-lengths between the Li and H atoms.
@@ -335,6 +462,8 @@ The calculated wavefunction for the ground state of water is:
 The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
 ![H₂O Ground State](notebooks/images/H2O_Ground_State.png)
+
+---
 
 ## Optimal H₂O Angle
 
