@@ -3,3 +3,13 @@ numpy
 matplotlib
 scipy
 openfermionpyscf
+
+[dev]
+pytest>=8.0
+black
+flake8
+mypy
+
+[docs]
+sphinx
+furo

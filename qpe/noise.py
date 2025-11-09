@@ -1,28 +1,46 @@
 """
-Noise utilities for Quantum Phase Estimation (QPE) simulations.
+qpe/noise.py
+============
+Noise utility functions for Quantum Phase Estimation (QPE) circuits.
 
 Currently supports:
-    • Depolarizing channel
-    • Amplitude damping channel
+  • Depolarizing channel
+  • Amplitude damping channel
 
-These can be combined for mixed-noise simulations.
+Both can be applied together to all wires in a circuit segment.
 """
 
+from __future__ import annotations
 import pennylane as qml
+from typing import Iterable
 
 
-def apply_noise_all(wires, p_dep: float = 0.0, p_amp: float = 0.0):
+def apply_noise_all(
+    wires: Iterable[int],
+    p_dep: float = 0.0,
+    p_amp: float = 0.0,
+) -> None:
+    """Apply depolarizing and/or amplitude damping noise to the given wires.
+
+    This function is intended to be called *inside* a QNode, typically
+    after a unitary operation or ansatz to simulate mixed noise channels.
+
+    Parameters
+    ----------
+    wires : Iterable[int]
+        Wires (qubit indices) on which to apply noise.
+    p_dep : float, optional
+        Depolarizing probability per wire (default = 0.0).
+    p_amp : float, optional
+        Amplitude damping probability per wire (default = 0.0).
+
+    Example
+    -------
+    >>> apply_noise_all([0, 1, 2], p_dep=0.02, p_amp=0.01)
     """
-    Apply depolarizing and amplitude damping noise to all specified wires.
+    if p_dep <= 0.0 and p_amp <= 0.0:
+        return  # Skip if no noise configured
 
-    Args:
-        wires (Iterable[int]): List of wires (qubit indices) to which noise is applied.
-        p_dep (float): Depolarizing channel probability per wire (default=0.0)
-        p_amp (float): Amplitude damping probability per wire (default=0.0)
-
-    Example:
-        >>> apply_noise_all([0, 1, 2], p_dep=0.02, p_amp=0.01)
-    """
     for w in wires:
         if p_dep > 0.0:
             qml.DepolarizingChannel(p_dep, wires=w)

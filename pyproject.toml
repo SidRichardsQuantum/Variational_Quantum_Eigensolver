@@ -1,9 +1,13 @@
-# ---- Build system ----
+# ===============================================================
+# Build System
+# ===============================================================
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# ---- Project metadata ----
+# ===============================================================
+# Project Metadata
+# ===============================================================
 [project]
 name = "vqe-pennylane"
 version = "0.2.0"
@@ -12,26 +16,57 @@ readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = { text = "MIT" }
 requires-python = ">=3.9"
+
 dependencies = [
     "pennylane>=0.42",
     "numpy",
     "matplotlib",
     "scipy",
-    "openfermionpyscf"
+    "openfermionpyscf",
+]
+
+keywords = ["quantum", "VQE", "QPE", "simulation", "pennylane", "quantum-chemistry"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
 ]
 
 [project.urls]
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
+Issues = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues"
 
-# ---- Packaging ----
-[tool.setuptools]
-packages = ["vqe", "qpe"]
+# ===============================================================
+# Packaging & Data
+# ===============================================================
+[tool.setuptools.packages.find]
+include = ["vqe*", "qpe*"]
 
 [tool.setuptools.package-data]
 "vqe" = ["images/*"]
 "qpe" = ["images/*"]
 
-# ---- Console entry points ----
+# ===============================================================
+# Optional Dependencies
+# ===============================================================
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "black",
+    "flake8",
+    "mypy",
+]
+docs = [
+    "sphinx",
+    "furo",
+]
+
+# ===============================================================
+# Entry Points (CLI)
+# ===============================================================
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"
