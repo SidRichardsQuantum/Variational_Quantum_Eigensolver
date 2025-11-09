@@ -8,7 +8,7 @@ import hashlib
 
 # === Base directories (parallel to vqe) ===
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-RESULTS_DIR = os.path.join(BASE_DIR, "package results")
+RESULTS_DIR = os.path.join(BASE_DIR, "package_results")
 IMG_DIR = os.path.join(BASE_DIR, "qpe", "images")
 
 
@@ -41,7 +41,7 @@ def cache_path(molecule, hash_key):
 
 
 def save_qpe_result(result):
-    """Save QPE result to JSON in the global package results directory."""
+    """Save QPE result to JSON in the global package_results directory."""
     ensure_dirs()
     key = signature_hash(
         result["molecule"],

@@ -11,7 +11,7 @@ from .visualize import (
     plot_optimizer_comparison,
     plot_ansatz_comparison,
 )
-from .io_utils import IMG_DIR, make_run_config_dict, run_signature, save_run_record, ensure_dirs
+from .io_utils import IMG_DIR, RESULTS_DIR, make_run_config_dict, run_signature, save_run_record, ensure_dirs
 ensure_dirs()
 
 # ================================================================
@@ -21,9 +21,10 @@ def run_vqe(
     molecule: str = "H2",
     seed: int = 0,
     n_steps: int = 50,
+    stepsize: float = 0.2,
     plot: bool = True,
-    ansatz_name: str = "StronglyEntanglingLayers",
-    optimizer_name: str = "GradientDescent",
+    ansatz_name: str = "UCCSD",
+    optimizer_name: str = "Adam",
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
@@ -31,9 +32,26 @@ def run_vqe(
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
+    mapping: str = "jordan_wigner",
 ):
-    """Run VQE workflow end-to-end with optional noise and caching."""
+    """Run a Variational Quantum Eigensolver (VQE) workflow end-to-end.
+    
+    Args:
+        molecule: Molecule name or identifier (e.g., "H2", "LiH", "H2O").
+        seed: Random seed for reproducibility.
+        n_steps: Number of optimization steps.
+        stepsize: Optimizer step size (user-configurable).
+        plot: Whether to plot convergence.
+        ansatz_name: Ansatz choice (e.g. "UCC-D", "UCCSD", "RY-CZ").
+        optimizer_name: Optimizer to use ("Adam", "GradientDescent", "Momentum").
+        noisy: Enable noise simulation.
+        depolarizing_prob: Depolarizing channel probability.
+        amplitude_damping_prob: Amplitude damping probability.
+        force: Force recomputation even if cached results exist.
+        symbols, coordinates, basis: Custom molecular geometry inputs.
+    """
 
+    ensure_dirs()  # Make sure result/image directories exist
     np.random.seed(seed)
 
     # --- Build or reuse molecular Hamiltonian ---
@@ -46,7 +64,7 @@ def run_vqe(
             unit="angstrom"
         )
     else:
-        H, qubits, symbols, coordinates, basis = build_hamiltonian(molecule)
+        H, qubits, symbols, coordinates, basis = build_hamiltonian(molecule, mapping=mapping)
 
     ansatz_fn = get_ansatz(ansatz_name)
 
@@ -57,16 +75,17 @@ def run_vqe(
         basis,
         ansatz_name,
         optimizer_name,
-        0.4,
+        stepsize,
         n_steps,
         seed,
         noisy,
         depolarizing_prob,
         amplitude_damping_prob,
+        mapping=mapping,
     )
     sig = run_signature(cfg)
     prefix = f"{molecule}_{optimizer_name}_s{seed}__{sig}"
-    result_path = os.path.join("results", f"{prefix}.json")
+    result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
     if not force and os.path.exists(result_path):
         print(f"\n📂 Found cached result for this configuration: {result_path}")
@@ -125,7 +144,7 @@ def run_vqe(
     )
 
     # --- Optimization ---
-    params, energies = minimize_energy(circuit, params, optimizer_name, steps=n_steps)
+    params, energies = minimize_energy(circuit, params, optimizer_name, steps=n_steps, stepsize=stepsize)
     final_energy = float(energies[-1])
     final_state = get_state(params)
 
@@ -161,6 +180,7 @@ def run_vqe_noise_sweep(
     depolarizing_probs=None,
     amplitude_damping_probs=None,
     force=False,
+    mapping: str = "jordan_wigner",
 ):
     """Run VQE for a range of noise levels and plot all curves on one figure."""
     depolarizing_probs = depolarizing_probs or np.arange(0.0, 0.11, 0.02)
@@ -179,6 +199,7 @@ def run_vqe_noise_sweep(
             depolarizing_prob=p_dep,
             amplitude_damping_prob=p_amp,
             force=force,
+            mapping=mapping,
         )
         results.append((p_dep, res["energies"]))
 
@@ -193,11 +214,13 @@ def run_vqe_optimizer_comparison(
     molecule="H2",
     ansatz_name="RY-CZ",
     optimizers=None,
-    steps=30,
+    steps=50,
+    stepsize=0.2,
     noisy=True,
-    depolarizing_prob=0.02,
-    amplitude_damping_prob=0.01,
+    depolarizing_prob=0.05,
+    amplitude_damping_prob=0.05,
     force=False,
+    mapping: str = "jordan_wigner",
 ):
     optimizers = optimizers or ["Adam", "GradientDescent", "Momentum"]
     results = {}
@@ -206,6 +229,7 @@ def run_vqe_optimizer_comparison(
         res = run_vqe(
             molecule=molecule,
             n_steps=steps,
+            stepsize=stepsize,
             ansatz_name=ansatz_name,
             optimizer_name=opt_name,
             noisy=noisy,
@@ -213,6 +237,7 @@ def run_vqe_optimizer_comparison(
             amplitude_damping_prob=amplitude_damping_prob,
             plot=False,
             force=force,
+            mapping=mapping,
         )
         results[opt_name] = res["energies"]
 
@@ -224,11 +249,13 @@ def run_vqe_ansatz_comparison(
     molecule="H2",
     optimizer_name="Adam",
     ansatzes=None,
-    steps=30,
+    steps=50,
+    stepsize=0.2,
     noisy=True,
-    depolarizing_prob=0.02,
-    amplitude_damping_prob=0.01,
+    depolarizing_prob=0.05,
+    amplitude_damping_prob=0.05,
     force=False,
+    mapping: str = "jordan_wigner",
 ):
     ansatzes = ansatzes or ["RY-CZ", "Minimal", "TwoQubit-RY-CNOT"]
     results = {}
@@ -237,6 +264,7 @@ def run_vqe_ansatz_comparison(
         res = run_vqe(
             molecule=molecule,
             n_steps=steps,
+            stepsize=stepsize,
             ansatz_name=ans_name,
             optimizer_name=optimizer_name,
             noisy=noisy,
@@ -244,6 +272,7 @@ def run_vqe_ansatz_comparison(
             amplitude_damping_prob=amplitude_damping_prob,
             plot=False,
             force=force,
+            mapping=mapping,
         )
         results[ans_name] = res["energies"]
 
@@ -270,11 +299,13 @@ def run_vqe_multi_seed_noise(
     ansatz_name="RY-CZ",
     optimizer_name="Adam",
     steps=30,
+    stepsize=0.2,
     seeds=None,
     noise_type="depolarizing",
     depolarizing_probs=None,
     amplitude_damping_probs=None,
     force=False,
+    mapping: str = "jordan_wigner",
 ):
     from .visualize import plot_noise_statistics
 
@@ -301,11 +332,13 @@ def run_vqe_multi_seed_noise(
         res = run_vqe(
             molecule=molecule,
             n_steps=steps,
+            stepsize=stepsize,
             plot=False,
             ansatz_name=ansatz_name,
             optimizer_name=optimizer_name,
             noisy=False,
             force=force,
+            mapping=mapping,
         )
         ref_energies.append(res["energy"])
         state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
@@ -324,6 +357,7 @@ def run_vqe_multi_seed_noise(
             res = run_vqe(
                 molecule=molecule,
                 n_steps=steps,
+                stepsize=stepsize,
                 plot=False,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
@@ -331,6 +365,7 @@ def run_vqe_multi_seed_noise(
                 depolarizing_prob=p_dep,
                 amplitude_damping_prob=p_amp,
                 force=force,
+                mapping=mapping,
             )
             noisy_energies.append(res["energy"])
             state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
@@ -366,14 +401,16 @@ def run_vqe_multi_seed_noise(
 # GEOMETRY SCANS
 # ================================================================
 def run_vqe_geometry_scan(
-    molecule="H2_BOND",          # or "LiH_BOND", "H2O_ANGLE"
-    param_name="bond",           # "bond" or "angle"
-    param_values=None,           # iterable of floats
-    ansatz_name="UCCSD",         # or "UCC-D" for speed on LiH
+    molecule="H2_BOND",  # or "LiH_BOND", "H2O_ANGLE"
+    param_name="bond",   # "bond" or "angle"
+    param_values=None,
+    ansatz_name="UCCSD",
     optimizer_name="Adam",
     steps=30,
+    stepsize=0.2,
     seeds=None,
     force=False,
+    mapping: str = "jordan_wigner",
 ):
     """Scan a geometry parameter (bond length or angle) and plot mean±std energy."""
     import matplotlib.pyplot as plt
@@ -392,16 +429,18 @@ def run_vqe_geometry_scan(
         for seed in seeds:
             np.random.seed(seed)
             res = run_vqe(
-                molecule=molecule,                 # name still used in filename/signature
+                molecule=molecule,
                 n_steps=steps,
+                stepsize=stepsize,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
-                symbols=symbols,                   # <- pass explicit geometry
+                symbols=symbols,
                 coordinates=coordinates,
                 noisy=False,
                 plot=False,
                 seed=seed,
-                force=force,                       # re-run if desired
+                force=force,
+                mapping=mapping,
             )
             energies_for_val.append(res["energy"])
 
@@ -441,6 +480,7 @@ def run_vqe_mapping_comparison(
     optimizer_name="Adam",
     mappings=None,
     steps=50,
+    stepsize=0.2,
     seed=0,
     force=False,
 ):
@@ -480,16 +520,17 @@ def run_vqe_mapping_comparison(
             basis,
             ansatz_name,
             optimizer_name,
-            0.4,
+            stepsize,
             steps,
             seed,
             noisy=False,
             depolarizing_prob=0.0,
             amplitude_damping_prob=0.0,
+            mapping=mapping,
         )
         sig = run_signature(cfg)
         prefix = f"{molecule}_{mapping}_{optimizer_name}_s{seed}__{sig}"
-        result_path = os.path.join("results", f"{prefix}.json")
+        result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
         # --- Load cached result if available ---
         if not force and os.path.exists(result_path):

@@ -25,7 +25,7 @@
 # Hide data / result folders from language statistics
 # -------------------------------------------------------------------
 data/** linguist-vendored
-package results/** linguist-vendored
+package_ results/** linguist-vendored
 qpe/images/** linguist-vendored
 vqe/images/** linguist-vendored
 

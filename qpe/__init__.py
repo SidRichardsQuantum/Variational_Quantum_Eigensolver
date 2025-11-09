@@ -10,6 +10,8 @@ Example:
     >>> plot_qpe_distribution(result)
 """
 
+__version__ = "0.1.0"
+
 from .core import (
     run_qpe,
     hartree_fock_energy,

@@ -59,7 +59,7 @@ Variational_Quantum_Eigensolver/
 ├── notebooks/           # Original research notebooks (for development)
 │   ├── vqe/
 │   └── qpe/
-├── package results/     # Cached simulation results (JSON)
+├── package_ results/     # Cached simulation results (JSON)
 ├── vqe/images/          # VQE plots and figures
 ├── qpe/images/          # QPE plots and figures
 ├── data/                # Raw molecule data / reference results
@@ -84,7 +84,7 @@ python -m vqe --molecule H2
 **Output:**
 - Optimized ground-state energy
 - Convergence plots in `vqe/images/`
-- Cached JSON results in `package results/`
+- Cached JSON results in `package_ results/`
 
 ### Other supported molecules:
 ```bash
@@ -121,14 +121,14 @@ python -m qpe --molecule H2
 - QPE bitstring probability distribution
 - Estimated eigenphase and corresponding energy
 - Hartree–Fock comparison
-- Cached results in `package results/`
+- Cached results in `package_ results/`
 - Saved plot in `qpe/images/`
 
 Example output:
 ```
 🔹 Running QPE for H2 (STO-3G)
 ▶️ Running QPE simulation...
-💾 Saved QPE result → package results/H2_QPE_<hash>.json
+💾 Saved QPE result → package_ results/H2_QPE_<hash>.json
 
 ✅ QPE completed.
 Most probable state: 0100
@@ -162,7 +162,7 @@ python -m qpe --molecule H2 --noisy --p_dep 0.05 --p_amp 0.02 --save-plot
 
 | Type | Path | Description |
 |------|------|-------------|
-| **Numerical results** | `package results/` | JSON output with QPE or VQE parameters and energies |
+| **Numerical results** | `package_ results/` | JSON output with QPE or VQE parameters and energies |
 | **Plots** | `vqe/images/` / `qpe/images/` | Figures saved automatically with `--save-plot` |
 | **Data cache** | `data/vqe/` / `data/qpe/` | Intermediate molecule data for notebooks |
 

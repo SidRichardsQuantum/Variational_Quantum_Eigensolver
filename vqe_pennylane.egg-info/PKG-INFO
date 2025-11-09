@@ -102,11 +102,11 @@ Variational_Quantum_Eigensolver/
 │       ├── results/      # Saved numerical and energy JSON files
 │       └── images/       # Generated visualization plots
 │
-├── package tests/        # Unit and reproducibility tests
+├── package_tests/        # Unit and reproducibility tests
 │   ├── test_reproducibility.py
 │   └── test_ssvqe_general.py
 │
-└── package results/      # Cached packaged output (JSON experiment records)
+└── package_ results/      # Cached packaged output (JSON experiment records)
 ```
 
 ## Usage

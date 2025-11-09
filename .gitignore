@@ -56,10 +56,10 @@ data/**/*.log
 !data/**/*.pdf
 
 # -------------------------------------------------------------------
-# Package results (JSON outputs)
+# package_results (JSON outputs)
 # -------------------------------------------------------------------
-package results/**/*.json
-!package results/.gitkeep
+package_results/**/*.json
+!package_results/.gitkeep
 
 # ✅ NEW — Ignore generated plots from qpe/images and vqe/images
 # (you keep the directories themselves tracked)

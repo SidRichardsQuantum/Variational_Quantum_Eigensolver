@@ -1,3 +1,18 @@
+"""
+VQE Module
+
+This module provides functionalities to run Variational Quantum Eigensolver (VQE) simulations
+using PennyLane. It includes core routines, ansatz definitions, optimizers, Hamiltonian
+construction, I/O utilities, and visualization tools.
+
+Example:
+    >>> from vqe import run_vqe, plot_convergence
+    >>> result = run_vqe(hamiltonian, ansatz, optimizer, init_params)
+    >>> plot_convergence(result)
+"""
+
+__version__ = "0.1.0"
+
 from .core import (
     run_vqe,
     run_vqe_noise_sweep,
