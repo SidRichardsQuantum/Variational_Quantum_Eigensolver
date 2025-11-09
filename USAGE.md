@@ -1,4 +1,4 @@
-# ⚛️ Variational Quantum Eigensolver & Quantum Phase Estimation
+# ⚛️ Variational Quantum Eigensolver & Quantum Phase Estimation Suite
 
 This project implements and compares **Variational Quantum Eigensolver (VQE)** and **Quantum Phase Estimation (QPE)** algorithms using [PennyLane](https://pennylane.ai/).  
 Both are modular, reproducible, and fully scriptable from the command line.
@@ -6,18 +6,12 @@ Both are modular, reproducible, and fully scriptable from the command line.
 ---
 
 ## Table of Contents
-
-- [⚙️ Installation](#️-installation)  
-- [Directory Overview](#directory-overview)  
-- [Running VQE](#running-vqe)  
-  - [Example: H₂ Ground-State Simulation](#example-h₂-ground-state-simulation)  
-  - [Supported Molecules](#other-supported-molecules)  
-  - [Optional Flags](#optional-flags)  
-- [Running QPE](#running-qpe)  
-  - [Example: H₂ Phase Estimation (Noiseless)](#example-h₂-phase-estimation-noiseless)  
-  - [Optional Parameters](#qpe-optional-parameters)  
-- [Outputs & Caching](#outputs--caching)  
-- [🧪 Testing](#-testing)  
+- [⚙️ Installation](#️-installation)
+- [Directory Overview](#directory-overview)
+- [Running VQE](#running-vqe)
+- [Running QPE](#running-qpe)
+- [Outputs & Caching](#outputs--caching)
+- [🧪 Testing](#-testing)
 - [Notes](#notes)
 - [Citation](#citation)
 - [Summary](#summary)
@@ -26,26 +20,26 @@ Both are modular, reproducible, and fully scriptable from the command line.
 
 ## ⚙️ Installation
 
-1. Clone the repository and navigate to it:
-   ```bash
-   git clone https://github.com/<your-username>/Variational_Quantum_Eigensolver.git
-   cd Variational_Quantum_Eigensolver
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Install the package in editable (development) mode:
-   ```bash
-   pip install -e .
-   ```
-
-This makes both `vqe` and `qpe` executable as modules or scripts:
 ```bash
-python -m vqe
-python -m qpe
+git clone https://github.com/<your-username>/Variational_Quantum_Eigensolver.git
+cd Variational_Quantum_Eigensolver
+pip install -e .
+```
+
+This installs both subpackages:
+- `vqe` → Variational Quantum Eigensolver module
+- `qpe` → Quantum Phase Estimation module
+
+You can run either directly:
+```bash
+python -m vqe --molecule H2
+python -m qpe --molecule H2
+```
+
+or use the entry points (if installed system-wide):
+```bash
+vqe --molecule H2
+qpe --molecule H2
 ```
 
 ---
@@ -54,22 +48,22 @@ python -m qpe
 
 ```
 Variational_Quantum_Eigensolver/
-├── vqe/                 # Packaged VQE module (CLI, engine, visualizations)
-├── qpe/                 # Packaged QPE module (CLI, core logic, visualizations)
-├── notebooks/           # Original research notebooks (for development)
+├── vqe/               # VQE package (engine, CLI, visualization, optimizers)
+├── qpe/               # QPE package (core, noise, CLI, visualization)
+├── notebooks/         # Exploratory notebooks for molecules and noise tests
 │   ├── vqe/
 │   └── qpe/
-├── package_ results/     # Cached simulation results (JSON)
-├── vqe/images/          # VQE plots and figures
-├── qpe/images/          # QPE plots and figures
-├── data/                # Raw molecule data / reference results
-├── tests/               # Pytest regression tests
+├── package_results/   # Cached JSON results shared by both packages
+├── vqe/images/        # VQE plots (convergence, scans, noise studies)
+├── qpe/images/        # QPE plots (distributions, sweeps)
+├── data/              # Optional molecule data
+├── package_tests/     # Unit and reproducibility tests
 │
-├── LICENSE              # MIT license
-├── README.md            # Overview
-├── THEORY.md            # Theoretical background and mathematical formulation
-├── RESULTS.md           # Consolidated results and analysis
-└── USAGE.md             # This file
+├── LICENSE
+├── README.md
+├── THEORY.md
+├── RESULTS.md
+└── USAGE.md
 ```
 
 ---
@@ -81,13 +75,13 @@ Variational_Quantum_Eigensolver/
 python -m vqe --molecule H2
 ```
 
-**Output:**
+Produces:
 - Optimized ground-state energy
-- Convergence plots in `vqe/images/`
-- Cached JSON results in `package_ results/`
+- Convergence plot → `vqe/images/`
+- Cached result → `package_results/`
 
-### Other supported molecules:
-```bash
+Other supported molecules:
+```
 --molecule H3+
 --molecule LiH
 --molecule H2O
@@ -112,23 +106,22 @@ python -m vqe --molecule LiH --geometry-scan --save-plot
 
 ## Running QPE
 
-### Example: H₂ Phase Estimation (noiseless)
+### Example: H₂ Phase Estimation
 ```bash
-python -m qpe --molecule H2
+python -m qpe --molecule H2 --ancillas 4 --shots 2000
 ```
 
-**Output:**
-- QPE bitstring probability distribution
-- Estimated eigenphase and corresponding energy
-- Hartree–Fock comparison
-- Cached results in `package_ results/`
-- Saved plot in `qpe/images/`
+Outputs:
+- Probability histogram of ancilla states
+- Estimated phase → energy conversion
+- Cached JSON result → `package_results/`
+- Optional plot → `qpe/images/`
 
 Example output:
 ```
 🔹 Running QPE for H2 (STO-3G)
 ▶️ Running QPE simulation...
-💾 Saved QPE result → package_ results/H2_QPE_<hash>.json
+💾 Saved QPE result → package_results/H2_QPE_<hash>.json
 
 ✅ QPE completed.
 Most probable state: 0100
@@ -138,7 +131,7 @@ Hartree–Fock energy: -0.88842304 Ha
 ΔE (QPE - HF): +0.10302488 Ha
 ```
 
-### QPE optional parameters:
+### Optional parameters:
 ```bash
 --ancillas INT        # Number of ancilla qubits (default 4)
 --t FLOAT             # Evolution time in exp(-i H t) (default 1.0)
@@ -162,34 +155,46 @@ python -m qpe --molecule H2 --noisy --p_dep 0.05 --p_amp 0.02 --save-plot
 
 | Type | Path | Description |
 |------|------|-------------|
-| **Numerical results** | `package_ results/` | JSON output with QPE or VQE parameters and energies |
-| **Plots** | `vqe/images/` / `qpe/images/` | Figures saved automatically with `--save-plot` |
-| **Data cache** | `data/vqe/` / `data/qpe/` | Intermediate molecule data for notebooks |
+| **JSON Results** | `package_results/` | Shared cache for VQE and QPE results |
+| **Plots** | `vqe/images/` or `qpe/images/` | Saved automatically with `--save-plot` |
+| **Raw Data** | `data/` | Intermediate molecule data for notebooks |
 
-Cached results are reused automatically on reruns with identical parameters — skipping long recomputations.
+Identical configurations automatically reuse cached runs.
 
 ---
 
 ## 🧪 Testing
 
-To verify core functionality:
+To verify functionality:
 ```bash
 pytest -v
 ```
 
-This runs lightweight reproducibility and structure tests for both VQE and QPE.
+Includes:
+- Functional tests for VQE, SSVQE, and QPE runs
+- Caching and reproducibility checks
+- Plot generation and import smoke tests
 
 ---
 
 ## Notes
 
-- **VQE** scales well with system size; use it for LiH and H₂O.
-- **QPE** grows rapidly in depth and qubits — best suited for H₂ or H₃⁺ in simulation.
-- **OpenFermion Backend**: For open-shell systems (like H₃⁺), ensure you install:
+- **VQE** uses `default.qubit`; noisy simulations use `default.mixed`.
+- **QPE** employs trotterized time evolution with optional depolarizing and amplitude damping noise.
+- Both modules share a unified random seed and hashing mechanism for reproducibility.
+- For open-shell systems (e.g. H₃⁺), install OpenFermion dependencies:
   ```bash
   pip install openfermion openfermionpyscf
   ```
-- **All random seeds** are fixed for reproducibility via `set_seed()`.
+  
+---
+
+## Summary
+
+| Algorithm | Command | Outputs | Best for |
+|------------|----------|----------|----------|
+| **VQE** | `python -m vqe --molecule H2` | Convergence, geometry scans, noise sweeps | Larger molecules (LiH, H₂O) |
+| **QPE** | `python -m qpe --molecule H2` | Phase histograms, eigenenergy extraction | Small molecules (H₂, H₃⁺) |
 
 ---
 
@@ -197,17 +202,6 @@ This runs lightweight reproducibility and structure tests for both VQE and QPE.
 
 If you use this project or its methods, please cite:
 > Sid Richards (2025). *Variational Quantum Eigensolver and Quantum Phase Estimation Comparisons using PennyLane.*
-
----
-
-## Summary
-
-| Algorithm | Command | Outputs | Best for |
-|------------|----------|----------|----------|
-| **VQE** | `python -m vqe --molecule H2` | Convergence, mappings, geometry scans | Large molecules (LiH, H₂O) |
-| **QPE** | `python -m qpe --molecule H2` | Phase distribution, eigenenergy extraction | Small systems (H₂, H₃⁺) |
-
-Both frameworks share the same back-end chemistry and file structure, ensuring results are directly comparable.
 
 ---
 
