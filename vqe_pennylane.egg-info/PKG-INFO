@@ -15,190 +15,191 @@ Requires-Dist: scipy
 Requires-Dist: openfermionpyscf
 Dynamic: license-file
 
-# Variational Quantum Eigensolver
+# VQE Package
 
-This project implements a simulation of the **Variational Quantum Eigensolver (VQE)** algorithm for molecular systems such as **Dihydrogen (H₂)**, **Lithium Hydride (LiH)**, **Water (H₂O)**, and the **Trihydrogen Cation (H₃⁺)** using **PennyLane** and **Python**.  
-We demonstrate **noiseless ground state energy calculations** and **eigenstate visualizations**, using different **ansatzes** approaches, classical **optimisers** and **qubit mappings**.
-The optimum bond-length of LiH and bond-angle of water are determined, and excitation strategies for H₃⁺ are evaluated.
+**Variational Quantum Eigensolver (VQE) and SSVQE toolkit**  
+Built with [PennyLane](https://pennylane.ai) for quantum chemistry and noise-resilient variational simulation.
 
-For detailed theoretical explanations, see [THEORY.md](THEORY.md).
-
-To read our main findings and results, see [RESULTS.md](RESULTS.md).
+This package refactors the original notebook experiments into a modular, reproducible codebase.
 
 ---
 
-## 📚 Table of Contents
+## 🧠 Overview
 
-- [Project Overview](#project-overview)
-- [Technologies Used](#technologies-used)
-- [Project Structure](#project-structure)
-- [Usage](#usage)
-- [Methodology Overview](#methodology-overview)
-- [Quantum Phase Estimation](#quantum-phase-estimation)
+The `vqe` package provides:
+- **VQE execution** for molecular Hamiltonians
+- **SSVQE** for excited states
+- **Noise-aware** simulations (depolarizing, amplitude damping)
+- **Comparison tools** for ansatzes, optimizers, and fermion-to-qubit mappings
+- **Geometry scans** and plotting utilities
+- **Reproducible configuration and caching**
+
+All runs are automatically saved in:
+```
+package_results/    ← JSON run records (configs, results)
+vqe/images/         ← Plots and convergence graphs
+```
 
 ---
 
-## Project Overview
+## Package Structure
 
-VQE is a hybrid quantum-classical algorithm used to solve quantum chemistry problems.
-This project implements VQE for:
+| Module | Purpose |
+|---------|----------|
+| `vqe/core.py` | Main VQE orchestration (single runs, sweeps, scans, comparisons) |
+| `vqe/engine.py` | Core engine: devices, noise, ansatz + optimizer plumbing |
+| `vqe/ansatz.py` | UCCSD, UCCD, and hardware-efficient ansatz definitions |
+| `vqe/hamiltonian.py` | Molecular Hamiltonians, geometry generators |
+| `vqe/optimizer.py` | Optimizer registry and energy minimization loop |
+| `vqe/io_utils.py` | Run configuration, stable hashing, JSON I/O |
+| `vqe/visualize.py` | Plotting for convergence, noise studies, comparisons |
+| `vqe/ssvqe.py` | State-specific VQE for excited states |
 
-- **H₂ (Dihydrogen)**: Optimizer and ansatzes benchmarking
-- **H₃⁺ (Trihydrogen Cation)**: Excitation, mapping comparisons and Subspace-Search VQE
-- **LiH (Lithium Hydride)**: Ground-state energy across bond lengths  
-- **H₂O (Water)**: Energy variation with bond angle
+---
 
-## Technologies Used
+## ⚙️ Installation
 
-- **Python 3.10+**
-- **NumPy**: Numerical computations
-- **Matplotlib**: Data visualization
-- **[PennyLane](https://pennylane.ai/)**: Quantum machine learning library
-- **[PennyLane-qchem](https://pennylane.ai/qml/demos/tutorial_qchem.html)**: Quantum chemistry extension
-- Scientific references: [arXiv papers](https://arxiv.org/search/?query=variational+quantum+eigensolver&searchtype=all)
-
-## Project Structure
-
-```
-Variational_Quantum_Eigensolver/
-├── LICENSE           # MIT license
-├── README.md         # This file
-├── THEORY.md         # Theoretical background and mathematical formulation
-├── RESULTS.md        # Consolidated results and analysis
-├── pyproject.toml    # For packaging
-├── requirements.txt  # Python dependencies
-├── .gitignore        # Git ignore rules
-│
-├── vqe/                  # Packaged VQE implementation
-│   ├── __init__.py
-│   ├── core.py
-│   ├── engine.py
-│   ├── optimizer.py
-│   ├── io_utils.py
-│   ├── visualize.py
-│   ├── ansatz.py
-│   ├── ssvqe.py
-│   └── images/           # (May be temporary)
-│
-├── qpe/                  # (In progress) Packaged QPE implementation
-│   └── __init__.py
-│
-├── notebooks/            # Jupyter notebooks for molecule-specific studies
-│   ├── vqe/
-│   │   ├── H2/           # H₂ simulations (noisy, noiseless, ansatz comparison, etc.)
-│   │   ├── H2O/          # H₂O simulations (bond angle, noiseless runs)
-│   │   ├── H3plus/       # H₃⁺ simulations (mappings, SSVQE, noise analysis)
-│   │   ├── LiH/          # LiH simulations (bond length, noiseless runs)
-│   │   └── vqe_utils.py  # Core VQE utility functions
-│   └── qpe/
-│       ├── H2/
-│       └── qpe_utils.py  # Core QPE utility functions
-│
-├── data/                 # Stored numerical results and generated plots
-│   ├── vqe/
-│   │   ├── results/      # Saved numerical and energy JSON files
-│   │   └── images/       # Generated visualization plots
-│   └── qpe/
-│       ├── results/      # Saved numerical and energy JSON files
-│       └── images/       # Generated visualization plots
-│
-├── package_tests/        # Unit and reproducibility tests
-│   ├── test_reproducibility.py
-│   └── test_ssvqe_general.py
-│
-└── package_ results/      # Cached packaged output (JSON experiment records)
-```
-
-## Usage
-
-### Quick Start
-
-1. Clone the repository:
-
+Clone and install locally:
 ```bash
-git clone https://github.com/SidRichardsQuantum/variational_quantum_eigensolver.git
-cd variational_quantum_eigensolver
+git clone <your-repo-url>
+cd <your-repo>
+pip install -e .
 ```
 
-2. Install dependencies:
+Dependencies (auto-installed if using `setup.py` or `requirements.txt`):
+- `pennylane`
+- `numpy`
+- `matplotlib`
 
-```bash
-pip install -r requirements.txt
+---
+
+## 🚀 Quick Start
+
+### 1️⃣ Run a simple VQE
+
+```python
+from vqe.core import run_vqe
+
+result = run_vqe(
+    molecule="H2",
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    n_steps=50,
+    stepsize=0.2,
+)
+print("Ground-state energy:", result["energy"])
 ```
 
-3. Run the VQE simulations:
+This automatically:
+- Builds the molecular Hamiltonian,
+- Initializes and runs the chosen ansatz,
+- Saves a JSON record under `package_results/`,
+- Plots convergence to `vqe/images/`.
 
-```bash
-# Lithium Hydride (LiH)
-jupyter notebook notebooks/vqe/LiH/LiH_Noiseless.ipynb
+---
 
-# Runs a noiseless VQE with a double–excitation UCC ansatz and the gradient descent optimizer
-# Outputs convergence plots and the final ground state amplitudes
+### 2️⃣ Compare optimizers
+
+```python
+from vqe.core import run_vqe_optimizer_comparison
+run_vqe_optimizer_comparison(molecule="H2", ansatz_name="RY-CZ")
 ```
 
-### Results Preview
+### 3️⃣ Compare ansatzes
 
-Running `notebooks/vqe/LiH/LiH_Noiseless.ipynb` produces:
+```python
+from vqe.core import run_vqe_ansatz_comparison
+run_vqe_ansatz_comparison(molecule="H2", optimizer_name="Adam")
+```
 
-- **Convergence of VQE energy** (noiseless, LiH, double excitation ansatz)
-- **Final ground state energy** close to the expected Hartree–Fock reference
-- **Ground state amplitudes** plotted as a bar chart
+### 4️⃣ Run noisy simulations
 
-![LiH VQE Convergence](data/vqe/images/LiH_Gradient_Descent.png)
+```python
+from vqe.core import run_vqe_noise_sweep
+run_vqe_noise_sweep(molecule="LiH", ansatz_name="UCC-D")
+```
 
-![LiH Ground State](data/vqe/images/LiH_Ground_State.png)
+### 5️⃣ Geometry scans
 
-## Methodology Overview
+```python
+from vqe.core import run_vqe_geometry_scan
+import numpy as np
+run_vqe_geometry_scan(
+    molecule="H2_BOND",
+    param_name="bond",
+    param_values=np.linspace(0.5, 2.5, 8),
+    ansatz_name="UCCSD"
+)
+```
 
-1. Molecular Setup: generated using PennyLane's `qchem` module
+### 6️⃣ SSVQE (Excited States)
 
-2. Quantum State Preparation:
+```python
+from vqe.ssvqe import run_ssvqe
+res = run_ssvqe(molecule="H3+",
+                num_states=2,
+                ansatz_name="UCCSD",
+                steps=80,
+                stepsize=0.4)
+```
 
-- Hartree-Fock reference state as initial guess
-- Jordan-Wigner transformation maps fermions to qubits
-- Mapping comparison for H₃⁺
+---
 
-3. Ansatzes Construction:
+## 📊 Reproducibility
 
-- Single and/or double excitation circuits
-- Ansatzes comparison for H₂
-- Full excitation comparison analysis for H₃⁺
+Each run is uniquely identified by a **12-character hash signature** derived from:
+- molecular geometry,
+- basis set,
+- ansatz,
+- optimizer and hyperparameters,
+- noise model,
+- fermion-to-qubit mapping.
 
-4. VQE Optimization:
+Run data is stored as JSON:
+```json
+{
+  "config": { ... },
+  "result": {
+    "energy": -1.1372704,
+    "energies": [...],
+    "final_state_real": [...],
+    "final_state_imag": [...]
+  }
+}
+```
 
-- Classical optimisers such as Adam, Gradient Descent, Nesterov, SPSA, etc...
-- Energy tracked at each iteration
-- Different optimisers compared for H₂
+---
 
-5. Analysis & Visualization
+## 📘 Notebooks
 
-- Energy convergence plots
-- Quantum state amplitude distributions
-- Quantum circuit diagrams
-- Bond-lengths or angles against ground state energies
+The original exploratory notebooks are still available under:
+```
+notebooks/
+```
+They now import directly from the `vqe` package rather than containing standalone code.
 
-## Quantum Phase Estimation
+Example:
+```python
+from vqe.core import run_vqe
+```
 
-The **Quantum Phase Estimation (QPE)** algorithm is implemented in this project as a complementary approach to the VQE.  
-While VQE variationally minimizes the energy using hybrid quantum–classical optimization, QPE directly extracts eigenenergies from the phase of the unitary time-evolution operator  
-$U = e^{-iHt}$.
+---
 
-This implementation includes:
+## Extending the Package
 
-- **Noiseless and noisy simulations** of H₂  
-- **Parameter sweeps** over evolution time and ancilla qubit count  
-- **Noise models** for depolarizing and amplitude damping channels  
-- **Caching** of results and figures for reproducibility  
-- **Phase-to-energy reconstruction** with automatic aliasing correction
+- **Add new ansatzes** → define in `vqe/ansatz.py` and register in `ANSATZES`
+- **Add new optimizers** → register in `vqe/optimizer.py`
+- **Add new geometry families** → update `generate_geometry` in `vqe/hamiltonian.py`
+- **Add custom noise models** → edit `apply_optional_noise` in `vqe/engine.py`
 
-Example notebooks:
+---
 
-- `notebooks/qpe/H2/H2_QPE_Noiseless.ipynb`
-- `notebooks/qpe/H2/H2_QPE_Noisy.ipynb`
+## Citation
 
-Output plots (saved in `data/qpe/images/`) visualize ancilla distributions and how measured energies depend on evolution time or noise level.
+If using this code in research, please cite:
 
-![H₂ QPE Distribution](data/qpe/images/H2_QPE_4q.png)
+> *Variational Quantum Eigensolver using PennyLane*  
+> Author: Sid Richards (2025)
 
 ---
 

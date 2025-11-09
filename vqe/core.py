@@ -97,9 +97,20 @@ def run_vqe(
 
     # --- Configuration and caching ---
     cfg = make_run_config_dict(
-        symbols, coordinates, basis, ansatz_name, optimizer_name,
-        stepsize, n_steps, seed, noisy, depolarizing_prob, amplitude_damping_prob, mapping=mapping
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        ansatz_desc=ansatz_name,
+        optimizer_name=optimizer_name,
+        stepsize=stepsize,
+        max_iterations=n_steps,
+        seed=seed,
+        mapping=mapping,
+        noisy=noisy,
+        depolarizing_prob=depolarizing_prob,
+        amplitude_damping_prob=amplitude_damping_prob,
     )
+
     sig = run_signature(cfg)
     prefix = f"{molecule}_{optimizer_name}_s{seed}__{sig}"
     result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
@@ -547,19 +558,20 @@ def run_vqe_mapping_comparison(
 
         # --- Config & caching ---
         cfg = make_run_config_dict(
-            symbols or [],
-            coordinates or [],
-            basis,
-            ansatz_name,
-            optimizer_name,
-            stepsize,
-            steps,
-            seed,
+            symbols=symbols if symbols is not None else [],
+            coordinates=coordinates if coordinates is not None else [],
+            basis=basis,
+            ansatz_desc=ansatz_name,
+            optimizer_name=optimizer_name,
+            stepsize=stepsize,
+            max_iterations=steps,
+            seed=seed,
+            mapping=mapping,
             noisy=False,
             depolarizing_prob=0.0,
             amplitude_damping_prob=0.0,
-            mapping=mapping,
         )
+
         sig = run_signature(cfg)
         prefix = f"{molecule}_{mapping}_{optimizer_name}_s{seed}__{sig}"
         result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
