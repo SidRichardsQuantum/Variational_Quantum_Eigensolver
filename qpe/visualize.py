@@ -1,69 +1,95 @@
 """
 qpe/visualize.py
 ================
-Visualization utilities for Quantum Phase Estimation (QPE).
+Plotting utilities for Quantum Phase Estimation (QPE).
 
 Provides:
-  • Distribution plots of measured ancilla probabilities
-  • Parameter / noise sweep plots with mean ± std
+  • Probability distribution plots of ancilla bitstrings
+  • Sweep plots (noise, ancillas, time, etc.)
+  
+This version uses the unified project-wide plotting system defined in
+`common.plotting`, ensuring full consistency with VQE plotting.
 """
 
 from __future__ import annotations
-import os
 import matplotlib.pyplot as plt
-from typing import Sequence, Optional
-from qpe.io_utils import IMG_DIR, ensure_dirs, save_qpe_plot
+from typing import Sequence, Optional, Dict, Any
+
+from common.plotting import (
+    build_filename,
+    save_plot,
+    format_molecule_name,
+)
 
 
 # ---------------------------------------------------------------------
-# Distribution Plot
+# QPE Distribution Plot
 # ---------------------------------------------------------------------
 def plot_qpe_distribution(
-    result: dict,
+    result: Dict[str, Any],
     show: bool = True,
     save: bool = True,
 ) -> None:
-    """Plot measured ancilla probability distribution from QPE results.
+    """
+    Plot the measured ancilla probability distribution from a QPE run.
 
     Parameters
     ----------
     result : dict
-        Output dictionary from ``run_qpe()``.
-    show : bool, optional
-        Whether to display the figure interactively (default = True).
-    save : bool, optional
-        Whether to save the figure under ``qpe/images/`` (default = True).
+        Output dictionary produced by run_qpe().
+    show : bool
+        Whether to display the figure.
+    save : bool
+        Whether to save the figure through the unified plotting system.
     """
-    probs = result.get("probs", {})
+
+    probs: Dict[str, float] = result.get("probs", {})
     if not probs:
-        print("⚠️ No probabilities found in QPE result; skipping plot.")
+        print("⚠️ No probabilities in QPE result; plot skipped.")
         return
 
-    items = sorted(probs.items(), key=lambda kv: (-kv[1], kv[0]))
+    molecule = format_molecule_name(result.get("molecule", "QPE"))
+    n_anc = int(result.get("n_ancilla", 0))
+    noise = result.get("noise", {})
+    p_dep = noise.get("p_dep", 0.0)
+    p_amp = noise.get("p_amp", 0.0)
+
+    # Sort by probability (high → low)
+    items = sorted(probs.items(), key=lambda kv: -kv[1])
     xs = [f"|{b}⟩" for b, _ in items]
     ys = [p for _, p in items]
 
+    # Figure
     plt.figure(figsize=(8, 4))
-    plt.bar(xs, ys, color="#007acc", edgecolor="black", alpha=0.85)
-    plt.xlabel("Ancilla Register State", fontsize=11)
+    plt.bar(xs, ys, alpha=0.85, edgecolor="black")
+
+    plt.xlabel("Ancilla State", fontsize=11)
     plt.ylabel("Probability", fontsize=11)
+
+    noise_label = ""
+    if p_dep > 0 or p_amp > 0:
+        noise_label = f" • noise(p_dep={p_dep}, p_amp={p_amp})"
+
     plt.title(
-        f"QPE Phase Distribution – {result.get('molecule', '?')}\n"
-        f"(ancillas={result.get('n_ancilla')}, noise={result.get('noise', {})})",
-        fontsize=12,
+        f"{molecule} QPE Distribution ({n_anc} ancilla){noise_label}",
+        fontsize=12
     )
+
     plt.xticks(rotation=45, ha="right")
     plt.grid(axis="y", linestyle="--", alpha=0.4)
     plt.tight_layout()
 
-    # Save figure
     if save:
-        ensure_dirs()
-        safe_name = str(result.get("molecule", "qpe")).replace("+", "plus").replace(" ", "_")
-        fname = f"{safe_name}_QPE_{result.get('n_ancilla', 0)}q.png"
-        path = os.path.join(IMG_DIR, fname)
-        plt.savefig(path, dpi=300)
-        print(f"📸 Saved QPE distribution plot → {path}")
+        fname = build_filename(
+            molecule=molecule,
+            topic="qpe_distribution",
+            extras={
+                "anc": n_anc,
+                "pdep": p_dep,
+                "pamp": p_amp,
+            }
+        )
+        save_plot(fname)
 
     if show:
         plt.show()
@@ -72,48 +98,69 @@ def plot_qpe_distribution(
 
 
 # ---------------------------------------------------------------------
-# Sweep Plot (Noise / Ancilla / Time)
+# Sweep Plot (Noise / Ancilla Count / Time Parameter)
 # ---------------------------------------------------------------------
 def plot_qpe_sweep(
     x_values: Sequence[float],
     y_means: Sequence[float],
     y_stds: Optional[Sequence[float]] = None,
-    x_label: str = "Parameter",
-    y_label: str = "Energy (Ha)",
+    *,
+    molecule: str = "?",
+    sweep_label: str = "Sweep parameter",
+    ylabel: str = "Energy (Ha)",
     title: str = "QPE Sweep",
     ref_value: Optional[float] = None,
     ref_label: str = "Reference",
-    save_name: Optional[str] = None,
+    ancilla: Optional[int] = None,
+    noise_params: Optional[Dict[str, float]] = None,
+    save: bool = True,
     show: bool = True,
 ) -> None:
-    """Plot mean ± std of QPE results across a swept parameter.
+    """
+    Plot a sweep of QPE-computed energies or phases (mean ± std).
 
     Parameters
     ----------
-    x_values : list or array
-        Parameter values on the x-axis (e.g., noise strength).
-    y_means : list or array
+    x_values : list
+        Parameter values (noise strengths, ancilla counts, times, etc.)
+    y_means : list
         Mean measured energies or phases.
-    y_stds : list or array, optional
-        Standard deviations of the measured quantity.
-    x_label, y_label : str, optional
-        Axis labels.
-    title : str, optional
+    y_stds : list, optional
+        Standard deviations.
+    molecule : str
+        Molecule label.
+    sweep_label : str
+        X-axis label.
+    ylabel : str
+        Y-axis label.
+    title : str
         Plot title.
     ref_value : float, optional
-        Optional horizontal reference line (e.g. Hartree–Fock energy).
-    ref_label : str, optional
-        Label for reference line.
-    save_name : str, optional
-        Filename for saving (e.g., ``"H2_QPE_noise_sweep.png"``).
-    show : bool, optional
-        Whether to display the plot interactively (default = True).
+        Reference horizontal line (e.g. Hartree–Fock energy).
+    ancilla : int, optional
+        Ancilla count for filename metadata.
+    noise_params : dict, optional
+        Noise dict: {"p_dep": ..., "p_amp": ...}
+    save : bool
+        Whether to save the plot.
+    show : bool
+        Whether to display the plot.
     """
+
+    molecule = format_molecule_name(molecule)
+    p_dep = (noise_params or {}).get("p_dep", 0.0)
+    p_amp = (noise_params or {}).get("p_amp", 0.0)
+
     plt.figure(figsize=(6.5, 4.5))
 
     if y_stds is not None:
         plt.errorbar(
-            x_values, y_means, yerr=y_stds, fmt="o-", capsize=3, label="QPE (mean ± std)"
+            x_values,
+            y_means,
+            yerr=y_stds,
+            fmt="o-",
+            capsize=4,
+            label="QPE mean ± std"
         )
     else:
         plt.plot(x_values, y_means, "o-", label="QPE mean")
@@ -121,18 +168,25 @@ def plot_qpe_sweep(
     if ref_value is not None:
         plt.axhline(ref_value, linestyle="--", color="gray", label=ref_label)
 
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    plt.title(title)
+    plt.xlabel(sweep_label)
+    plt.ylabel(ylabel)
+    plt.title(f"{molecule} – {title}")
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend()
     plt.tight_layout()
 
-    if save_name:
-        ensure_dirs()
-        path = save_qpe_plot(save_name)
-        plt.savefig(path, dpi=300)
-        print(f"📊 Saved QPE sweep plot → {path}")
+    if save:
+        fname = build_filename(
+            molecule=molecule,
+            topic="qpe_sweep",
+            extras={
+                "anc": ancilla,
+                "pdep": p_dep,
+                "pamp": p_amp,
+                "topic": title.replace(" ", "_").lower(),
+            }
+        )
+        save_plot(fname)
 
     if show:
         plt.show()

@@ -1,8 +1,11 @@
 """
-QPE I/O Utilities
-=================
-Handles file paths, caching, and result persistence for Quantum Phase Estimation (QPE).
-Ensures consistent storage layout alongside the VQE package.
+qpe/io_utils.py
+================
+Handles result persistence, hashing, and image-saving utilities
+for Quantum Phase Estimation (QPE).
+
+This version fully synchronizes all plotting and filename conventions
+with the shared `common.plotting` system used throughout the project.
 """
 
 from __future__ import annotations
@@ -11,8 +14,11 @@ import json
 import hashlib
 from typing import Any, Dict
 
+from common.plotting import save_plot, build_filename
+
+
 # ---------------------------------------------------------------------
-# Base Directories (mirroring VQE)
+# Base Directories
 # ---------------------------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 RESULTS_DIR = os.path.join(BASE_DIR, "package_results")
@@ -38,7 +44,7 @@ def signature_hash(
     noise: bool,
     shots: int | None,
 ) -> str:
-    """Generate a short reproducible hash for a QPE configuration."""
+    """Generate a reproducible short hash for a given QPE configuration."""
     key = json.dumps(
         {
             "molecule": molecule,
@@ -54,7 +60,7 @@ def signature_hash(
 
 
 def cache_path(molecule: str, hash_key: str) -> str:
-    """Return the canonical cache file path for a given molecule and hash key."""
+    """Return the canonical JSON results file path."""
     ensure_dirs()
     safe_mol = molecule.replace("+", "plus").replace(" ", "_")
     return os.path.join(RESULTS_DIR, f"{safe_mol}_QPE_{hash_key}.json")
@@ -64,28 +70,31 @@ def cache_path(molecule: str, hash_key: str) -> str:
 # Result Persistence
 # ---------------------------------------------------------------------
 def save_qpe_result(result: Dict[str, Any]) -> str:
-    """Save a QPE result to JSON in `package_results/`.
+    """
+    Save a QPE result to JSON in `package_results/`.
 
     Returns:
-        The file path of the saved result.
+        Full path to the saved JSON result file.
     """
     ensure_dirs()
     key = signature_hash(
-        result["molecule"],
-        result["n_ancilla"],
-        result["t"],
-        result.get("noise", False),
-        result.get("shots", None),
+        molecule=result["molecule"],
+        n_ancilla=result["n_ancilla"],
+        t=result["t"],
+        noise=bool(result.get("noise")),
+        shots=result.get("shots", None),
     )
     path = cache_path(result["molecule"], key)
+
     with open(path, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
+
     print(f"💾 Saved QPE result → {path}")
     return path
 
 
 def load_qpe_result(molecule: str, hash_key: str) -> Dict[str, Any] | None:
-    """Load a cached QPE result if available; return None if not found."""
+    """Load a cached QPE JSON result if it exists; otherwise return None."""
     path = cache_path(molecule, hash_key)
     if os.path.exists(path):
         with open(path, "r", encoding="utf-8") as f:
@@ -94,9 +103,22 @@ def load_qpe_result(molecule: str, hash_key: str) -> Dict[str, Any] | None:
 
 
 # ---------------------------------------------------------------------
-# Plot Utilities
+# Unified Plot Saving (PNG)
 # ---------------------------------------------------------------------
-def save_qpe_plot(name: str) -> str:
-    """Return a full image save path in `qpe/images/` and ensure directory exists."""
+def save_qpe_plot(filename: str) -> str:
+    """
+    Save a QPE plot using the unified project-wide PNG logic.
+
+    Parameters
+    ----------
+    filename : str
+        A filename produced by `build_filename()` or a simple string.
+        Example: "H2_QPE_distribution_4q.png"
+
+    Returns
+    -------
+    str
+        Full path where the PNG was saved.
+    """
     ensure_dirs()
-    return os.path.join(IMG_DIR, name)
+    return save_plot(filename)

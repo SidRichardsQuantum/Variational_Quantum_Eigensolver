@@ -4,7 +4,7 @@ qpe/core.py
 Core Quantum Phase Estimation (QPE) implementation.
 
 Supports both noiseless and noisy QPE simulations using PennyLane.
-Integrates cleanly with qpe.io_utils and qpe.noise modules.
+Integrates fully with qpe.io_utils (for JSON saving) and qpe.noise.
 """
 
 from __future__ import annotations
@@ -21,13 +21,14 @@ from qpe.io_utils import save_qpe_result
 # Inverse Quantum Fourier Transform
 # ---------------------------------------------------------------------
 def inverse_qft(wires: list[int]) -> None:
-    """Apply the inverse Quantum Fourier Transform (QFT) on given wires."""
+    """Apply the inverse Quantum Fourier Transform (QFT) on a list of wires."""
     n = len(wires)
-    # Swap order (mirror)
+
+    # Mirror ordering
     for i in range(n // 2):
         qml.SWAP(wires=[wires[i], wires[n - i - 1]])
 
-    # Apply Hadamard + controlled phase rotations
+    # Controlled phase ladder + Hadamards
     for j in range(n):
         k = n - j - 1
         qml.Hadamard(wires=k)
@@ -48,22 +49,25 @@ def controlled_powered_evolution(
     trotter_steps: int = 1,
     noise_params: Optional[Dict[str, float]] = None,
 ) -> None:
-    """Apply controlled-U^(2^power) = controlled exp(-i * H * t * 2^power).
+    """
+    Apply controlled-U^(2^power) = controlled exp(-i H t 2^power).
 
     Args:
-        hamiltonian: PennyLane Hamiltonian.
-        system_wires: Target system wires.
-        control_wire: Single ancilla wire controlling evolution.
-        t: Evolution time per step.
+        hamiltonian: Molecular Hamiltonian.
+        system_wires: Wires of the system register.
+        control_wire: Ancilla controlling the evolution.
+        t: Base evolution time.
         power: Exponent controlling repetition count.
-        trotter_steps: Number of Trotter steps for ApproxTimeEvolution.
-        noise_params: Optional dict with keys {'p_dep', 'p_amp'}.
+        trotter_steps: Number of Trotter steps.
+        noise_params: Optional dict {'p_dep', 'p_amp'}.
     """
     n_repeat = 2 ** power
+
     for _ in range(n_repeat):
         qml.ctrl(qml.ApproxTimeEvolution, control=control_wire)(
             hamiltonian, t, trotter_steps, system_wires
         )
+
         if noise_params:
             apply_noise_all(
                 wires=system_wires + [control_wire],
@@ -73,7 +77,7 @@ def controlled_powered_evolution(
 
 
 # ---------------------------------------------------------------------
-# QPE Runner
+# QPE MAIN RUNNER
 # ---------------------------------------------------------------------
 def run_qpe(
     hamiltonian: qml.Hamiltonian,
@@ -86,45 +90,46 @@ def run_qpe(
     molecule_name: str = "molecule",
     save: bool = True,
 ) -> Dict[str, Any]:
-    """Run a (noisy or noiseless) Quantum Phase Estimation simulation.
+    """
+    Run a (noisy or noiseless) Quantum Phase Estimation simulation.
 
     Args:
-        hamiltonian: Molecular Hamiltonian operator.
-        hf_state: Binary Hartree–Fock state vector.
-        n_ancilla: Number of ancilla (phase) qubits.
-        t: Time evolution parameter in exp(-iHt).
-        trotter_steps: Number of Trotter steps for ApproxTimeEvolution.
-        noise_params: Optional dict with {'p_dep', 'p_amp'}.
+        hamiltonian: Molecular Hamiltonian.
+        hf_state: Hartree–Fock bitstring (array of 0/1).
+        n_ancilla: Number of phase estimation qubits.
+        t: Evolution parameter in exp(-iHt).
+        trotter_steps: Number of ApproxTimeEvolution Trotter steps.
+        noise_params: Optional dict {'p_dep', 'p_amp'} for noise channels.
         shots: Number of measurement samples.
-        molecule_name: Label for saving and logging.
-        save: Whether to cache result JSON in `package_results/`.
+        molecule_name: Label used for file saving and output.
+        save: Whether to cache the result JSON.
 
     Returns:
-        dict with:
-            counts, probs, phase, energy, best_bitstring,
+        A result dictionary containing:
+            counts, probs, best_bitstring, phase, energy,
             hf_energy, n_ancilla, t, noise, shots, molecule
     """
     num_qubits = len(hf_state)
     ancilla_wires = list(range(n_ancilla))
     system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
 
-    # Device selection
+    # Choose device
     dev_name = "default.mixed" if noise_params else "default.qubit"
     dev = qml.device(dev_name, wires=n_ancilla + num_qubits, shots=shots)
 
-    # Remap Hamiltonian wires to match system layout
+    # Remap Hamiltonian wires to system register indices
     H_sys = hamiltonian.map_wires({i: system_wires[i] for i in range(num_qubits)})
 
     @qml.qnode(dev)
     def circuit():
-        # Prepare HF state
+        # Prepare HF state in system register
         qml.BasisState(np.array(hf_state, dtype=int), wires=system_wires)
 
         # Apply Hadamards on ancilla register
         for a in ancilla_wires:
             qml.Hadamard(wires=a)
 
-        # Controlled unitary evolution
+        # Controlled-U evolution ladder
         for k, a in enumerate(ancilla_wires):
             n_repeat = 2 ** (n_ancilla - 1 - k)
             for _ in range(n_repeat):
@@ -140,6 +145,7 @@ def run_qpe(
 
         # Inverse QFT
         inverse_qft(ancilla_wires)
+
         return qml.sample(wires=ancilla_wires)
 
     # Run circuit
@@ -148,10 +154,10 @@ def run_qpe(
     counts = dict(Counter(bitstrings))
     probs = {b: c / shots for b, c in counts.items()}
 
-    # Compute HF reference
+    # HF reference energy
     E_hf = hartree_fock_energy(hamiltonian, hf_state)
 
-    # Phase / energy reconstruction
+    # Decode phases + energies
     rows = []
     for b, c in counts.items():
         ph_m = bitstring_to_phase(b, msb_first=True)
@@ -160,10 +166,16 @@ def run_qpe(
         e_l = phase_to_energy_unwrapped(ph_l, t, ref_energy=E_hf)
         rows.append((b, c, ph_m, ph_l, e_m, e_l))
 
+    # Most likely observation
     best_row = max(rows, key=lambda r: r[1])
     best_b = best_row[0]
-    best_E = min((best_row[4], best_row[5]), key=lambda x: abs(x - E_hf))
-    best_phase = best_row[2] if best_E == best_row[4] else best_row[3]
+
+    # Choose energy estimate closest to HF reference
+    best_energy = min(
+        (best_row[4], best_row[5]),
+        key=lambda x: abs(x - E_hf)
+    )
+    best_phase = best_row[2] if best_energy == best_row[4] else best_row[3]
 
     result = {
         "molecule": molecule_name,
@@ -171,7 +183,7 @@ def run_qpe(
         "probs": probs,
         "best_bitstring": best_b,
         "phase": float(best_phase),
-        "energy": float(best_E),
+        "energy": float(best_energy),
         "hf_energy": float(E_hf),
         "n_ancilla": n_ancilla,
         "t": t,
@@ -189,7 +201,7 @@ def run_qpe(
 # Hartree–Fock Reference Energy
 # ---------------------------------------------------------------------
 def hartree_fock_energy(hamiltonian: qml.Hamiltonian, hf_state: np.ndarray) -> float:
-    """Compute ⟨HF|H|HF⟩ energy in Hartree."""
+    """Compute ⟨HF|H|HF⟩ in Hartree."""
     num_qubits = len(hf_state)
     dev = qml.device("default.qubit", wires=num_qubits)
 
@@ -202,18 +214,31 @@ def hartree_fock_energy(hamiltonian: qml.Hamiltonian, hf_state: np.ndarray) -> f
 
 
 # ---------------------------------------------------------------------
-# Phase / Energy Conversion Utilities
+# Phase / Energy Utilities
 # ---------------------------------------------------------------------
 def bitstring_to_phase(bits: str, msb_first: bool = True) -> float:
-    """Convert a bitstring (MSB or LSB first) into a fractional phase in [0, 1)."""
+    """
+    Convert bitstring → fractional phase in [0, 1).
+
+    If msb_first=False, bitstring is interpreted LSB-first instead.
+    """
     b = bits if msb_first else bits[::-1]
     return float(sum((ch == "1") * (0.5 ** i) for i, ch in enumerate(b, start=1)))
 
 
 def phase_to_energy_unwrapped(
-    phase: float, t: float, ref_energy: Optional[float] = None
+    phase: float,
+    t: float,
+    ref_energy: Optional[float] = None,
 ) -> float:
-    """Convert phase → energy, unwrapping modulo 2π around reference."""
+    """
+    Convert phase → energy, unwrapping modulo 2π around a reference.
+
+    Args:
+        phase: Phase in [0,1).
+        t: Evolution time.
+        ref_energy: Optional HF energy for improved unwrapping.
+    """
     base = -2 * np.pi * phase / t
 
     # Wrap into (-π/t, π/t]
@@ -222,6 +247,7 @@ def phase_to_energy_unwrapped(
     while base <= -np.pi / t:
         base += 2 * np.pi / t
 
+    # If reference provided, choose nearest branch
     if ref_energy is not None:
         candidates = [base + k * (2 * np.pi / t) for k in (-1, 0, 1)]
         base = min(candidates, key=lambda x: abs(x - ref_energy))
