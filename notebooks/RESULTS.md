@@ -55,7 +55,7 @@ SPSA:
 Final ground state energy = -0.89576313 Ha
 ```
 
-![H₂ Optimizer Comparison](data/vqe/images/H2_Optimizer_Comparison.png)
+![H₂ Optimizer Comparison](/data/vqe/images/H2_OptimizerComparison_UCCSD_s0.png)
 
 The best optimizer for this dihydrogen example is the Gradient Descent.
 Using this, the ground state is found:
@@ -66,7 +66,7 @@ Ground state of H₂:
 |ψ⟩ = -0.0585|0011> + 0.9983|1100>
 ```
 
-![H₂ Ground State](data/vqe/images/H2_Ground_State.png)
+![H₂ Ground State](/data/vqe/images/H2_GroundState_UCCSD_Adam_s0.png)
 
 ---
 
@@ -100,7 +100,7 @@ Minimal:
 Final energy = -0.88810382 Ha
 ```
 
-![H₂ Ansatzes Comparison](data/vqe/images/H2_Ansatz_Comparison.png)
+![H₂ Ansatzes Comparison](/data/vqe/images/H2_AnsatzComparison_Adam_s0.png)
 
 Although all ansatzes reach similar energy minima, TwoQubit-RY-CNOT and RY-CZ converge slightly faster while **Minimal** shows mild oscillations mid-convergence.
 
@@ -110,7 +110,7 @@ Although all ansatzes reach similar energy minima, TwoQubit-RY-CNOT and RY-CZ co
 
 Six noise probabilities in the range $[0.0, 0.1]$ were used to compare how resilient different optimizers and ansatzes are to depolarizing or amplitude damping noise.
 
-![H₂ Noisy Convergence](data/vqe/images/H2_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
+![H₂ Noisy Convergence](/data/vqe/images/H2_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
 
 The reference energy above is the noiseless optimized final energy.
 Depolarizing noise probability is proportional to final energy (as we will also see in the next plot).
@@ -119,16 +119,16 @@ Increasing noise strength also reduces the oscillations in convergence.
 In the next three plots below, five seeds were used to calculate averages and standard deviations for more accurate results.
 The plot below shows the fidelities of different optimizers under depolarizing noise.
 
-![H₂ Noisy Optimisers](data/vqe/images/H2_Noise_Error_Optimizer_Comparison_TwoQubit-RY-CNOT.png)
+![H₂ Noisy Optimisers](/data/vqe/images/H2_NoiseError_UCCSD_Adam_s0.png)
 
 There were no noticeable differences in final energies reached between the different optimizers, for any depolarizing noise strength.
 
-![H₂ Noisy Ansatzes](data/vqe/images/H2_Noise_Error_Ansatz_Comparison_Adam.png)
+![H₂ Noisy Ansatzes](/data/vqe/images/H2_NoiseError_UCCSD_Adam_s0.png)
 
 The TwoQubit-RY-CNOT and Minimal ansatzes had the most resilience to depolarizing noise, by consistently having the greatest fidelities with the smallest standard deviations.
 The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
 
-![H₂ Noise Types](data/vqe/images/H2_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
+![H₂ Noise Types](/data/vqe/images/H2_NoiseError_UCCSD_Adam_s0.png)
 
 Depolarizing noise had a more robust effect on fidelity and energy error, than amplitude damping noise, for all noise levels.
 
@@ -157,7 +157,7 @@ Estimated energy: -0.78539816 Ha
 ΔE (QPE − HF): 0.1030 Ha
 ```
 
-![H₂ QPE distribution (noiseless)](data/qpe/images/H2_QPE_4q.png)
+![H₂ QPE distribution (noiseless)](/data/qpe/images/H2_QPE_NoiseDep_PeakMeanStd_s0.png)
 
 As shown above, the ancilla register exhibits a clear, single dominant peak.  
 This corresponds to the encoded ground-state phase from the unitary evolution $U = e^{-iHt}$.
@@ -170,14 +170,14 @@ Increasing the number of ancillas enhances phase precision.
 The energy estimate oscillates due to finite resolution, with bin width
 $$\Delta E = \frac{2\pi}{t 2^n}$$
 
-![Energy vs ancillas](data/qpe/images/H2_QPE_Noiseless_Ancilla.png)
+![Energy vs ancillas](/data/qpe/images/H2_QPE_NoiseDep_PeakMeanStd_s0.png)
 
 #### Evolution Time
 
 Longer evolution times improve phase resolution but risk aliasing if $|E| > \pi t$.  
 The optimal $t$ balances resolution and unambiguous phase mapping.
 
-![Energy vs evolution time](data/qpe/images/H2_QPE_Noiseless_Time.png)
+![Energy vs evolution time](/data/qpe/images/H2_QPE_NoiseDep_PeakMeanStd_s0.png)
 
 ### Discussion
 
@@ -209,7 +209,7 @@ Estimated energy: -0.39269908 Ha
 ΔE (QPE − HF): +0.49572396 Ha
 ```
 
-![H₂ QPE distribution (noisy)](data/qpe/images/H2_QPE_4q.png)
+![H₂ QPE distribution (noisy)](/data/qpe/images/H2_QPE_NoiseDep_PeakMeanStd_s0.png)
 
 There is no lone state that is significantly more probable than the rest.
 Depolarizing noise has caused information to be lost, as the ground state appears to be more randomised.
@@ -219,9 +219,9 @@ Depolarizing noise has caused information to be lost, as the ground state appear
 A sweep from $p_{dep}=0.0$ to $0.1$ (amplitude damping fixed at $0$) shows only mild energy bias, but a gradual loss of peak sharpness.  
 The plots below show **mean ± standard deviation** over **5 seeds**, highlighting the stochastic variability of noisy simulations.
 
-![Energy vs depolarizing noise](data/qpe/images/H2_QPE_Dep_Energy_avg.png)
+![Energy vs depolarizing noise](/data/qpe/images/H2_QPE_Distribution_anc4_s0.png)
 
-![Peak probability vs depolarizing noise](data/qpe/images/H2_QPE_Dep_Peak_avg.png)
+![Peak probability vs depolarizing noise](/data/qpe/images/H2_QPE_Distribution_anc4_s0.png)
 
 - The **energy** remains close to the noiseless estimate for small $p_{dep}$ but exhibits increasing spread as noise grows.  
 - The **peak probability** decreases steadily, following an approximately exponential decay, showing that depolarizing noise mainly reduces measurement confidence rather than biasing the energy.
@@ -231,9 +231,9 @@ The plots below show **mean ± standard deviation** over **5 seeds**, highlighti
 With depolarizing noise fixed to zero, amplitude damping ($p_{amp}\in[0,0.1]$) introduces stronger bias toward higher apparent energies and reduced contrast in ancilla measurements.  
 Again, the plots represent **mean ± standard deviation** over **5 seeds**.
 
-![Energy vs amplitude damping](data/qpe/images/H2_QPE_Amp_Energy_avg.png)
+![Energy vs amplitude damping](/data/qpe/images/H2_QPE_AncillaScan_Noiseless_s0.png)
 
-![Peak probability vs amplitude damping](data/qpe/images/H2_QPE_Amp_Peak_avg.png)
+![Peak probability vs amplitude damping](/data/qpe/images/H2_QPE_AncillaScan_Noiseless_s0.png)
 
 - At low $p_{amp}$, the estimated energy remains near the noiseless result.  
 - Beyond $p_{amp}\approx0.07$, dissipation dominates, pushing the apparent energy upward while the peak probability collapses toward zero.  
@@ -278,7 +278,7 @@ Single + Double (UCCSD):
 Final energy = -1.27001939 Ha
 ```
 
-![H₃⁺ Excitation Comparison](data/vqe/images/H3plus_Excitation_Comparison.png)
+![H₃⁺ Excitation Comparison](/data/vqe/images/H3plus_Excitation_Comparison.png)
 
 The best convergence and lowest energy are achieved when both single and double excitations are used, consistent with the expected benefits of the full UCCSD ansatze.
 
@@ -292,7 +292,7 @@ This decomposition showcases the entanglement and correlation introduced by high
 
 A quantum circuit diagram for the UCCSD ansatzes is below:
 
-![H₃⁺ Circuit Diagram](data/vqe/images/H3plus_UCCSD_Circuit.png)
+![H₃⁺ Circuit Diagram](/data/vqe/images/H3plus_UCCSD_Circuit.png)
 
 ---
 
@@ -323,7 +323,7 @@ bravyi_kitaev: -0.67410221 Ha
 parity:        -0.67413491 Ha
 ```
 
-![H₃⁺ Mapping Comparison](data/vqe/images/H3plus_Mapping_Comparison.png)
+![H₃⁺ Mapping Comparison](/data/vqe/images/H3plus_NoiseError_AnsatzComparison_Adam.png)
 
 The **Bravyi-Kitaev** mapping converges to the lowest energy among the three, though all mappings reach similar accuracy after $50$ iterations.
 
@@ -356,12 +356,12 @@ Final Excited State Energy (E₁): -0.58759689 Ha
 Excitation Energy ΔE = E₁ - E₀:   0.66294540 Ha
 ```
 
-![H₃⁺ SSVQE Adam Convergence](data/vqe/images/H3plus_SSVQE_Adam.png)
+![H₃⁺ SSVQE Adam Convergence](/data/vqe/images/H3plus_SSVQE_Adam.png)
 
 The **ground state** is dominated by the Hartree–Fock configuration $|110000⟩$,  
 while the **first excited state** shifts amplitude toward $|100100⟩$ and other configurations, showing clear state separation:
 
-![H₃⁺ ψ₀ vs ψ₁ Decomposition](data/vqe/images/H3plus_SSVQE_State_Comparison.png)
+![H₃⁺ ψ₀ vs ψ₁ Decomposition](/data/vqe/images/H3plus_SSVQE_Adam.png)
 
 The orthogonality penalty successfully suppressed overlap between the states, producing distinct quantum states with a meaningful excitation energy gap.
 
@@ -371,7 +371,7 @@ The orthogonality penalty successfully suppressed overlap between the states, pr
 
 Five noise probabilities in the range $[0.0, 0.1]$ were used to compare how resilient different optimizers and ansatzes are to depolarizing or amplitude damping noise.
 
-![H₃⁺ Noisy Convergence](data/vqe/images/H3plus_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
+![H₃⁺ Noisy Convergence](/data/vqe/images/H3plus_Depolarizing_Convergence_Adam_TwoQubit-RY-CNOT.png)
 
 The reference energy above is the noiseless optimized final energy.
 Similarly to the H₂ results, depolarizing noise probability is proportional to final energy, and increasing noise strength slightly reduces the oscillations in convergence.
@@ -379,16 +379,16 @@ Similarly to the H₂ results, depolarizing noise probability is proportional to
 In the next three plots below, three seeds were used to calculate averages and standard deviations for more accurate results.
 The plot below shows the fidelities of different optimizers under depolarizing noise.
 
-![H₃⁺ Noisy Optimisers](data/vqe/images/H3plus_Noise_Error_Optimizer_Comparison_TwoQubit-RY-CNOT.png)
+![H₃⁺ Noisy Optimisers](/data/vqe/images/H3plus_NoiseError_AnsatzComparison_Adam.png)
 
 Again, there were no noticeable differences between the different optimizers for H₃⁺.
 
-![H₃⁺ Noisy Ansatzes](data/vqe/images/H3plus_Noise_Error_Ansatz_Comparison_Adam.png)
+![H₃⁺ Noisy Ansatzes](/data/vqe/images/H3plus_NoiseError_AnsatzComparison_Adam.png)
 
 The RY-CZ ansatz had the lowest fidelities for all noise levels, and the greatest standard deviations.
 TwoQubit-RY-CNOT and Minimal ansatzes were both most resilient to depolarizing noise.
 
-![H₃⁺ Noise Types](data/vqe/images/H3plus_Noise_Error_Adam_TwoQubit-RY-CNOT.png)
+![H₃⁺ Noise Types](/data/vqe/images/H3plus_NoiseError_AnsatzComparison_Adam.png)
 
 Similarly to the H₂ results, depolarizing noise had a more robust effect on fidelity than amplitude damping noise.
 However, amplitude damping gave larger energy errors despite being more fidelitous
@@ -407,7 +407,7 @@ However, amplitude damping gave larger energy errors despite being more fidelito
 
 `GradientDescentOptimizer` with step-size $0.2$ successfully converges at ground state energy $-7.67972341 Ha$:
 
-![LiH Gradient Descent](data/vqe/images/LiH_Gradient_Descent.png)
+![LiH Gradient Descent](/data/vqe/images/LiH_GradientDescent.png)
 
 The calculated wavefunction for the ground state of LiH is:
 
@@ -420,7 +420,7 @@ The calculated wavefunction for the ground state of LiH is:
 
 The Hartree-Fock state $|111100000000⟩$ is the most dominant.
 
-![LiH Ground State](data/vqe/images/LiH_Ground_State.png)
+![LiH Ground State](/data/vqe/images/LiH_GroundState_UCCSD_Adam_s0.png)
 
 ---
 
@@ -430,7 +430,7 @@ The Gradient Descent Optimizer was used to scan over a range of bond-lengths bet
 $25$ maximum iterations and a stepsize of $0.8$ were used, over $10$ bond-lengths in the range $[1.1, 2.1] Å$.
 Plot output from `LiH_Bond_Length.ipynb`:
 
-![LiH Bond Length Scan](data/vqe/images/LiH_Bond_Length_Scan.png)
+![LiH Bond Length Scan](/data/vqe/images/LiH_BondLengthScan_UCCSD_Adam_s0.png)
 
 ```
 Optimal bond length: 1.66 Å
@@ -452,7 +452,7 @@ Minimum ground state energy: -5.59345560 Ha
 
 `AdamOptimizer` with step-size $0.2$ successfully converges at ground state energy $-72.85526883516486 Ha$:
 
-![H₂O Adam Convergence](data/vqe/images/H2O_Adam.png)
+![H₂O Adam Convergence](/data/vqe/images/H2O_Adam_GroundState.png)
 
 The calculated wavefunction for the ground state of water is:
 
@@ -466,7 +466,7 @@ The calculated wavefunction for the ground state of water is:
 
 The Hartree-Fock state $|11111111110000⟩$ is the most dominant.
 
-![H₂O Ground State](data/vqe/images/H2O_Ground_State.png)
+![H₂O Ground State](/data/vqe/images/H2O_GroundState_UCCSD_Adam_s0.png)
 
 ---
 
@@ -476,7 +476,7 @@ The Adam optimizer was used to find the angle between the two hydrogens about th
 $20$ maximum iterations and a stepsize of $0.2$ were used, over $10$ bond-angles in the range $[100, 109]°$.
 Plot output from `H2O_Bond_Angle.ipynb`:
 
-![H₂O Bond Angle Scan](data/vqe/images/H2O_Bond_Angle_Scan.png)
+![H₂O Bond Angle Scan](/data/vqe/images/H2O_BondAngleScan_UCCSD_Adam_s0.png)
 
 ```
 Minimum energy: -70.119419 Ha

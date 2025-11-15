@@ -127,9 +127,9 @@ Running `notebooks/vqe/LiH/LiH_Noiseless.ipynb` produces:
 - **Final ground state energy** close to the expected Hartree–Fock reference
 - **Ground state amplitudes** plotted as a bar chart
 
-![LiH VQE Convergence](data/vqe/images/LiH_Gradient_Descent.png)
+![LiH VQE Convergence](/data/vqe/images/LiH_GradientDescent.png)
 
-![LiH Ground State](data/vqe/images/LiH_Ground_State.png)
+![LiH Ground State](/data/vqe/images/LiH_GroundState_UCCSD_Adam_s0.png)
 
 ## Methodology Overview
 
@@ -179,9 +179,9 @@ Example notebooks:
 - `notebooks/qpe/H2/H2_QPE_Noiseless.ipynb`
 - `notebooks/qpe/H2/H2_QPE_Noisy.ipynb`
 
-Output plots (saved in `data/qpe/images/`) visualize ancilla distributions and how measured energies depend on evolution time or noise level.
+Output plots (saved in `/data/qpe/images/`) visualize ancilla distributions and how measured energies depend on evolution time or noise level.
 
-![H₂ QPE Distribution](data/qpe/images/H2_QPE_4q.png)
+![H₂ QPE Distribution](/data/qpe/images/H2_QPE_NoiseDep_PeakMeanStd_s0.png)
 
 ---
 
