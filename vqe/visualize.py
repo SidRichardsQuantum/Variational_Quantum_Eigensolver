@@ -206,50 +206,82 @@ def plot_noise_statistics(
     _save_plot(fname)
 
 
-# ================================================================
-# SSVQE PLOTTING (MULTI-STATE)
-# ================================================================
+# ---------------------------------------------------------------------
+# SSVQE Multi-State Convergence Plot
+# ---------------------------------------------------------------------
 def plot_ssvqe_convergence_multi(
-    molecule: str,
-    energies_per_state: list[list[float]],
-    labels: list[str] | None = None,
-    ansatz_name="UCCSD",
-    optimizer_name="Adam",
+    energies_per_state,
+    *,
+    molecule="molecule",
+    ansatz="UCCSD",
+    optimizer="Adam",
+    show=True,
+    save=True,
 ):
     """
-    Plot convergence for multiple SSVQE states.
+    Plot convergence for multiple states from SSVQE.
 
-    Args:
-        molecule: Molecule label
-        energies_per_state: list of lists; each sublist is energy trajectory for a state
-        labels: Optional state labels (e.g. ["E0", "E1", "E2"])
+    Parameters
+    ----------
+    energies_per_state : dict or list
+        Either:
+            {0: [...], 1: [...], 2: [...]}  
+        or a list-of-lists:
+            [[...], [...], [...]]
+        Each entry is the energy trajectory for one state.
+
+    molecule : str
+        Molecule label.
+    ansatz : str
+        Ansatz name.
+    optimizer : str
+        Optimizer name.
+    show : bool
+        Whether to display the plot.
+    save : bool
+        Whether to save the PNG via common.plotting.
     """
-    mol_norm = normalize_molecule_name(molecule)
 
-    plt.figure(figsize=(8, 6))
+    import matplotlib.pyplot as plt
+    from common.plotting import build_filename, save_plot, format_molecule_name
 
-    num_states = len(energies_per_state)
-    if labels is None:
-        labels = [f"E{i}" for i in range(num_states)]
+    # Normalise molecule name
+    mol_norm = format_molecule_name(molecule)
 
-    for idx, energies in enumerate(energies_per_state):
-        plt.plot(range(len(energies)), energies, label=labels[idx])
+    # Handle dict or list input
+    if isinstance(energies_per_state, dict):
+        trajectories = [energies_per_state[k] for k in sorted(energies_per_state.keys())]
+    else:
+        trajectories = energies_per_state
 
-    title = build_title(
-        molecule,
-        f"SSVQE Convergence ({ansatz_name}, {optimizer_name})"
-    )
-    fname = build_filename(
-        "SSVQE_Convergence",
-        mol_norm,
-        ansatz_name,
-        optimizer_name,
-    )
+    n_states = len(trajectories)
 
-    plt.title(title)
+    # Plot
+    plt.figure(figsize=(7, 4.5))
+    for i, E_list in enumerate(trajectories):
+        plt.plot(E_list, label=f"State {i}")
+
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
+    plt.title(f"{molecule} SSVQE ({n_states} states) – {ansatz}, {optimizer}")
+    plt.grid(True, alpha=0.3)
     plt.legend()
-    plt.grid(True, alpha=0.4)
     plt.tight_layout()
-    _save(fname)
+
+    # Save if requested
+    if save:
+        fname = build_filename(
+            molecule=mol_norm,
+            topic="ssvqe_convergence",
+            extras={
+                "states": n_states,
+                "ans": ansatz,
+                "opt": optimizer,
+            }
+        )
+        save_plot(fname)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
