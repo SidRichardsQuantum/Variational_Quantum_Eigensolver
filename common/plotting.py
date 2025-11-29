@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 # Base Directories
 # ---------------------------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-IMG_DIR = os.path.join(BASE_DIR, "plots")  # master save location
+IMG_DIR = os.path.join(BASE_DIR, "images")
 
 
 def ensure_plot_dirs():
@@ -137,7 +137,7 @@ def save_plot(filename: str) -> str:
     This ensures:
         - consistent DPI
         - consistent bounding box
-        - all plots stored in `plots/` regardless of subsystem
+        - all plots stored in `images/` regardless of subsystem
         - automatic directory creation
 
     Parameters
