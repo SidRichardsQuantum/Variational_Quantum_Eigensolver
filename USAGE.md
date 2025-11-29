@@ -1,42 +1,32 @@
-# ⚛️ Variational Quantum Eigensolver & Quantum Phase Estimation Suite
+# ⚛️ VQE–QPE Quantum Simulation Suite — Usage Guide
 
-This project implements and compares **Variational Quantum Eigensolver (VQE)** and **Quantum Phase Estimation (QPE)** algorithms using [PennyLane](https://pennylane.ai/).  
-Both are modular, reproducible, and fully scriptable from the command line.
-
----
-
-## Table of Contents
-- [⚙️ Installation](#️-installation)
-- [Directory Overview](#directory-overview)
-- [Running VQE](#running-vqe)
-- [Running QPE](#running-qpe)
-- [Outputs & Caching](#outputs--caching)
-- [🧪 Testing](#-testing)
-- [Notes](#notes)
-- [Citation](#citation)
-- [Summary](#summary)
+This document provides **practical, example-driven instructions** for running the full VQE/QPE PennyLane simulation suite.  
+It complements `README.md` by focusing on **how to run**, **what each command does**, and **where outputs go**.
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 ```bash
-git clone https://github.com/<your-username>/Variational_Quantum_Eigensolver.git
+git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
 cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-This installs both subpackages:
-- `vqe` → Variational Quantum Eigensolver module
-- `qpe` → Quantum Phase Estimation module
+This installs the two Python packages:
 
-You can run either directly:
+- `vqe/` — Variational Quantum Eigensolver (+ SSVQE)
+- `qpe/` — Quantum Phase Estimation (noiseless & noisy)
+
+You may run them via:
+
 ```bash
 python -m vqe --molecule H2
 python -m qpe --molecule H2
 ```
 
-or use the entry points (if installed system-wide):
+or (if installed globally):
+
 ```bash
 vqe --molecule H2
 qpe --molecule H2
@@ -44,163 +34,175 @@ qpe --molecule H2
 
 ---
 
-## Directory Overview
+# Directory Overview
 
 ```
 Variational_Quantum_Eigensolver/
-├── vqe/               # VQE package (engine, CLI, visualization, optimizers)
-├── qpe/               # QPE package (core, noise, CLI, visualization)
-├── notebooks/         # Exploratory notebooks for molecules and noise tests
-│   ├── vqe/
-│   └── qpe/
-├── package_results/   # Cached JSON results shared by both packages
-├── vqe/images/        # VQE plots (convergence, scans, noise studies)
-├── qpe/images/        # QPE plots (distributions, sweeps)
-├── data/              # Optional molecule data
-├── package_tests/     # Unit and reproducibility tests
-│
-├── LICENSE
 ├── README.md
 ├── THEORY.md
-├── RESULTS.md
-└── USAGE.md
+├── USAGE.md
+├── LICENSE
+├── pyproject.toml
+│
+├── vqe/                     # Variational Quantum Eigensolver package
+├── qpe/                     # Quantum Phase Estimation package
+├── common/                  # Shared logic for VQE + QPE
+│
+├── results/                 # JSON outputs
+├── images/                  # Saved plots (VQE + QPE)
+├── data/                    # Optional molecule configs, external data
+│
+└── notebooks/               # Notebooks importing from the vqe/ and qpe/ packages
 ```
+
+All VQE/QPE runs save:
+
+- JSON output → `package_results/`
+- Plots → `plots/`
+
+These locations are **unified** across VQE and QPE.
 
 ---
 
-## Running VQE
+# 🔹 Running VQE
 
-### Example: H₂ Ground-State Simulation
+VQE supports:
+- Ground state VQE
+- Excited-state SSVQE
+- Geometry scans
+- Noise sweeps
+- Mapping comparisons
+- Optimizer comparisons
+
+### Basic run
+
 ```bash
 python -m vqe --molecule H2
 ```
 
-Produces:
-- Optimized ground-state energy
-- Convergence plot → `vqe/images/`
-- Cached result → `package_results/`
+Outputs include:
 
-Other supported molecules:
-```
---molecule H3+
---molecule LiH
---molecule H2O
-```
+- Optimized energy  
+- Convergence plot saved under `plots/`  
+- JSON record in `package_results/`
 
-### Optional flags:
+### Choose ansatz & optimizer
+
 ```bash
---compare-mappings         # Compare Jordan–Wigner, Bravyi–Kitaev, and Parity mappings
---geometry-scan            # Bond length scans
---optimizer-comparison     # Compare classical optimizers
---noise-sweep              # Simulate different noise levels
---save-plot                # Save figures to vqe/images/
---no-plot                  # Run headless (no figure display)
+python -m vqe --molecule H2 -a UCCSD -o Adam
 ```
 
-Example:
+### Geometry scan (e.g., H₂ bond length)
+
 ```bash
-python -m vqe --molecule LiH --geometry-scan --save-plot
+python -m vqe   --scan-geometry H2_BOND   --range 0.5 1.5 7   --param-name bond   -a UCCSD
+```
+
+### Excited states (SSVQE)
+
+```bash
+python -m vqe --molecule H3+ --ssvqe --penalty-weight 10.0
+```
+
+### Noise sweep
+
+```bash
+python -m vqe --molecule LiH --noise-sweep --p-dep 0.02
 ```
 
 ---
 
-## Running QPE
+# 🔹 Running QPE
 
-### Example: H₂ Phase Estimation
+QPE supports:
+
+- Noiseless & noisy Quantum Phase Estimation
+- Trotterized time evolution
+- Arbitrary ancilla count
+- Probability histograms
+- Sweep plots (noise, time, ancillas)
+
+### Basic QPE
+
 ```bash
 python -m qpe --molecule H2 --ancillas 4 --shots 2000
 ```
 
-Outputs:
-- Probability histogram of ancilla states
-- Estimated phase → energy conversion
-- Cached JSON result → `package_results/`
-- Optional plot → `qpe/images/`
+### With plotting
 
-Example output:
-```
-🔹 Running QPE for H2 (STO-3G)
-▶️ Running QPE simulation...
-💾 Saved QPE result → package_results/H2_QPE_<hash>.json
-
-✅ QPE completed.
-Most probable state: 0100
-Estimated phase: 0.125000
-Estimated energy: -0.78539816 Ha
-Hartree–Fock energy: -0.88842304 Ha
-ΔE (QPE - HF): +0.10302488 Ha
-```
-
-### Optional parameters:
 ```bash
---ancillas INT        # Number of ancilla qubits (default 4)
---t FLOAT             # Evolution time in exp(-i H t) (default 1.0)
---trotter-steps INT   # Trotterization steps (default 2)
---shots INT           # Number of samples (default 1000)
---noisy               # Enable noise model
---p_dep FLOAT         # Depolarizing probability
---p_amp FLOAT         # Amplitude damping probability
---save-plot           # Save figure to qpe/images/
---no-plot             # Disable plotting
+python -m qpe --molecule H2 --plot
 ```
 
-**Example (noisy QPE):**
+### Noisy QPE
+
 ```bash
-python -m qpe --molecule H2 --noisy --p_dep 0.05 --p_amp 0.02 --save-plot
+python -m qpe --molecule H2 --noisy --p-dep 0.05 --p-amp 0.02 --plot
+```
+
+### Adjust time evolution and trotter steps
+
+```bash
+python -m qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
 ```
 
 ---
 
-## Outputs & Caching
+# Outputs & Caching
 
-| Type | Path | Description |
-|------|------|-------------|
-| **JSON Results** | `package_results/` | Shared cache for VQE and QPE results |
-| **Plots** | `vqe/images/` or `qpe/images/` | Saved automatically with `--save-plot` |
-| **Raw Data** | `data/` | Intermediate molecule data for notebooks |
+Every run produces:
 
-Identical configurations automatically reuse cached runs.
+| Type | Location | Description |
+|------|----------|-------------|
+| **JSON result** | `package_results/<run>.json` | energies, configuration, metadata |
+| **Plots** | `plots/` | VQE convergence, QPE histograms, scans |
+| **Hashed filenames** | Yes | Ensures filesystem-safe, collision-free naming |
+
+Runs automatically reuse cached results unless `--force` is passed:
+
+```bash
+python -m qpe --molecule H2 --force
+```
 
 ---
 
-## 🧪 Testing
+# 🧪 Testing
 
-To verify functionality:
+Run all tests:
+
 ```bash
 pytest -v
 ```
 
-Includes:
-- Functional tests for VQE, SSVQE, and QPE runs
-- Caching and reproducibility checks
-- Plot generation and import smoke tests
+Covers:
+
+- VQE ground/SSVQE runs  
+- QPE noiseless/noisy correctness  
+- Plotting smoke tests  
+- Caching integrity  
 
 ---
 
-## Notes
+# Notes
 
-- **VQE** uses `default.qubit`; noisy simulations use `default.mixed`.
-- **QPE** employs trotterized time evolution with optional depolarizing and amplitude damping noise.
-- Both modules share a unified random seed and hashing mechanism for reproducibility.
-- For open-shell systems (e.g. H₃⁺), install OpenFermion dependencies:
-  ```bash
-  pip install openfermion openfermionpyscf
-  ```
-  
----
+- Devices used:
+  - `default.qubit` for noiseless
+  - `default.mixed` for noisy runs
+- All geometry generation is shared through `common/geometry`
+- All molecule data is unified in `common/molecules`
+- All plotting uses a single interface in `common/plotting`
 
-## Summary
-
-| Algorithm | Command | Outputs | Best for |
-|------------|----------|----------|----------|
-| **VQE** | `python -m vqe --molecule H2` | Convergence, geometry scans, noise sweeps | Larger molecules (LiH, H₂O) |
-| **QPE** | `python -m qpe --molecule H2` | Phase histograms, eigenenergy extraction | Small molecules (H₂, H₃⁺) |
+For open-shell systems:
+```bash
+pip install openfermion openfermionpyscf
+```
 
 ---
 
-## Citation
+# 🧾 Citation
 
-If you use this project or its methods, please cite:
+If you use this project:
+
 > Sid Richards (2025). *Variational Quantum Eigensolver and Quantum Phase Estimation Comparisons using PennyLane.*
 
 ---

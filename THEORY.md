@@ -21,15 +21,17 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 ## Molecules Studied
 
-| Molecule | Properties Investigated                         | Qubits |
-|:---------:|:------------------------------------------------|:-------:|
-| **H₂**    | Ansatz and Optimizer Comparison                 | 4 |
-| **LiH**   | Bond-Length Scan                                | 12 |
-| **H₂O**   | Bond-Angle Scan                                 | 14 |
-| **H₃⁺**   | Excitation, Mapping Comparisons, and SSVQE      | 6 |
+| Molecule | Properties Investigated                         | Basis     | Qubits (mapped) |
+|:--------:|:------------------------------------------------|:-----------|:----------------:|
+| **H₂**    | Ansatz comparison, optimizer comparison, QPE    | STO-3G     | 4 |
+| **LiH**   | Bond-length scans (VQE)                         | STO-3G     | 12 |
+| **H₂O**   | Bond-angle scans (VQE)                          | STO-3G     | 14 |
+| **H₃⁺**   | Mapping comparisons, SSVQE excited states       | STO-3G     | 6 |
 
-All simulations use the **STO-3G** basis set for consistency.  
-Molecular Hamiltonians are constructed using **second quantization** and mapped to qubit operators via the Jordan–Wigner, Bravyi–Kitaev or Parity transformations (via PennyLane's `qchem` module).
+All molecular geometries now come from the **shared registry** in `common/molecules.py`.
+All simulations use the **STO-3G** basis set for consistency.
+
+Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
 
 ---
 
@@ -62,6 +64,30 @@ The VQE algorithm consists of:
 3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
 
+VQE WORKFLOW:
+
+```
+   CLASSICAL OPTIMIZER                         QUANTUM DEVICE / SIMULATOR
+   ---------------------                       ---------------------------
+            │                                              │
+            │  1) propose parameters θ₀                    │
+            ├─────────────────────────────────────────────▶│
+            │                                              │
+            │                          2) prepare ansatz |ψ(θ₀)⟩
+            │                              + measure ⟨H⟩   │
+            │◀─────────────────────────────────────────────┤
+            │                                              │
+   3) compute cost:  E(θ₀) = ⟨ψ(θ₀)|H|ψ(θ₀)⟩               │
+   4) update θ₁ = θ₀ - η · ∇E(θ₀)                          │
+            │                                              │
+            ├─────────────────────────────────────────────▶│
+            │         (repeat until convergence)           │
+            │                                              │
+            ▼                                              ▼
+       Optimal θ*                               Approx. ground state |ψ(θ*)⟩
+                                              with energy E₀ ≈ ⟨ψ(θ*)|H|ψ(θ*)⟩
+```
+
 ---
 
 ### Ansatz Construction
@@ -78,6 +104,14 @@ A chemistry-inspired ansatz derived from coupled-cluster theory. Includes single
 - Exact for small systems like H₂ or H₃⁺ in minimal basis sets (e.g., STO-3G)
 - Used to compare excitation types (single vs. double vs. UCCSD) in **H₃⁺**
 
+```
+   |HF⟩  --exp[ T(θ) - T(θ)^† ]-->  |ψ_UCCSD(θ)⟩
+
+   where T(θ) = T₁(θ) + T₂(θ) for:
+         T₁ singles  (a^†_p a_q)
+         T₂ doubles  (a^†_p a^†_q a_r a_s)
+```
+
 #### $R_Y-C_Z$ Ansatz
 
 A hardware-efficient ansatz composed of layers alternating single-qubit rotations and entangling gates.
@@ -87,6 +121,17 @@ A hardware-efficient ansatz composed of layers alternating single-qubit rotation
 - Good expressibility for small and medium systems
 - Easier to implement on near-term hardware
 
+```
+Layer k:
+
+   ┌──────────── Ry rotations ─────────────┐   ┌──── CZ entanglers ───
+   q0: ── Ry(θ₀,k) ────────────────────────────●─────────●────────────
+                                               │         │
+   q1: ── Ry(θ₁,k) ────────────────────────────X─────────●────────────
+                                                         │
+   q2: ── Ry(θ₂,k) ──────────────────────────────────────X────────────
+```
+
 #### Minimal / One-Parameter Ansatz
 
 A manually constructed, problem-specific ansatz using very few parameters.
@@ -95,6 +140,12 @@ A manually constructed, problem-specific ansatz using very few parameters.
 - Uses a single $R_Y$ rotation and one entangling gate (e.g., CNOT)
 - Extremely shallow and interpretable
 - Useful for testing optimizers, energy landscapes, or learning curves
+
+```
+   q0: ── Ry(θ) ──●────
+                  │
+   q1: ───────────X────   (single entangler)
+```
 
 ---
 
@@ -196,6 +247,40 @@ $$\mathcal{L} = \sum_i w_i ⟨\psi_i| H |\psi_i⟩$$
 
 This enforces that each optimized state corresponds to a different eigenvector of the Hamiltonian.
 
+```
+         θ(0)               θ(1)
+      ┌─────────┐        ┌─────────┐
+|0⟩──▶│  Ansatz │──▶|ψ₀⟩ │         │
+      └─────────┘        └─────────┘
+                           │
+                           ▼
+                       |ψ₁⟩, |ψ₂⟩, ...
+
+Loss function:
+
+   𝓛(θ(0), θ(1), …) =
+       Σᵢ wᵢ ⟨ψᵢ| H |ψᵢ⟩        (weighted energies)
+     + λ Σ_{i<j} |⟨ψᵢ | ψⱼ⟩|²    (orthogonality penalty)
+
+
+OPTIMIZATION LOOP:
+
+Initialize {θ(0), θ(1), …}
+      │
+      ▼
+Prepare { |ψᵢ(θ(i))⟩ } on device
+      │
+      ▼
+Measure ⟨ψᵢ|H|ψᵢ⟩ and overlaps ⟨ψᵢ|ψⱼ⟩
+      │
+      ▼
+Compute 𝓛  → update all θ(i) with Adam
+      │
+      └── repeat until 𝓛 converges
+
+Result: approximate low-lying spectrum {E₀, E₁, …} from a single joint optimization.
+```
+
 #### Implementation Details for H₃⁺
 
 - **Ansatz**: UCCSD with both single and double excitations.
@@ -216,7 +301,8 @@ This enforces that each optimized state corresponds to a different eigenvector o
 
 The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting eigenvalues of unitary operators.  
 In the context of quantum chemistry, QPE can be used to determine the electronic ground-state energy of a molecule by estimating the eigenenergies of the time-evolution operator.
-QPE is implemented for H₂ as a reference system, exploring both noiseless and noisy phase estimation under controlled depolarizing and amplitude damping channels.
+QPE is implemented for molecules defined in `common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
+This guarantees consistent chemistry and reproducible comparisons between VQE and QPE.
 
 ### QPE Background
 
@@ -268,6 +354,43 @@ QPE operates by coupling a register of $n$ qubits, which encodes the phase infor
    - The measured phase is converted to the molecular energy:
     $$E = -\frac{2\pi\theta}{t}.$$
 
+In this implementation, each controlled-unitary block uses **trotterized time evolution**, with the number of Trotter steps configurable from the CLI or Python API.  
+The initial state is always the **Hartree–Fock state** constructed directly from the qubit count returned by `qchem.molecular_hamiltonian`, ensuring correctness for all supported molecules.
+
+```
+Ancilla register (phase qubits):    a₀  a₁  ...  a_{n-1}
+System register (molecular state):  s₀  s₁  ...  s_{m-1}
+
+1) INITIALIZATION:
+
+Ancilla:  |0⟩^{⊗ n}  ──H──H── ... ──H──▶  (uniform superposition)
+System:   |HF⟩       ────────────▶  approximate eigenstate of H
+
+2) CONTROLLED TIME EVOLUTION:
+
+For k = 0 .. n-1 (from least to most significant bit):
+
+   a_k: ──●───────────────  applies   U^{2^k} = exp(-i H t 2^k)
+           │
+   sys:  U^{2^k}
+
+Overall effect:
+   Σ_k |k⟩_anc ⊗ U^k |HF⟩_sys
+   → phase information e^{2π i θ k} encoded in ancillas
+
+3) INVERSE QFT ON ANCIILA REGISTER:
+
+   a₀: ── IQFT ──┐
+   a₁: ──────────┼──▶ measurement → bitstring b_{n-1}…b₀
+   ...           │
+   a_{n-1}: ─────┘
+
+Bitstring b ≈ binary fraction of phase θ:
+   θ ≈ 0.b₁ b₂ … bₙ
+Energy recovery:
+   E ≈ -2π θ / t
+```
+
 #### Key Points
 
 The inclusion of QPE in this project complements the variational studies by demonstrating:
@@ -279,8 +402,29 @@ The inclusion of QPE in this project complements the variational studies by demo
 
 ## Noise Types
 
-In real quantum hardware, noise arises from imperfect gates and environmental interactions.
-This notebook models two primary noise channels using PennyLane’s `default.mixed` simulator to study their effect on VQE convergence and accuracy.
+This project models two primary noise channels — **depolarizing** and **amplitude damping** — using PennyLane’s `default.mixed` backend.
+
+Both VQE *and* QPE support these channels:
+- VQE applies noise layer-by-layer inside the ansatz.
+- QPE applies noise after each controlled-unitary evolution using `qpe.noise.apply_noise_all`.
+
+```
+                    (ideal) circuit
+                 ┌───────────────────┐
+   |ψ_in⟩  ───▶  │  unitary U(θ)     │  ──▶  |ψ_out⟩
+                 └───────────────────┘
+
+In the noisy model, between/after unitary layers we insert channels:
+
+                 ┌───────────────────┐   ┌───────────────┐
+   |ψ_in⟩  ───▶  │  unitary U(θ)     │──▶│  noise 𝓔(·)   │──▶  ρ_out
+                 └───────────────────┘   └───────────────┘
+
+In this project:
+
+   VQE (noisy) → apply 𝓔 after each ansatz layer on all active wires
+   QPE (noisy) → apply 𝓔 after each controlled time-evolution segment
+```
 
 ### Depolarizing Noise
 
