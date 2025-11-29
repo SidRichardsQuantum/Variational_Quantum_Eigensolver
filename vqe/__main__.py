@@ -1,21 +1,55 @@
+"""
+Command-line interface for the vqe package.
+
+This file powers:
+
+    $ python -m vqe ...
+
+It supports:
+    - Standard VQE
+    - Noisy vs noiseless comparison
+    - Noise sweeps
+    - Optimizer comparison
+    - Ansatz comparison
+    - Multi-seed noise averaging
+    - Geometry scans (bond length, bond angle)
+    - Fermion-to-qubit mapping comparison
+    - SSVQE for excited states
+
+All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe.
+"""
+
+from __future__ import annotations
 import argparse
 import numpy as np
-from .core import run_vqe
-from vqe.visualize import plot_convergence
-from vqe.core import (
+
+from vqe import (
+    run_vqe,
     run_vqe_noise_sweep,
     run_vqe_optimizer_comparison,
     run_vqe_ansatz_comparison,
     run_vqe_multi_seed_noise,
     run_vqe_geometry_scan,
     run_vqe_mapping_comparison,
+    run_ssvqe,
+    plot_convergence,
 )
 
 
+# ================================================================
+# SPECIAL MODES DISPATCHER
+# ================================================================
 def handle_special_modes(args):
-    """Handle all nonstandard experiment modes. Returns True if handled."""
+    """
+    Dispatch CLI options for all extended experiment modes.
+    Returns True if a special mode handled the execution.
+    """
+
+    # ---------------------------
+    #  SSVQE
+    # ---------------------------
     if args.ssvqe:
-        from vqe.ssvqe import run_ssvqe
+        print("🔹 Running SSVQE (excited states)...")
         res = run_ssvqe(
             molecule=args.molecule,
             ansatz_name=args.ansatz,
@@ -27,17 +61,16 @@ def handle_special_modes(args):
             noisy=args.noisy,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
-            plot=args.plot,
             force=args.force,
         )
-        print("\nFinal (SSVQE):")
-        preview = {
-            **res,
-            "final_params": f"[{len(res['final_params'])} states; each {len(res['final_params'][0])} params]"
-        }
-        print(preview)
+        print("Final energies per state:")
+        for i, Es in enumerate(res["energies_per_state"]):
+            print(f"  E{i}: {Es[-1]:.8f} Ha")
         return True
 
+    # ---------------------------
+    # Mapping comparison
+    # ---------------------------
     if args.mapping_comparison:
         run_vqe_mapping_comparison(
             molecule=args.molecule,
@@ -50,6 +83,9 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Multi-seed noise sweep
+    # ---------------------------
     if args.multi_seed_noise:
         run_vqe_multi_seed_noise(
             molecule=args.molecule,
@@ -62,6 +98,9 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Geometry scan
+    # ---------------------------
     if args.scan_geometry:
         start, end, num = args.range
         values = np.linspace(start, end, int(num))
@@ -77,6 +116,9 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Optimizer comparison
+    # ---------------------------
     if args.compare_optimizers:
         run_vqe_optimizer_comparison(
             molecule=args.molecule,
@@ -90,6 +132,9 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Ansatz comparison
+    # ---------------------------
     if args.compare_ansatzes:
         run_vqe_ansatz_comparison(
             molecule=args.molecule,
@@ -103,6 +148,9 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Noise sweep
+    # ---------------------------
     if args.noise_sweep:
         run_vqe_noise_sweep(
             molecule=args.molecule,
@@ -114,17 +162,22 @@ def handle_special_modes(args):
         )
         return True
 
+    # ---------------------------
+    # Compare noisy vs noiseless
+    # ---------------------------
     if args.compare_noise:
         print(f"🔹 Comparing noisy vs noiseless VQE for {args.molecule}")
         res_noiseless = run_vqe(
-            args.molecule, args.steps, False,
+            args.molecule,
+            args.steps,
             stepsize=args.stepsize,
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=False,
         )
         res_noisy = run_vqe(
-            args.molecule, args.steps, False,
+            args.molecule,
+            args.steps,
             stepsize=args.stepsize,
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
@@ -132,7 +185,6 @@ def handle_special_modes(args):
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
         )
-
         plot_convergence(
             res_noiseless["energies"],
             args.molecule,
@@ -141,67 +193,91 @@ def handle_special_modes(args):
             ansatz=args.ansatz,
             dep_prob=args.depolarizing_prob,
             amp_prob=args.amplitude_damping_prob,
-            noisy=True,
         )
-        print("\n✅ Comparison complete.")
         return True
 
     return False
 
 
+# ================================================================
+# MAIN ENTRYPOINT
+# ================================================================
 def main():
     parser = argparse.ArgumentParser(
         prog="vqe",
-        description="Variational Quantum Eigensolver (VQE) Simulation Toolkit",
+        description="VQE/SSVQE Simulation Toolkit",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    # === Core simulation parameters ===
-    core = parser.add_argument_group("Core Parameters")
-    core.add_argument("-m", "--molecule",        type=str,   default="H2",          help="Molecule to simulate [default: H2]")
-    core.add_argument("-a", "--ansatz",          type=str,   default="UCCSD",       help="Ansatz circuit [default: UCCSD]")
-    core.add_argument("-o", "--optimizer",       type=str,   default="Adam",        help="Optimizer to use [default: Adam]")
-    core.add_argument("-map", "--mapping",       type=str,   default="jordan_wigner",
+    # ------------------------------------------------------------------
+    # Core parameters
+    # ------------------------------------------------------------------
+    core = parser.add_argument_group("Core")
+    core.add_argument("-m", "--molecule", type=str, default="H2",
+                      help="Molecule (H2, LiH, H2O, H3+)")
+    core.add_argument("-a", "--ansatz", type=str, default="UCCSD",
+                      help="Ansatz name")
+    core.add_argument("-o", "--optimizer", type=str, default="Adam",
+                      help="Optimizer name")
+    core.add_argument("-map", "--mapping", type=str,
+                      default="jordan_wigner",
                       choices=["jordan_wigner", "bravyi_kitaev", "parity"],
-                      help="Fermion-to-qubit mapping [default: jordan_wigner]")
-    core.add_argument("-s", "--steps",           type=int,   default=50,            help="Number of optimization steps [default: 50]")
-    core.add_argument("-lr", "--stepsize",       type=float, default=0.2,           help="Learning rate / step size [default: 0.2]")
+                      help="Fermion-to-qubit mapping")
+    core.add_argument("-s", "--steps", type=int, default=50,
+                      help="Number of optimization iterations")
+    core.add_argument("-lr", "--stepsize", type=float, default=0.2,
+                      help="Optimizer step size")
 
-    # === Noise and environment ===
-    noise = parser.add_argument_group("Noise & Environment")
-    noise.add_argument("--noisy", action="store_true", help="Enable noise simulation")
-    noise.add_argument("--depolarizing-prob", type=float, default=0.0, help="Depolarizing noise probability per wire [default: 0.0]")
-    noise.add_argument("--amplitude-damping-prob", type=float, default=0.0, help="Amplitude damping probability per wire [default: 0.0]")
+    # ------------------------------------------------------------------
+    # Noise controls
+    # ------------------------------------------------------------------
+    noise = parser.add_argument_group("Noise")
+    noise.add_argument("--noisy", action="store_true", help="Enable noise")
+    noise.add_argument("--depolarizing-prob", type=float, default=0.0)
+    noise.add_argument("--amplitude-damping-prob", type=float, default=0.0)
 
-    # === Experiment modes ===
-    exp = parser.add_argument_group("Experiment Modes")
-    exp.add_argument("--compare-noise", action="store_true", help="Compare noiseless vs noisy runs")
-    exp.add_argument("--noise-sweep", action="store_true", help="Run VQE for a range of noise levels")
-    exp.add_argument("--compare-optimizers", nargs="+", help="Compare multiple optimizers (e.g. Adam GradientDescent)")
-    exp.add_argument("--compare-ansatzes", nargs="+", help="Compare multiple ansatzes (e.g. RY-CZ Minimal)")
-    exp.add_argument("--multi-seed-noise", action="store_true", help="Run multi-seed noise averaging")
-    exp.add_argument("--noise-type", type=str, choices=["depolarizing", "amplitude", "combined"],
-                     default="depolarizing", help="Noise type for multi-seed runs [default: depolarizing]")
-    exp.add_argument("--mapping-comparison", action="store_true", help="Compare different fermion-to-qubit mappings")
+    # ------------------------------------------------------------------
+    # Experiment modes
+    # ------------------------------------------------------------------
+    exp = parser.add_argument_group("Modes")
+    exp.add_argument("--compare-noise", action="store_true")
+    exp.add_argument("--noise-sweep", action="store_true")
+    exp.add_argument("--compare-optimizers", nargs="+")
+    exp.add_argument("--compare-ansatzes", nargs="+")
+    exp.add_argument("--multi-seed-noise", action="store_true")
+    exp.add_argument("--noise-type", type=str,
+                     choices=["depolarizing", "amplitude", "combined"],
+                     default="depolarizing")
 
-    # === Geometry scan & SSVQE ===
-    geom = parser.add_argument_group("Geometry & SSVQE")
-    geom.add_argument("--scan-geometry", type=str, help="Perform a VQE geometry scan (e.g. H2_BOND)")
-    geom.add_argument("--range", nargs=3, type=float, metavar=("START", "END", "NUM"), help="Range for geometry scan (e.g. 0.5 1.5 10)")
-    geom.add_argument("--param-name", type=str, default="angle", help="Geometry parameter to vary [default: angle]")
-    geom.add_argument("--ssvqe", action="store_true", help="Run two-state SSVQE (ground + first excited)")
-    geom.add_argument("--penalty-weight", type=float, default=10.0, help="Penalty weight for |⟨ψ0|ψ1⟩|² term [default: 10.0]")
+    exp.add_argument("--mapping-comparison", action="store_true")
 
-    # === Miscellaneous ===
-    misc = parser.add_argument_group("Miscellaneous")
-    misc.add_argument("--seed", type=int, default=0, help="Random seed [default: 0]")
-    misc.add_argument("-p", "--plot", action="store_true", help="Plot energy convergence and save to /images")
-    misc.add_argument("--force", action="store_true", help="Force recomputation (ignore cached results)")
+    # ------------------------------------------------------------------
+    # Geometry & SSVQE
+    # ------------------------------------------------------------------
+    geom = parser.add_argument_group("Geometry / SSVQE")
+    geom.add_argument("--scan-geometry", type=str,
+                      help="Parametric geometry: H2_BOND, LiH_BOND, H2O_ANGLE")
+    geom.add_argument("--range", nargs=3, type=float,
+                      metavar=("START", "END", "NUM"),
+                      help="Geometry scan range")
+    geom.add_argument("--param-name", type=str, default="param")
+    geom.add_argument("--ssvqe", action="store_true")
+    geom.add_argument("--penalty-weight", type=float, default=10.0)
+
+    # ------------------------------------------------------------------
+    # Misc
+    # ------------------------------------------------------------------
+    misc = parser.add_argument_group("Misc")
+    misc.add_argument("--seed", type=int, default=0)
+    misc.add_argument("--force", action="store_true", help="Ignore cached results")
+    misc.add_argument("--plot", action="store_true", help="Plot convergence")
 
     args = parser.parse_args()
 
-    # Summary header
-    print("\n🧮  VQE Simulation Configuration")
+    # ------------------------------------------------------------------
+    # Summary banner
+    # ------------------------------------------------------------------
+    print("\n🧮  VQE Simulation")
     print(f"• Molecule:   {args.molecule}")
     print(f"• Ansatz:     {args.ansatz}")
     print(f"• Optimizer:  {args.optimizer}")
@@ -211,17 +287,18 @@ def main():
     print(f"• Seed:       {args.seed}")
     print()
 
-    # Handle special experiment modes
+    # Try special modes first
     if handle_special_modes(args):
         return
 
-    # === Default VQE run ===
+    # ------------------------------------------------------------------
+    # Default VQE run
+    # ------------------------------------------------------------------
     print(f"🔹 Running standard VQE for {args.molecule}")
     result = run_vqe(
         molecule=args.molecule,
         n_steps=args.steps,
         stepsize=args.stepsize,
-        plot=args.plot,
         ansatz_name=args.ansatz,
         optimizer_name=args.optimizer,
         mapping=args.mapping,
@@ -229,24 +306,12 @@ def main():
         depolarizing_prob=args.depolarizing_prob,
         amplitude_damping_prob=args.amplitude_damping_prob,
         force=args.force,
+        plot=args.plot,
     )
 
-    # Clean print for CLI output
-    def _to_serializable(obj):
-        if hasattr(obj, "item"):
-            try:
-                return float(obj.item())
-            except Exception:
-                pass
-        if isinstance(obj, (list, tuple)):
-            return [_to_serializable(v) for v in obj]
-        if isinstance(obj, dict):
-            return {k: _to_serializable(v) for k, v in obj.items()}
-        return obj
-
-    clean_result = _to_serializable(result)
-    print("\nFinal Result:")
-    print(clean_result)
+    print("\nFinal result:")
+    print({k: (float(v) if hasattr(v, "item") else v)
+           for k, v in result.items()})
 
 
 if __name__ == "__main__":

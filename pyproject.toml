@@ -1,13 +1,7 @@
-# ===============================================================
-# Build System
-# ===============================================================
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# ===============================================================
-# Project Metadata
-# ===============================================================
 [project]
 name = "vqe-pennylane"
 version = "0.2.0"
@@ -18,10 +12,11 @@ license = { text = "MIT" }
 requires-python = ">=3.9"
 
 dependencies = [
-    "pennylane>=0.42",
+    "pennylane>=0.42,<0.45",
     "numpy",
     "matplotlib",
     "scipy",
+    "openfermion",
     "openfermionpyscf",
 ]
 
@@ -39,34 +34,24 @@ classifiers = [
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
 Issues = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues"
 
-# ===============================================================
-# Packaging & Data
-# ===============================================================
 [tool.setuptools.packages.find]
-include = ["vqe*", "qpe*"]
+include = ["vqe", "vqe.*", "qpe", "qpe.*"]
 
-[tool.setuptools.package-data]
-"vqe" = ["images/*"]
-"qpe" = ["images/*"]
+# No package-data needed (images generated at runtime)
 
-# ===============================================================
-# Optional Dependencies
-# ===============================================================
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "black",
     "flake8",
     "mypy",
+    "jupyterlab",
 ]
 docs = [
     "sphinx",
     "furo",
 ]
 
-# ===============================================================
-# Entry Points (CLI)
-# ===============================================================
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"

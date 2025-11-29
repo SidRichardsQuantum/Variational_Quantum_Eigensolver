@@ -5,12 +5,13 @@ Core plumbing layer for VQE and SSVQE routines.
 
 Handles:
 - Device creation and optional noise insertion
-- Ansatz construction and initialization
+- Ansatz construction and parameter initialisation
 - Optimizer creation
-- QNode builders for energy and overlap evaluation
+- QNode builders for energy, state, and overlap evaluation
 """
 
 from __future__ import annotations
+
 import inspect
 import pennylane as qml
 from pennylane import numpy as np
@@ -23,7 +24,13 @@ from .optimizer import get_optimizer
 # DEVICE & NOISE HANDLING
 # ================================================================
 def make_device(num_wires: int, noisy: bool = False):
-    """Return a PennyLane device, using a mixed-state simulator if noise is enabled."""
+    """
+    Return a PennyLane device.
+
+    Uses a mixed-state simulator when noise is enabled to correctly
+    capture the effect of channels such as DepolarizingChannel and
+    AmplitudeDamping.
+    """
     dev_name = "default.mixed" if noisy else "default.qubit"
     return qml.device(dev_name, wires=num_wires)
 
@@ -37,15 +44,15 @@ def apply_optional_noise(
     """
     Apply optional noise channels to each qubit after the ansatz.
 
-    This should be called **inside** a QNode, *after* the ansatz circuit.
+    Intended to be called from inside a QNode, *after* the ansatz circuit.
     """
     if not noisy:
         return
 
     for w in range(num_wires):
-        if depolarizing_prob > 0:
+        if depolarizing_prob > 0.0:
             qml.DepolarizingChannel(depolarizing_prob, wires=w)
-        if amplitude_damping_prob > 0:
+        if amplitude_damping_prob > 0.0:
             qml.AmplitudeDamping(amplitude_damping_prob, wires=w)
 
 
@@ -56,8 +63,10 @@ def _call_ansatz(ansatz_fn, params, wires, symbols=None, coordinates=None, basis
     """
     Call an ansatz function, automatically forwarding only the arguments it supports.
 
-    This ensures compatibility between different ansatz definitions
-    (e.g., UCCSD which expects molecular arguments, vs hardware-efficient layers).
+    This allows a uniform interface for:
+      - "toy" ansatzes that only expect (params, wires)
+      - chemistry ansatzes (e.g. UCCSD/UCCD) that also take
+        symbols / coordinates / basis.
     """
     sig = inspect.signature(ansatz_fn).parameters
     kwargs = {}
@@ -82,15 +91,10 @@ def build_ansatz(
     scale: float = 0.01,
 ):
     """
-    Return a tuple `(ansatz_fn, init_params)` for the specified ansatz.
+    Construct an ansatz function and a matching initial parameter vector.
 
-    Args:
-        ansatz_name: Name of the ansatz (see vqe.ansatz.ANSATZES).
-        num_wires: Number of qubits/wires.
-        seed: Random seed for deterministic initialization.
-        symbols, coordinates, basis: Optional molecule info.
-        requires_grad: Whether parameters require gradients.
-        scale: Initialization scale (for random ansatz types).
+    Returns:
+        (ansatz_fn, params)
     """
     ansatz_fn = get_ansatz(ansatz_name)
     params = init_params(
@@ -110,7 +114,9 @@ def build_ansatz(
 # OPTIMIZER BUILDER
 # ================================================================
 def build_optimizer(optimizer_name: str, stepsize: float):
-    """Return a PennyLane optimizer instance by name with the given stepsize."""
+    """
+    Return a PennyLane optimizer instance by name with the given stepsize.
+    """
     return get_optimizer(optimizer_name, stepsize=stepsize)
 
 
@@ -123,26 +129,26 @@ def make_energy_qnode(
     ansatz_fn,
     num_wires,
     *,
-    noisy=False,
-    depolarizing_prob=0.0,
-    amplitude_damping_prob=0.0,
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
     symbols=None,
     coordinates=None,
-    basis="sto-3g",
+    basis: str = "sto-3g",
     diff_method: str | None = None,
 ):
     """
     Build a QNode that computes the expectation value <H> for given parameters.
 
     Args:
-        H: Hamiltonian (qml.Hamiltonian)
-        dev: PennyLane device
+        H:        Hamiltonian (qml.Hamiltonian)
+        dev:      PennyLane device
         ansatz_fn: Callable ansatz circuit
         num_wires: Number of qubits
-        noisy: Whether to include noise
+        noisy:    Whether to include noise
         depolarizing_prob, amplitude_damping_prob: Noise probabilities
-        symbols, coordinates, basis: Molecular info (for UCC ansatz)
-        diff_method: Differentiation method override
+        symbols, coordinates, basis: Molecular info (for UCC ansatzes)
+        diff_method: Optional differentiation method override
     """
     if diff_method is None:
         diff_method = "finite-diff" if noisy else "parameter-shift"
@@ -156,17 +162,48 @@ def make_energy_qnode(
     return energy
 
 
+def make_state_qnode(
+    dev,
+    ansatz_fn,
+    num_wires,
+    *,
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
+    symbols=None,
+    coordinates=None,
+    basis: str = "sto-3g",
+    diff_method: str | None = None,
+):
+    """
+    Build a QNode that returns the final state for given parameters.
+
+    For noiseless devices, this is a statevector.
+    For mixed-state devices, this is a density matrix.
+    """
+    if diff_method is None:
+        diff_method = "finite-diff" if noisy else "parameter-shift"
+
+    @qml.qnode(dev, diff_method=diff_method)
+    def state(params):
+        _call_ansatz(ansatz_fn, params, range(num_wires), symbols, coordinates, basis)
+        apply_optional_noise(noisy, depolarizing_prob, amplitude_damping_prob, num_wires)
+        return qml.state()
+
+    return state
+
+
 def make_overlap00_fn(
     dev,
     ansatz_fn,
     num_wires,
     *,
-    noisy=False,
-    depolarizing_prob=0.0,
-    amplitude_damping_prob=0.0,
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
     symbols=None,
     coordinates=None,
-    basis="sto-3g",
+    basis: str = "sto-3g",
     diff_method: str | None = None,
 ):
     """

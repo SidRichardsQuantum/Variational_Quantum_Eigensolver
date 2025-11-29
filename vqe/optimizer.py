@@ -1,83 +1,55 @@
 """
 vqe.optimizer
 -------------
-Lightweight interface for selecting and running PennyLane optimizers.
+Lightweight wrapper over PennyLane optimizers with a unified interface.
+
+Provides:
+    - get_optimizer(name, stepsize)
 """
 
+from __future__ import annotations
 import pennylane as qml
+
 
 # ================================================================
 # AVAILABLE OPTIMIZERS
 # ================================================================
-OPTIMIZERS = {
+_OPTIMIZERS = {
     "Adam": qml.AdamOptimizer,
+    "adam": qml.AdamOptimizer,  # alias
     "GradientDescent": qml.GradientDescentOptimizer,
-    "Nesterov": qml.NesterovMomentumOptimizer,
-    "Adagrad": qml.AdagradOptimizer,
+    "gd": qml.GradientDescentOptimizer,  # alias
     "Momentum": qml.MomentumOptimizer,
-    "SPSA": qml.SPSAOptimizer,
+    "Nesterov": qml.NesterovMomentumOptimizer,
+    "RMSProp": qml.RMSPropOptimizer,
+    "Adagrad": qml.AdagradOptimizer,
 }
 
 
 # ================================================================
-# OPTIMIZER SELECTION
+# MAIN FACTORY
 # ================================================================
-def get_optimizer(name: str, stepsize: float = 0.2):
+def get_optimizer(name: str = "Adam", stepsize: float = 0.2):
     """
-    Retrieve a PennyLane optimizer instance by name.
+    Return a PennyLane optimizer instance by name.
 
     Args:
-        name: Optimizer name (e.g., "Adam", "GradientDescent").
-        stepsize: Step size (learning rate) to initialize the optimizer.
+        name: Optimizer identifier (case-insensitive).
+        stepsize: Learning rate.
 
     Returns:
-        An instantiated PennyLane optimizer.
+        An instantiated optimizer.
 
-    Raises:
-        ValueError: If the optimizer name is not recognized.
+    Example:
+        opt = get_optimizer("Adam", 0.1)
+        params, cost = opt.step_and_cost(cost_fn, params)
     """
-    if name not in OPTIMIZERS:
-        available = ", ".join(OPTIMIZERS.keys())
-        raise ValueError(f"Unknown optimizer '{name}'. Available options: {available}")
+    key = name.lower()
+    for k, cls in _OPTIMIZERS.items():
+        if k.lower() == key:
+            return cls(stepsize)
 
-    # Handle both modern (stepsize=kwarg) and legacy (positional) API variants
-    try:
-        return OPTIMIZERS[name](stepsize=stepsize)
-    except TypeError:
-        return OPTIMIZERS[name](stepsize)
-
-
-# ================================================================
-# OPTIMIZATION LOOP
-# ================================================================
-def minimize_energy(circuit, params, optimizer: str = "Adam", steps: int = 50, stepsize: float = 0.2):
-    """
-    Run iterative optimization of a variational circuit to minimize energy.
-
-    Args:
-        circuit: A callable QNode returning the circuit energy.
-        params: Initial parameter array.
-        optimizer: Optimizer name (default: "Adam").
-        steps: Number of optimization steps.
-        stepsize: Step size for the optimizer.
-
-    Returns:
-        (final_params, energies)
-            final_params: Optimized parameters.
-            energies: List of energy values per iteration (including initial).
-    """
-    opt = get_optimizer(optimizer, stepsize)
-
-    energies = [circuit(params)]
-    for n in range(steps):
-        try:
-            params, _ = opt.step_and_cost(circuit, params)
-        except AttributeError:
-            # For optimizers that lack step_and_cost
-            params = opt.step(circuit, params)
-
-        energy = circuit(params)
-        energies.append(energy)
-        print(f"Step {n + 1:02d}/{steps}: E = {energy:.6f}")
-
-    return params, energies
+    raise ValueError(
+        f"Unknown optimizer '{name}'. "
+        f"Available: {', '.join(_OPTIMIZERS.keys())}"
+    )

@@ -4,11 +4,13 @@ vqe.ansatz
 Library of parameterized quantum circuits (ansatzes) used in the VQE workflow.
 
 Includes:
-- Simple 2-qubit toy ansatzes (RY-CZ, Minimal)
-- Hardware-efficient templates
-- Chemistry-inspired UCCSD and UCCD ansatzes (cached for speed)
-- Parameter initialization logic
+- Simple 2-qubit toy ansatzes (RY-CZ, Minimal, TwoQubit-RY-CNOT)
+- Hardware-efficient templates (StronglyEntanglingLayers)
+- Chemistry-inspired UCCSD / UCCD-style ansatzes
+- Parameter initialisation logic aligned with legacy notebooks
 """
+
+from __future__ import annotations
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -16,10 +18,14 @@ from pennylane import qchem
 
 
 # ================================================================
-# BASIC ANSATZ CIRCUITS
+# BASIC ANSATZ CIRCUITS (TOY / HARDWARE-EFFICIENT)
 # ================================================================
 def two_qubit_ry_cnot(params, wires):
-    """Two-qubit toy entangler; not a chemically meaningful ansatz."""
+    """
+    Two-qubit toy entangler; not a chemically meaningful ansatz.
+
+    Matches the behaviour used in the H₂ noise-scan notebook.
+    """
     qml.RY(params[0], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
     qml.RY(-params[0], wires=wires[1])
@@ -27,114 +33,171 @@ def two_qubit_ry_cnot(params, wires):
 
 
 def ry_cz(params, wires):
-    """Single-layer RY rotations followed by a CZ entangling chain."""
+    """
+    Single-layer RY rotations followed by a CZ chain.
+
+    Matches the legacy vqe_utils.ry_cz used for H₂ optimizer / ansatz comparisons.
+    """
     if len(params) != len(wires):
-        raise ValueError(f"RY-CZ expects one parameter per wire (got {len(params)} vs {len(wires)})")
-    for w in range(len(wires)):
-        qml.RY(params[w], wires=wires[w])
+        raise ValueError(
+            f"RY-CZ expects one parameter per wire "
+            f"(got {len(params)} vs {len(wires)})"
+        )
+
+    for i, w in enumerate(wires):
+        qml.RY(params[i], wires=w)
+
     for i in range(len(wires) - 1):
         qml.CZ(wires=[wires[i], wires[i + 1]])
 
 
 def minimal(params, wires):
-    """Minimal 2-qubit circuit: RY rotation + CNOT."""
+    """
+    Minimal 2-qubit circuit: RY rotation + CNOT.
+
+    Matches the legacy vqe_utils.minimal used in H₂ ansatz comparisons.
+    """
     qml.RY(params[0], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
 def hardware_efficient_ansatz(params, wires):
-    """Standard hardware-efficient ansatz using StronglyEntanglingLayers."""
+    """
+    Standard hardware-efficient ansatz using StronglyEntanglingLayers.
+
+    Shape convention:
+        params.shape = (n_layers, len(wires), 3)
+    """
     qml.templates.StronglyEntanglingLayers(params, wires=wires)
 
 
 # ================================================================
-# CHEMISTRY-INSPIRED ANSATZES (UCC FAMILY)
+# UCC-STYLE CHEMISTRY ANSATZES
 # ================================================================
-def uccsd_ansatz(params, wires, symbols=None, coordinates=None, basis="sto-3g"):
+
+def _ucc_cache_key(symbols, coordinates, basis: str):
+    coords = np.array(coordinates, dtype=float).flatten().tolist()
+    return (tuple(symbols), tuple(coords), basis.upper())
+
+
+def _build_ucc_data(symbols, coordinates, basis="STO-3G"):
+    """
+    Compute (singles, doubles, hf_state) for a given molecule and cache them.
+
+    This mirrors what the old notebooks did via:
+        - qchem.hf_state(electrons, qubits)
+        - qchem.excitations(electrons, qubits)
+    """
+    if symbols is None or coordinates is None:
+        raise ValueError(
+            "UCC ansatz requires symbols and coordinates. "
+            "Make sure build_hamiltonian(...) is used and passed through."
+        )
+
+    key = _ucc_cache_key(symbols, coordinates, basis)
+
+    if not hasattr(_build_ucc_data, "_cache"):
+        _build_ucc_data._cache = {}
+
+    if key not in _build_ucc_data._cache:
+        try:
+            mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
+        except TypeError:
+            # Older PennyLane versions without basis kwarg
+            mol = qchem.Molecule(symbols, coordinates, charge=0)
+
+        electrons = mol.n_electrons
+        spin_orbitals = 2 * mol.n_orbitals
+
+        singles, doubles = qchem.excitations(electrons, spin_orbitals)
+        hf_state = qchem.hf_state(electrons, spin_orbitals)
+
+        _build_ucc_data._cache[key] = (singles, doubles, hf_state)
+
+    return _build_ucc_data._cache[key]
+
+
+def uccsd_ansatz(params, wires, symbols=None, coordinates=None, basis="STO-3G"):
     """
     Unitary Coupled Cluster Singles and Doubles (UCCSD) ansatz.
 
-    Uses single and double excitations built from a molecular Hartree–Fock reference.
-    Results are cached per (molecule, geometry) for efficiency.
+    Behaviour is chosen to match legacy notebooks where we used:
+
+        excitation_ansatz(
+            params,
+            wires=range(qubits),
+            hf_state=hf,
+            excitations=(singles, doubles),
+            excitation_type="both",
+        )
+
+    Args:
+        params: 1D array of length len(singles) + len(doubles)
+        wires: sequence of PennyLane wires
+        symbols, coordinates, basis: molecular data (required for chemistry use)
     """
-    spin_orbitals = len(wires)
+    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
 
-    # --- Build or reuse cached molecular data ---
-    key = tuple(symbols) + tuple(coordinates.flatten())
-    if not hasattr(uccsd_ansatz, "_cache"):
-        uccsd_ansatz._cache = {}
+    num_wires = len(wires)
+    if len(hf_state) != num_wires:
+        raise ValueError(
+            f"HF state length ({len(hf_state)}) does not match number of wires ({num_wires})."
+        )
 
-    if key not in uccsd_ansatz._cache:
-        try:
-            mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
-        except TypeError:
-            # Older PennyLane compatibility
-            mol = qchem.Molecule(symbols, coordinates, charge=0)
+    qml.BasisState(np.array(hf_state, dtype=int), wires=wires)
 
-        electrons = mol.n_electrons
-        singles, doubles = qchem.excitations(electrons, spin_orbitals)
-        hf_state = qchem.hf_state(electrons, spin_orbitals)
-        uccsd_ansatz._cache[key] = (singles, doubles, hf_state)
-    else:
-        singles, doubles, hf_state = uccsd_ansatz._cache[key]
-
-    # --- Prepare reference state ---
-    qml.BasisState(hf_state, wires=wires)
-
-    # --- Apply single and double excitations ---
     n_singles = len(singles)
-    for i, s in enumerate(singles):
-        qml.SingleExcitation(params[i], wires=s)
-    for j, d in enumerate(doubles):
-        qml.DoubleExcitation(params[n_singles + j], wires=d)
+    n_doubles = len(doubles)
+    if len(params) != n_singles + n_doubles:
+        raise ValueError(
+            f"UCCSD expects {n_singles + n_doubles} parameters "
+            f"(got {len(params)})."
+        )
+
+    # Singles
+    for i, exc in enumerate(singles):
+        qml.SingleExcitation(params[i], wires=list(exc))
+
+    # Doubles
+    for j, exc in enumerate(doubles):
+        qml.DoubleExcitation(params[n_singles + j], wires=list(exc))
 
 
-def uccd_ansatz(params, wires, symbols=None, coordinates=None, basis="sto-3g"):
+def uccd_ansatz(params, wires, symbols=None, coordinates=None, basis="STO-3G"):
     """
-    Unitary Coupled Cluster Doubles (UCCD) ansatz.
-    Applies only double excitations (no singles). Used for LiH and similar systems.
-    Cached molecular data to avoid repeated qchem rebuilds.
+    UCC Doubles-only ansatz (UCCD / "UCC-D").
+
+    Designed to mirror the LiH notebook behaviour where we used
+    `excitation_ansatz(..., excitation_type="double")` with zero initial params.
+
+    Args:
+        params: 1D array of length len(doubles)
+        wires: sequence of wires
+        symbols, coordinates, basis: molecular data
     """
-    if symbols is None or coordinates is None:
-        symbols = ["Li", "H"]
-        coordinates = np.array([[0.0, 0.0, 0.0],
-                                [0.0, 0.0, 1.6]])
+    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
 
-    spin_orbitals = len(wires)
-    key = tuple(symbols) + tuple(coordinates.flatten())
+    num_wires = len(wires)
+    if len(hf_state) != num_wires:
+        raise ValueError(
+            f"HF state length ({len(hf_state)}) does not match number of wires ({num_wires})."
+        )
 
-    # --- Build or reuse cached molecular data ---
-    if not hasattr(uccd_ansatz, "_cache"):
-        uccd_ansatz._cache = {}
+    qml.BasisState(np.array(hf_state, dtype=int), wires=wires)
 
-    if key not in uccd_ansatz._cache:
-        try:
-            mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
-        except TypeError:
-            mol = qchem.Molecule(symbols, coordinates, charge=0)
-
-        electrons = mol.n_electrons
-        _, doubles = qchem.excitations(electrons, spin_orbitals)
-        hf_state = qchem.hf_state(electrons, spin_orbitals)
-        uccd_ansatz._cache[key] = (doubles, hf_state)
-    else:
-        doubles, hf_state = uccd_ansatz._cache[key]
-
-    # --- Prepare Hartree–Fock state ---
-    qml.BasisState(hf_state, wires=wires)
-
-    # --- Sanity check ---
     if len(params) != len(doubles):
-        raise ValueError(f"UCCD expects {len(doubles)} parameters, got {len(params)}")
+        raise ValueError(
+            f"UCCD expects {len(doubles)} parameters (got {len(params)})."
+        )
 
-    # --- Apply double excitations ---
-    for i, d in enumerate(doubles):
-        qml.DoubleExcitation(params[i], wires=d)
+    for i, exc in enumerate(doubles):
+        qml.DoubleExcitation(params[i], wires=list(exc))
 
 
 # ================================================================
 # REGISTRY
 # ================================================================
+
 ANSATZES = {
     "TwoQubit-RY-CNOT": two_qubit_ry_cnot,
     "RY-CZ": ry_cz,
@@ -142,50 +205,52 @@ ANSATZES = {
     "StronglyEntanglingLayers": hardware_efficient_ansatz,
     "UCCSD": uccsd_ansatz,
     "UCC-D": uccd_ansatz,
+    "UCCD": uccd_ansatz,  # alias
 }
 
 
 def get_ansatz(name: str):
     """Return ansatz function by name."""
     if name not in ANSATZES:
-        available = ", ".join(ANSATZES.keys())
+        available = ", ".join(sorted(ANSATZES.keys()))
         raise ValueError(f"Unknown ansatz '{name}'. Available: {available}")
     return ANSATZES[name]
 
 
 # ================================================================
-# PARAMETER INITIALIZATION
+# PARAMETER INITIALISATION
 # ================================================================
 def init_params(
     ansatz_name: str,
     num_wires: int,
     scale: float = 0.01,
-    requires_grad=True,
+    requires_grad: bool = True,
     symbols=None,
     coordinates=None,
-    basis="sto-3g",
+    basis: str = "STO-3G",
     seed: int = 0,
 ):
     """
-    Initialize variational parameters for a given ansatz.
+    Initialise variational parameters for a given ansatz.
 
-    - Random initialization for hardware-efficient circuits.
-    - Zero initialization for UCC-D/UCCD (per LiH_Noiseless.ipynb convention).
-    - Deterministic for reproducibility (controlled by seed).
+    Design choices (to match legacy notebooks):
 
-    Args:
-        ansatz_name: Name of the ansatz.
-        num_wires: Number of qubits.
-        scale: Random scale for non-UCC ansatzes.
-        requires_grad: Whether parameters require gradients.
-        symbols, coordinates, basis: Molecular data (for UCC variants).
-        seed: Random seed for reproducibility.
+    - TwoQubit-RY-CNOT / Minimal:
+        * 1 parameter, small random normal ~ N(0, scale²)
+    - RY-CZ:
+        * `num_wires` parameters, random normal ~ N(0, scale²)
+    - StronglyEntanglingLayers:
+        * params.shape = (1, num_wires, 3), normal with width ~ π
+    - UCCSD / UCCD / UCC-D:
+        * **All zeros**, matching old notebooks where VQE started from θ = 0
+          and optimised UCCSD/UCCD from that point.
 
     Returns:
-        np.ndarray: Initialized parameter array.
+        np.ndarray with `requires_grad=True`.
     """
     np.random.seed(seed)
 
+    # --- Toy ansatzes ---
     if ansatz_name in ["TwoQubit-RY-CNOT", "Minimal"]:
         vals = scale * np.random.randn(1)
 
@@ -193,31 +258,39 @@ def init_params(
         vals = scale * np.random.randn(num_wires)
 
     elif ansatz_name == "StronglyEntanglingLayers":
-        vals = np.random.normal(0, np.pi, (1, num_wires, 3))
+        # One layer by default; can be generalised later if needed
+        vals = np.random.normal(0.0, np.pi, (1, num_wires, 3))
 
+    # --- Chemistry ansatzes (UCC family) ---
     elif ansatz_name in ["UCCSD", "UCC-D", "UCCD"]:
-        # --- Default fallback geometry ---
+        # We need molecular data to know #excitations.
+        # For pure "H2", "LiH", etc., these are supplied by build_hamiltonian + engine.build_ansatz.
         if symbols is None or coordinates is None:
-            symbols = ["H", "H"]
-            coordinates = np.array([[0.0, 0.0, 0.0],
-                                    [0.0, 0.0, 0.7414]])
+            raise ValueError(
+                f"Ansatz '{ansatz_name}' requires symbols/coordinates "
+                "to determine excitation count. Ensure you are using "
+                "build_hamiltonian(...) and engine.build_ansatz(...)."
+            )
 
-        spin_orbitals = num_wires
+        # Compute excitations exactly as in the notebooks
         try:
             mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
         except TypeError:
             mol = qchem.Molecule(symbols, coordinates, charge=0)
 
         electrons = mol.n_electrons
+        spin_orbitals = 2 * mol.n_orbitals
         singles, doubles = qchem.excitations(electrons, spin_orbitals)
 
-        # --- Parameter allocation ---
         if ansatz_name in ["UCC-D", "UCCD"]:
+            # Doubles-only: match LiH notebook – all zeros
             vals = np.zeros(len(doubles))
         else:
-            vals = scale * np.random.randn(len(singles) + len(doubles))
+            # UCCSD: singles + doubles, all zeros (legacy behaviour)
+            vals = np.zeros(len(singles) + len(doubles))
 
     else:
-        raise ValueError(f"Unknown ansatz '{ansatz_name}'")
+        available = ", ".join(sorted(ANSATZES.keys()))
+        raise ValueError(f"Unknown ansatz '{ansatz_name}'. Available: {available}")
 
     return np.array(vals, requires_grad=requires_grad)
