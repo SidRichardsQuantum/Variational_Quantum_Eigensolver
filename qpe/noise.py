@@ -14,7 +14,6 @@ from __future__ import annotations
 import pennylane as qml
 from typing import Iterable
 
-
 def apply_noise_all(
     wires: Iterable[int],
     p_dep: float = 0.0,
