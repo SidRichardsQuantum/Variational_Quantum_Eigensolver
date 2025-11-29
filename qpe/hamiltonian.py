@@ -1,5 +1,5 @@
 """
-qpe/hamiltonian.py
+common.hamiltonian.py
 ==================
 
 Shared molecular configuration + Hamiltonian construction for QPE.

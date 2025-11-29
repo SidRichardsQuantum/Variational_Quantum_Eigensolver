@@ -18,11 +18,11 @@ import argparse
 import time
 
 import pennylane as qml
-from pennylane import qchem
 from pennylane import numpy as np
+from pennylane import qchem
 
 from qpe.hamiltonian import build_hamiltonian
-from qpe.core import run_qpe, hartree_fock_energy
+from qpe.core import run_qpe
 from qpe.io_utils import (
     save_qpe_result,
     load_qpe_result,
@@ -71,6 +71,14 @@ MOLECULES = {
         "basis": "STO-3G",
     },
 }
+
+# Minimal atomic number table for electron counting
+Z = {"H": 1, "Li": 3, "O": 8}
+
+
+def infer_electrons(symbols, charge: int) -> int:
+    """Infer number of electrons for a molecule from symbols and charge."""
+    return int(sum(Z[s] for s in symbols) - charge)
 
 
 # ---------------------------------------------------------------------
@@ -156,7 +164,7 @@ def main():
     else:
         print("• Noise:      OFF")
 
-    # Hamiltonian
+    # Hamiltonian + HF state
     symbols = cfg["symbols"]
     coords = cfg["coordinates"]
     charge = cfg["charge"]
@@ -165,14 +173,7 @@ def main():
     start_time = time.time()
     H, n_qubits = build_hamiltonian(symbols, coords, charge, basis)
 
-    # Build HF state consistent with this Hamiltonian
-    try:
-        mol = qchem.Molecule(symbols, coords, charge=charge, basis=basis)
-    except TypeError:
-        # Fallback for older PennyLane versions without 'basis' kwarg
-        mol = qchem.Molecule(symbols, coords, charge=charge)
-
-    electrons = mol.n_electrons
+    electrons = infer_electrons(symbols, charge)
     hf_state = qchem.hf_state(electrons, n_qubits)
 
     # Caching

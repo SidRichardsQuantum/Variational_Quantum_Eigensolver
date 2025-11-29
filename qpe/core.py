@@ -8,7 +8,7 @@ This module is deliberately focused on:
     • Classical post-processing (bitstrings → phases → energies)
 
 It does **not**:
-    • Build Hamiltonians (see qpe.hamiltonian)
+    • Build Hamiltonians (see common.hamiltonian)
     • Deal with filenames or JSON I/O (see qpe.io_utils)
 """
 
