@@ -1,16 +1,13 @@
-# Core Python version
-python>=3.8,<3.12
+# Runtime dependencies (mirror pyproject.toml)
+pennylane>=0.42,<0.45
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+openfermion
+openfermionpyscf
 
-# Core scientific stack
-numpy>=1.21,<2.0
-scipy>=1.7,<2.0
-matplotlib>=3.4,<4.0
-
-# PennyLane core and chemistry plugin
-pennylane==0.29.1
-pennylane-qchem==0.29.0
-
-# Jupyter for notebook execution
-jupyterlab>=3.0,<4.0
-notebook>=6.4,<7.0
-ipykernel>=6.0,<7.0
+# Optional / dev tools
+jupyterlab
+notebook
+ipykernel
+pytest

@@ -1,14 +1,18 @@
+from __future__ import annotations
+
+__version__ = "0.2.0"
+
 """
-common
+vqe_qpe_common
 ======
 
 Shared utilities used across VQE, QPE, and future solvers.
 
 This subpackage contains:
-    • common.molecules   — canonical molecule registry
-    • common.geometry    — unified geometry generators (bond/angle scans)
-    • common.hamiltonian — single source of truth for Hamiltonian construction
-    • common.plotting    — global plotting + filename/dir management
+    • vqe_qpe_common.molecules   — canonical molecule registry
+    • vqe_qpe_common.geometry    — unified geometry generators (bond/angle scans)
+    • vqe_qpe_common.hamiltonian — single source of truth for Hamiltonian construction
+    • vqe_qpe_common.plotting    — global plotting + filename/dir management
 
 All high-level solvers (VQE, QPE, QSVT, etc.) should import molecule
 definitions, geometry logic, Hamiltonians, and plotting helpers from here
@@ -16,7 +20,7 @@ to avoid duplication and ensure reproducibility.
 
 Example
 -------
-    from common import (
+    from vqe_qpe_common import (
         MOLECULES,
         get_molecule_config,
         generate_geometry,
@@ -25,8 +29,6 @@ Example
         save_plot,
     )
 """
-
-from __future__ import annotations
 
 # Molecule data + helpers
 from .molecules import MOLECULES, get_molecule_config  # noqa: F401

@@ -1,0 +1,28 @@
+# Include top-level metadata
+include README.md
+include USAGE.md
+include THEORY.md
+include LICENSE
+include pyproject.toml
+
+# Include package source
+recursive-include vqe *.py
+recursive-include qpe *.py
+recursive-include vqe_qpe_common *.py
+
+# Include only notebook *descriptions* but NOT results
+recursive-include notebooks *.md
+
+# Exclude notebooks themselves (huge)
+exclude notebooks/*.ipynb
+exclude notebooks/**/*.ipynb
+
+# Exclude large data directories
+prune data
+prune results
+prune vendor_wheels
+
+# Exclude cache/junk
+prune **/__pycache__
+exclude **/*.pyc
+exclude .pytest_cache

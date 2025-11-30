@@ -26,7 +26,7 @@ import json
 import hashlib
 from typing import Any, Dict
 
-from common.plotting import save_plot, build_filename
+from vqe_qpe_common.plotting import save_plot, build_filename
 
 
 # ---------------------------------------------------------------------

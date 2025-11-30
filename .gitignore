@@ -55,12 +55,6 @@ data/**/*.log
 !data/**/*.svg
 !data/**/*.pdf
 
-# -------------------------------------------------------------------
-# package_results (JSON outputs)
-# -------------------------------------------------------------------
-package_results/**/*.json
-!package_results/.gitkeep
-
 # ✅ NEW — Ignore generated plots from qpe/images and vqe/images
 # (you keep the directories themselves tracked)
 qpe/images/**/*.png
@@ -81,3 +75,10 @@ htmlcov/
 # -------------------------------------------------------------------
 *.nbconvert.ipynb
 *.nbconvert.*
+
+# -------------------------------------------------------------------
+# Wheel files
+# -------------------------------------------------------------------
+vendor_wheels/
+*.whl
+.wheels/

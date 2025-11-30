@@ -6,216 +6,217 @@ Author-email: Sid Richards <siddrichards@hotmail.co.uk>
 License: MIT
 Project-URL: Homepage, https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver
 Project-URL: Issues, https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues
+Project-URL: Documentation, https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver#readme
 Keywords: quantum,VQE,QPE,simulation,pennylane,quantum-chemistry
 Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Science/Research
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.12
 Classifier: Topic :: Scientific/Engineering :: Physics
 Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: pennylane>=0.42
-Requires-Dist: numpy
+Requires-Dist: pennylane<0.45,>=0.42
+Requires-Dist: numpy<2.0,>=1.23
+Requires-Dist: scipy<2.0,>=1.9
 Requires-Dist: matplotlib
-Requires-Dist: scipy
+Requires-Dist: openfermion
 Requires-Dist: openfermionpyscf
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
 Requires-Dist: black; extra == "dev"
 Requires-Dist: flake8; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
+Requires-Dist: jupyterlab; extra == "dev"
 Provides-Extra: docs
 Requires-Dist: sphinx; extra == "docs"
 Requires-Dist: furo; extra == "docs"
 Dynamic: license-file
 
-# VQE Package
+# Quantum Simulation Suite — VQE + QPE (PennyLane)
 
-**Variational Quantum Eigensolver (VQE) and SSVQE toolkit**  
-Built with [PennyLane](https://pennylane.ai) for quantum chemistry and noise-resilient variational simulation.
+<p align="center">
 
-This package refactors the original notebook experiments into a modular, reproducible codebase.
+<a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions">
+  <img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" />
+</a>
+
+<a href="https://pypi.org/project/vqe-pennylane/">
+  <img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" />
+</a>
+
+<img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" />
+
+<img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" />
+
+</p>
+
+
+A modern, modular, and fully reproducible **quantum-chemistry simulation suite** built on  
+**PennyLane**, featuring:
+
+- **Variational Quantum Eigensolver (VQE)**  
+- **State-Specific VQE (SSVQE)**  
+- **Quantum Phase Estimation (QPE)**  
+- **Unified molecule registry, geometry generators, and plotting tools**  
+- **Consistent caching and reproducibility across all solvers**
+
+This project refactors all previous notebooks into a clean Python package with  
+a shared `vqe_qpe_common/` layer for Hamiltonians, molecules, geometry, and plotting.
+
+- **[THEORY.md](THEORY.md)** — Full background on VQE, QPE, ansatzes, optimizers, mappings, and noise models.  
+- **[USAGE.md](USAGE.md)** — Practical guide for installation, CLI usage, running simulations, caching, and plotting.
+
+These documents complement the README and provide both the *theoretical foundation* and the *hands-on execution details* of the VQE/QPE suite.
 
 ---
 
-## 🧠 Overview
+# Project Structure
 
-The `vqe` package provides:
-- **VQE execution** for molecular Hamiltonians
-- **SSVQE** for excited states
-- **Noise-aware** simulations (depolarizing, amplitude damping)
-- **Comparison tools** for ansatzes, optimizers, and fermion-to-qubit mappings
-- **Geometry scans** and plotting utilities
-- **Reproducible configuration and caching**
-
-All runs are automatically saved in:
 ```
-package_results/    ← JSON run records (configs, results)
-vqe/images/         ← Plots and convergence graphs
+Variational_Quantum_Eigensolver/
+├── README.md
+├── THEORY.md
+├── USAGE.md
+├── LICENSE
+├── pyproject.toml
+│
+├── vqe_qpe_common/          # Shared logic for VQE + QPE
+│   ├── molecules.py         # Unified molecule registry
+│   ├── geometry.py          # Bond/angle geometry generators
+│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
+│   └── plotting.py          # Shared plotting + filename builders
+│
+├── vqe/                     # Variational Quantum Eigensolver package
+│   ├── __main__.py          # CLI: python -m vqe
+│   ├── core.py              # VQE orchestration (runs, scans, sweeps)
+│   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
+│   ├── ansatz.py            # UCCSD, RY-CZ, HEA, minimal ansätze
+│   ├── optimizer.py         # Adam, GD, Momentum, SPSA, etc.
+│   ├── hamiltonian.py       # VQE-specific wrapper → uses vqe_qpe_common.hamiltonian
+│   ├── io_utils.py          # JSON caching, run signatures
+│   ├── visualize.py         # Convergence, scans, noise plots
+│   └── ssvqe.py             # Subspace-search VQE (excited states)
+│
+├── qpe/                     # Quantum Phase Estimation package
+│   ├── __main__.py          # CLI: python -m qpe
+│   ├── core.py              # Controlled-U, trotterized dynamics, iQFT
+│   ├── hamiltonian.py       # QPE-specific wrapper → uses vqe_qpe_common.hamiltonian
+│   ├── io_utils.py          # JSON caching, run signatures
+│   ├── noise.py             # Depolarizing + amplitude damping channels
+│   └── visualize.py         # Phase histograms + sweep plots
+│
+├── results/                 # JSON outputs
+├── images/                  # Saved plots (VQE + QPE)
+├── data/                    # Optional molecule configs, external data
+│
+└── notebooks/               # Notebooks importing from the vqe/ and qpe/ packages
 ```
 
----
+This structure ensures:
 
-## Package Structure
-
-| Module | Purpose |
-|---------|----------|
-| `vqe/core.py` | Main VQE orchestration (single runs, sweeps, scans, comparisons) |
-| `vqe/engine.py` | Core engine: devices, noise, ansatz + optimizer plumbing |
-| `vqe/ansatz.py` | UCCSD, UCCD, and hardware-efficient ansatz definitions |
-| `vqe/hamiltonian.py` | Molecular Hamiltonians, geometry generators |
-| `vqe/optimizer.py` | Optimizer registry and energy minimization loop |
-| `vqe/io_utils.py` | Run configuration, stable hashing, JSON I/O |
-| `vqe/visualize.py` | Plotting for convergence, noise studies, comparisons |
-| `vqe/ssvqe.py` | State-specific VQE for excited states |
+- **VQE and QPE share the same chemistry** (`vqe_qpe_common/`)
+- **All results are cached consistently** (`results/`)
+- **All plots use one naming system** (`vqe_qpe_common/plotting.py`)
+- **Notebooks import from the real package** (no duplicated code)
+- **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
 
 ---
 
-## ⚙️ Installation
+# ⚙️ Installation
 
-Clone and install locally:
 ```bash
-git clone <your-repo-url>
-cd <your-repo>
+git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver
+cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-Dependencies (auto-installed if using `setup.py` or `requirements.txt`):
-- `pennylane`
+**Python ≥ 3.9 required.**
+
+**Core dependencies:**
+- `pennylane >= 0.42`
 - `numpy`
+- `scipy`
 - `matplotlib`
+- `openfermionpyscf` (optional fallback for Hamiltonians)
 
 ---
 
-## 🚀 Quick Start
+# Common Core (Shared by VQE & QPE)
 
-### 1️⃣ Run a simple VQE
+The following modules ensure full consistency between solvers:
+
+| Module | Purpose |
+|--------|---------|
+| `vqe_qpe_common/molecules.py` | Canonical molecule definitions |
+| `vqe_qpe_common/geometry.py` | Bond/angle/coordinate generators |
+| `vqe_qpe_common/hamiltonian.py` | Hamiltonian construction + OpenFermion fallback |
+| `vqe_qpe_common/plotting.py` | Unified filename builder + PNG export |
+
+---
+
+# 🔹 VQE Package
+
+Features:
+- Ground-state VQE
+- Excited-state SSVQE
+- Geometry scans
+- Noise sweeps
+- Mapping comparisons
+- Optimizer registry
+- Result caching
+
+Run example:
 
 ```python
 from vqe.core import run_vqe
-
-result = run_vqe(
-    molecule="H2",
-    ansatz_name="UCCSD",
-    optimizer_name="Adam",
-    n_steps=50,
-    stepsize=0.2,
-)
-print("Ground-state energy:", result["energy"])
-```
-
-This automatically:
-- Builds the molecular Hamiltonian,
-- Initializes and runs the chosen ansatz,
-- Saves a JSON record under `package_results/`,
-- Plots convergence to `vqe/images/`.
-
----
-
-### 2️⃣ Compare optimizers
-
-```python
-from vqe.core import run_vqe_optimizer_comparison
-run_vqe_optimizer_comparison(molecule="H2", ansatz_name="RY-CZ")
-```
-
-### 3️⃣ Compare ansatzes
-
-```python
-from vqe.core import run_vqe_ansatz_comparison
-run_vqe_ansatz_comparison(molecule="H2", optimizer_name="Adam")
-```
-
-### 4️⃣ Run noisy simulations
-
-```python
-from vqe.core import run_vqe_noise_sweep
-run_vqe_noise_sweep(molecule="LiH", ansatz_name="UCC-D")
-```
-
-### 5️⃣ Geometry scans
-
-```python
-from vqe.core import run_vqe_geometry_scan
-import numpy as np
-run_vqe_geometry_scan(
-    molecule="H2_BOND",
-    param_name="bond",
-    param_values=np.linspace(0.5, 2.5, 8),
-    ansatz_name="UCCSD"
-)
-```
-
-### 6️⃣ SSVQE (Excited States)
-
-```python
-from vqe.ssvqe import run_ssvqe
-res = run_ssvqe(molecule="H3+",
-                num_states=2,
-                ansatz_name="UCCSD",
-                steps=80,
-                stepsize=0.4)
+result = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", n_steps=50)
+print(result["energy"])
 ```
 
 ---
 
-## 📊 Reproducibility
+# 🔹 QPE Package
 
-Each run is uniquely identified by a **12-character hash signature** derived from:
-- molecular geometry,
-- basis set,
-- ansatz,
-- optimizer and hyperparameters,
-- noise model,
-- fermion-to-qubit mapping.
-
-Run data is stored as JSON:
-```json
-{
-  "config": { ... },
-  "result": {
-    "energy": -1.1372704,
-    "energies": [...],
-    "final_state_real": [...],
-    "final_state_imag": [...]
-  }
-}
-```
-
----
-
-## 📘 Notebooks
-
-The original exploratory notebooks are still available under:
-```
-notebooks/
-```
-They now import directly from the `vqe` package rather than containing standalone code.
+Features:
+- Noiseless & noisy QPE  
+- Trotterized exp(-iHt)  
+- Inverse QFT  
+- Noise channels  
+- Cached results  
 
 Example:
+
 ```python
-from vqe.core import run_vqe
+from vqe_qpe_common.hamiltonian import build_hamiltonian
+from qpe.core import run_qpe
+
+H, n_qubits, hf_state = build_hamiltonian(["H","H"], coords, 0, "STO-3G")
+result = run_qpe(H, hf_state, n_ancilla=4)
 ```
 
 ---
 
-## Extending the Package
+# CLI Usage
 
-- **Add new ansatzes** → define in `vqe/ansatz.py` and register in `ANSATZES`
-- **Add new optimizers** → register in `vqe/optimizer.py`
-- **Add new geometry families** → update `generate_geometry` in `vqe/hamiltonian.py`
-- **Add custom noise models** → edit `apply_optional_noise` in `vqe/engine.py`
+### VQE  
+```bash
+python -m vqe -m H2 -a UCCSD -o Adam --steps 50
+```
+
+### QPE  
+```bash
+python -m qpe --molecule H2 --ancillas 4 --shots 2000
+```
 
 ---
 
-## Citation
+# 🧪 Tests
 
-If using this code in research, please cite:
-
-> *Variational Quantum Eigensolver using PennyLane*  
-> Author: Sid Richards (2025)
+```bash
+pytest -v
+```
 
 ---
 

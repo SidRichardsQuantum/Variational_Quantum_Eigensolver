@@ -530,7 +530,7 @@ def run_vqe_geometry_scan(
     """
     Geometry scan using run_vqe + generate_geometry, mirroring the H₂O and LiH notebooks.
     """
-    from common.plotting import build_filename, save_plot
+    from vqe_qpe_common.plotting import build_filename, save_plot
     import matplotlib.pyplot as plt
 
     if param_values is None:
@@ -577,7 +577,7 @@ def run_vqe_geometry_scan(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    from common.plotting import format_molecule_name
+    from vqe_qpe_common.plotting import format_molecule_name
     mol_norm = format_molecule_name(molecule)
 
     fname = build_filename(
@@ -622,7 +622,7 @@ def run_vqe_mapping_comparison(
     - Plotting energy convergence curves and printing summary
     """
     import matplotlib.pyplot as plt
-    from common.plotting import build_filename, save_plot
+    from vqe_qpe_common.plotting import build_filename, save_plot
 
     mappings = mappings or ["jordan_wigner", "bravyi_kitaev", "parity"]
     results = {}

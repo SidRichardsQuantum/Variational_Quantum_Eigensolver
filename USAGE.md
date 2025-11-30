@@ -46,7 +46,7 @@ Variational_Quantum_Eigensolver/
 │
 ├── vqe/                     # Variational Quantum Eigensolver package
 ├── qpe/                     # Quantum Phase Estimation package
-├── common/                  # Shared logic for VQE + QPE
+├── vqe_qpe_common/          # Shared logic for VQE + QPE
 │
 ├── results/                 # JSON outputs
 ├── images/                  # Saved plots (VQE + QPE)
@@ -188,9 +188,9 @@ Covers:
 - Devices used:
   - `default.qubit` for noiseless
   - `default.mixed` for noisy runs
-- All geometry generation is shared through `common/geometry`
-- All molecule data is unified in `common/molecules`
-- All plotting uses a single interface in `common/plotting`
+- All geometry generation is shared through `vqe_qpe_common/geometry`
+- All molecule data is unified in `vqe_qpe_common/molecules`
+- All plotting uses a single interface in `vqe_qpe_common/plotting`
 
 For open-shell systems:
 ```bash

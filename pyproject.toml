@@ -13,9 +13,9 @@ requires-python = ">=3.9"
 
 dependencies = [
     "pennylane>=0.42,<0.45",
-    "numpy",
+    "numpy>=1.23,<2.0",
+    "scipy>=1.9,<2.0",
     "matplotlib",
-    "scipy",
     "openfermion",
     "openfermionpyscf",
 ]
@@ -26,16 +26,17 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
 ]
 
 [project.urls]
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
 Issues = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues"
+Documentation = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver#readme"
 
 [tool.setuptools.packages.find]
-include = ["vqe", "vqe.*", "qpe", "qpe.*"]
+include = ["vqe", "vqe.*", "qpe", "qpe.*", "vqe_qpe_common", "vqe_qpe_common.*"]
 
 # No package-data needed (images generated at runtime)
 

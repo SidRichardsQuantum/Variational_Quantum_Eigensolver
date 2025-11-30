@@ -243,7 +243,7 @@ def plot_ssvqe_convergence_multi(
     """
 
     import matplotlib.pyplot as plt
-    from common.plotting import build_filename, save_plot, format_molecule_name
+    from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_name
 
     # Normalise molecule name
     mol_norm = format_molecule_name(molecule)

@@ -28,10 +28,10 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 | **H₂O**   | Bond-angle scans (VQE)                          | STO-3G     | 14 |
 | **H₃⁺**   | Mapping comparisons, SSVQE excited states       | STO-3G     | 6 |
 
-All molecular geometries now come from the **shared registry** in `common/molecules.py`.
+All molecular geometries now come from the **shared registry** in `vqe_qpe_common/molecules.py`.
 All simulations use the **STO-3G** basis set for consistency.
 
-Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
+Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified vqe_qpe_common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
 
 ---
 
@@ -64,28 +64,22 @@ The VQE algorithm consists of:
 3. **Optimization**: Classically optimize parameters $\theta$ to minimize energy
 4. **Iteration**: Repeat until convergence
 
-VQE WORKFLOW:
-
 ```
-   CLASSICAL OPTIMIZER                         QUANTUM DEVICE / SIMULATOR
-   ---------------------                       ---------------------------
-            │                                              │
-            │  1) propose parameters θ₀                    │
-            ├─────────────────────────────────────────────▶│
-            │                                              │
-            │                          2) prepare ansatz |ψ(θ₀)⟩
-            │                              + measure ⟨H⟩   │
-            │◀─────────────────────────────────────────────┤
-            │                                              │
-   3) compute cost:  E(θ₀) = ⟨ψ(θ₀)|H|ψ(θ₀)⟩               │
-   4) update θ₁ = θ₀ - η · ∇E(θ₀)                          │
-            │                                              │
-            ├─────────────────────────────────────────────▶│
-            │         (repeat until convergence)           │
-            │                                              │
-            ▼                                              ▼
-       Optimal θ*                               Approx. ground state |ψ(θ*)⟩
-                                              with energy E₀ ≈ ⟨ψ(θ*)|H|ψ(θ*)⟩
+VQE WORKFLOW
+============
+
+   Classical Optimizer                Quantum Circuit
+   -------------------                ----------------
+         │                                   │
+         │  propose parameters θ             │
+         ├──────────────────────────────────▶│
+         │                                   │
+         │                    prepare ansatz → measure energy
+         │◀──────────────────────────────────┤
+         │
+   update θ ← minimize energy
+         │
+         └── repeat until convergence
 ```
 
 ---
@@ -105,7 +99,7 @@ A chemistry-inspired ansatz derived from coupled-cluster theory. Includes single
 - Used to compare excitation types (single vs. double vs. UCCSD) in **H₃⁺**
 
 ```
-   |HF⟩  --exp[ T(θ) - T(θ)^† ]-->  |ψ_UCCSD(θ)⟩
+   |HF⟩ ── exp( T(θ) - T(θ)^† ) ──>  |ψ_UCCSD(θ)⟩
 
    where T(θ) = T₁(θ) + T₂(θ) for:
          T₁ singles  (a^†_p a_q)
@@ -123,7 +117,6 @@ A hardware-efficient ansatz composed of layers alternating single-qubit rotation
 
 ```
 Layer k:
-
    ┌──────────── Ry rotations ─────────────┐   ┌──── CZ entanglers ───
    q0: ── Ry(θ₀,k) ────────────────────────────●─────────●────────────
                                                │         │
@@ -260,7 +253,7 @@ Loss function:
 
    𝓛(θ(0), θ(1), …) =
        Σᵢ wᵢ ⟨ψᵢ| H |ψᵢ⟩        (weighted energies)
-     + λ Σ_{i<j} |⟨ψᵢ | ψⱼ⟩|²    (orthogonality penalty)
+     + λ Σ_{i<j} |⟨ψᵢ | ψⱼ⟩|²   (orthogonality penalty)
 
 
 OPTIMIZATION LOOP:
@@ -301,7 +294,7 @@ Result: approximate low-lying spectrum {E₀, E₁, …} from a single joint opt
 
 The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting eigenvalues of unitary operators.  
 In the context of quantum chemistry, QPE can be used to determine the electronic ground-state energy of a molecule by estimating the eigenenergies of the time-evolution operator.
-QPE is implemented for molecules defined in `common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
+QPE is implemented for molecules defined in `vqe_qpe_common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
 This guarantees consistent chemistry and reproducible comparisons between VQE and QPE.
 
 ### QPE Background
@@ -409,21 +402,28 @@ Both VQE *and* QPE support these channels:
 - QPE applies noise after each controlled-unitary evolution using `qpe.noise.apply_noise_all`.
 
 ```
-                    (ideal) circuit
-                 ┌───────────────────┐
-   |ψ_in⟩  ───▶  │  unitary U(θ)     │  ──▶  |ψ_out⟩
-                 └───────────────────┘
+NOISE IN SIMULATIONS
+====================
 
-In the noisy model, between/after unitary layers we insert channels:
+Circuit execution with noise:
 
-                 ┌───────────────────┐   ┌───────────────┐
-   |ψ_in⟩  ───▶  │  unitary U(θ)     │──▶│  noise 𝓔(·)   │──▶  ρ_out
-                 └───────────────────┘   └───────────────┘
+   ideal gates
+       ↓
+   apply noise channel(s)
+       ↓
+   next layer of gates
+       ↓
+   apply noise channel(s)
+       ↓
+   ...
 
-In this project:
+Noise effects studied:
+   • depolarizing noise (symmetric errors)
+   • amplitude damping (relaxation toward |0⟩)
 
-   VQE (noisy) → apply 𝓔 after each ansatz layer on all active wires
-   QPE (noisy) → apply 𝓔 after each controlled time-evolution segment
+Used in:
+   • VQE (after each ansatz layer)
+   • QPE (after each controlled evolution step)
 ```
 
 ### Depolarizing Noise

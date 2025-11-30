@@ -11,7 +11,7 @@ import pennylane as qml
 from pennylane import qchem
 from typing import Tuple
 
-from common.molecules import get_molecule_config
+from vqe_qpe_common.molecules import get_molecule_config
 
 def hartree_fock_state(symbols, charge, n_qubits):
     """Compute electron count and return HF basis state bitstring."""

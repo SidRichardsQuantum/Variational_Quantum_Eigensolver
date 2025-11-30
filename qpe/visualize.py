@@ -26,7 +26,7 @@ from typing import Dict, Any, Sequence, Optional
 
 import matplotlib.pyplot as plt
 
-from common.plotting import (
+from vqe_qpe_common.plotting import (
     build_filename,
     save_plot,
     format_molecule_name,

@@ -1,7 +1,8 @@
-pennylane>=0.42
-numpy
+pennylane<0.45,>=0.42
+numpy<2.0,>=1.23
+scipy<2.0,>=1.9
 matplotlib
-scipy
+openfermion
 openfermionpyscf
 
 [dev]
@@ -9,6 +10,7 @@ pytest>=8.0
 black
 flake8
 mypy
+jupyterlab
 
 [docs]
 sphinx
