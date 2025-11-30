@@ -38,13 +38,3 @@ All notable changes to this project will be documented in this file.
 - Full repository refactor: new modules, documentation, directory structure.
 
 ---
-
-## [0.1.0] - 2025-11-09
-### Added
-- Early VQE prototype.
-- Prototype QPE implementation.
-- Legacy notebooks and utilities.
-- Initial Hamiltonian generation and ansatz support.
-
----
-
