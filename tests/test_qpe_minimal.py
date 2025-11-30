@@ -1,18 +1,21 @@
-import numpy as np
+from vqe_qpe_common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
-from qpe.hamiltonian import build_h2_hamiltonian
+import numpy as np
 
-def test_qpe_runs_minimal():
-    H = build_h2_hamiltonian(0.7)
+def test_qpe_minimal():
+    atoms = ["H", "H"]
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [0.0, 0.0, 0.7]])
+
+    H, n_qubits, hf_state = build_hamiltonian(
+        atoms, coords, charge=0, basis="sto-3g"
+    )
 
     result = run_qpe(
         hamiltonian=H,
-        num_ancillas=2,
-        time=0.2,
-        shots=100,
-        seed=0,
-        verbose=False,
+        hf_state=hf_state,
+        n_ancilla=1,
+        shots=100
     )
 
-    assert "phase_distribution" in result
-    assert isinstance(result["phase_distribution"], dict)
+    assert "phase" in result

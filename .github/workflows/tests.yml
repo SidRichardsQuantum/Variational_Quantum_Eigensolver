@@ -2,25 +2,27 @@ name: tests
 
 on:
   push:
-    branches: [ main ]
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: "3.12"
 
-    - name: Install package
+    - name: Install dependencies
       run: |
-        pip install build
-        pip install -e .[dev]
+        pip install -e .
+        pip install pytest
 
     - name: Run tests
-      run: pytest -q
+      run: pytest -v

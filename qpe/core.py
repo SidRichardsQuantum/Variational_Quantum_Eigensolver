@@ -270,6 +270,8 @@ def run_qpe(
 
     # Run circuit
     samples = np.array(circuit(), dtype=int)
+    samples = np.atleast_2d(samples)
+
     bitstrings = ["".join(str(int(b)) for b in s) for s in samples]
     counts = dict(Counter(bitstrings))
     probs = {b: c / shots for b, c in counts.items()}

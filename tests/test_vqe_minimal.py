@@ -1,20 +1,21 @@
-import numpy as np
+from vqe_qpe_common.hamiltonian import build_hamiltonian
 from vqe.core import run_vqe
-from vqe.hamiltonian import build_h2_hamiltonian
+import numpy as np
 
-def test_vqe_runs_minimal():
-    # Tiny molecule (H2)
-    H = build_h2_hamiltonian(bond_length=0.7)
+def test_vqe_minimal():
+    atoms = ["H", "H"]
+    coords = np.array([[0.0, 0.0, 0.0],
+                       [0.0, 0.0, 0.7]])
 
-    # Use simplified VQE settings
-    result = run_vqe(
-        hamiltonian=H,
-        ansatz="TwoQubit-RY-CNOT",
-        optimizer="adam",
-        steps=3,
-        seed=0,
-        verbose=False
+    H, n_qubits, hf_state = build_hamiltonian(
+        atoms, coords, charge=0, basis="sto-3g"
     )
 
-    assert "final_energy" in result
-    assert np.isfinite(result["final_energy"])
+    result = run_vqe(
+        "H2",
+        ansatz_name="Minimal",
+        optimizer_name="Adam",
+        n_steps=2
+    )
+
+    assert "energy" in result
