@@ -130,20 +130,18 @@ def build_filename(
 # ---------------------------------------------------------------------
 # Unified Save
 # ---------------------------------------------------------------------
-def save_plot(filename: str) -> str:
+def save_plot(filename: str, show: bool = True) -> str:
     """
-    Save the current matplotlib figure to the global IMG_DIR.
-
-    This ensures:
-        - consistent DPI
-        - consistent bounding box
-        - all plots stored in `images/` regardless of subsystem
-        - automatic directory creation
+    Save the current matplotlib figure to the global IMG_DIR and optionally
+    display it inline (for notebooks).
 
     Parameters
     ----------
     filename : str
         A clean filename produced by build_filename().
+    show : bool, default=True
+        If True, display the plot (for Jupyter/VSCode notebooks).
+        If False, only save.
 
     Returns
     -------
@@ -159,7 +157,11 @@ def save_plot(filename: str) -> str:
     path = os.path.join(IMG_DIR, filename)
 
     plt.savefig(path, dpi=300, bbox_inches="tight")
-    plt.close()
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
     print(f"📁 Saved plot → {path}")
     return path

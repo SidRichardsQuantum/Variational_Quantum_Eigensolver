@@ -17,12 +17,19 @@ import pennylane as qml
 _OPTIMIZERS = {
     "Adam": qml.AdamOptimizer,
     "adam": qml.AdamOptimizer,  # alias
+
     "GradientDescent": qml.GradientDescentOptimizer,
     "gd": qml.GradientDescentOptimizer,  # alias
+
     "Momentum": qml.MomentumOptimizer,
     "Nesterov": qml.NesterovMomentumOptimizer,
+
     "RMSProp": qml.RMSPropOptimizer,
     "Adagrad": qml.AdagradOptimizer,
+
+    # ---- NEW ADDITIONS (SPSA SUPPORT) ----
+    "SPSA": qml.SPSAOptimizer,
+    "spsa": qml.SPSAOptimizer,  # alias
 }
 
 
@@ -39,10 +46,6 @@ def get_optimizer(name: str = "Adam", stepsize: float = 0.2):
 
     Returns:
         An instantiated optimizer.
-
-    Example:
-        opt = get_optimizer("Adam", 0.1)
-        params, cost = opt.step_and_cost(cost_fn, params)
     """
     key = name.lower()
     for k, cls in _OPTIMIZERS.items():

@@ -45,7 +45,6 @@ def _save_plot(fname):
     os.makedirs(IMG_DIR, exist_ok=True)
     path = os.path.join(IMG_DIR, fname)
     plt.savefig(path, dpi=300, bbox_inches="tight")
-    plt.close()
     print(f"📁 Saved → {path}")
 
 
@@ -60,6 +59,7 @@ def plot_convergence(
     ansatz: str = "UCCSD",
     dep_prob: float = 0.0,
     amp_prob: float = 0.0,
+    show=True,
 ):
     """
     Plot VQE energy convergence (noisy + noiseless overlay).
@@ -104,11 +104,16 @@ def plot_convergence(
     )
     _save_plot(fname)
 
+    if show:
+        plt.show()
+    else:
+        plt.close()
+
 
 # ================================================================
 # OPTIMIZER COMPARISON
 # ================================================================
-def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD"):
+def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD", show=True):
     """
     Plot multiple optimizers on a shared convergence graph.
     """
@@ -129,11 +134,16 @@ def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD
     fname = _safe_filename("VQE_Optimizer_Comparison", molecule, ansatz)
     _save_plot(fname)
 
+    if show:
+        plt.show()
+    else:
+        plt.close()
+
 
 # ================================================================
 # ANSATZ COMPARISON
 # ================================================================
-def plot_ansatz_comparison(molecule: str, results: dict, optimizer: str = "Adam"):
+def plot_ansatz_comparison(molecule: str, results: dict, show=True, optimizer: str = "Adam"):
     """
     Plot multiple ansatzes on a shared convergence graph.
     """
@@ -154,6 +164,11 @@ def plot_ansatz_comparison(molecule: str, results: dict, optimizer: str = "Adam"
     fname = _safe_filename("VQE_Ansatz_Comparison", molecule, optimizer)
     _save_plot(fname)
 
+    if show:
+        plt.show()
+    else:
+        plt.close()
+
 
 # ================================================================
 # NOISE STATISTICS
@@ -165,6 +180,7 @@ def plot_noise_statistics(
     energy_stds,
     fidelity_means,
     fidelity_stds,
+    show=True,
     optimizer_name="Adam",
     ansatz_name="UCCSD",
     noise_type="Depolarizing",
@@ -204,6 +220,11 @@ def plot_noise_statistics(
         noise_type,
     )
     _save_plot(fname)
+
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 
 # ---------------------------------------------------------------------
