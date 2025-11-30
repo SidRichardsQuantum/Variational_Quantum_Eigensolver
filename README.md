@@ -1,28 +1,27 @@
 # Quantum Simulation Suite — VQE + QPE (PennyLane)
 
-<!-- Badge block -->
 <p align="center">
+
+  <!-- PyPI Version -->
+  <a href="https://pypi.org/project/vqe-pennylane/">
+    <img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version">
+  </a>
 
   <!-- PyPI Downloads -->
   <a href="https://pypi.org/project/vqe-pennylane/">
-    <img src="https://img.shields.io/pypi/dw/vqe-pennylane?style=flat-square" alt="PyPI Downloads"/>
+    <img src="https://img.shields.io/pypi/dm/vqe-pennylane?style=flat-square" alt="PyPI Downloads">
   </a>
 
   <!-- GitHub Actions Tests -->
   <a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions/workflows/tests.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests"/>
-  </a>
-
-  <!-- PyPI Version -->
-  <a href="https://pypi.org/project/vqe-pennylane/">
-    <img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version"/>
+    <img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
   </a>
 
   <!-- Supported Python Versions -->
-  <img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions"/>
+  <img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions">
 
   <!-- License -->
-  <img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License"/>
+  <img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
 
 </p>
 
@@ -99,18 +98,25 @@ This structure ensures:
 
 # ⚙️ Installation
 
+### Install from PyPI
+
 ```bash
 pip install vqe-pennylane
 ```
 
-**Python ≥ 3.9 required.**
+### Install from source (development mode)
 
-**Core dependencies:**
-- `pennylane >= 0.42`
-- `numpy`
-- `scipy`
-- `matplotlib`
-- `openfermionpyscf` (optional fallback for Hamiltonians)
+```bash
+git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
+cd Variational_Quantum_Eigensolver
+pip install -e .
+```
+
+### Confirm installation
+
+```bash
+python -c "import vqe, qpe; print('VQE+QPE imported successfully!')"
+```
 
 ---
 
