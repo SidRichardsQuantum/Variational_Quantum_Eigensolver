@@ -8,7 +8,7 @@ version = "0.2.1"
 description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
-license = { text = "MIT" }
+license = { text = "MIT", file = "LICENSE" }
 requires-python = ">=3.9"
 
 dependencies = [
