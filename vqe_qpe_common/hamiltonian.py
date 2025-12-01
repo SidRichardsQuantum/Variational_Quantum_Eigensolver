@@ -15,7 +15,13 @@ from vqe_qpe_common.molecules import get_molecule_config
 
 def hartree_fock_state(symbols, charge, n_qubits):
     """Compute electron count and return HF basis state bitstring."""
-    Z = {"H": 1, "Li": 3, "O": 8}
+    Z = {
+        "H": 1,
+        "He": 2,
+        "Li": 3,
+        "Be": 4,
+        "O": 8,
+    }
     electrons = sum(Z[s] for s in symbols) - charge
     return qchem.hf_state(int(electrons), n_qubits)
 

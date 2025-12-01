@@ -465,15 +465,33 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
 
 ## References
 
-- [VQE](https://en.wikipedia.org/wiki/Variational_quantum_eigensolver)
-- [Hartree-Fock Method](https://en.wikipedia.org/wiki/Hartree–Fock_method)
-- [Ansatzes](https://docs.pennylane.ai/en/stable/code/qml.html)
-- [Optimisers](https://docs.pennylane.ai/en/stable/introduction/interfaces.html)
-- [Quantum Chemistry with Fermion-to-Qubit Mappings](https://arxiv.org/abs/1701.08213)
-- [Variational Quantum Eigensolver Review](https://arxiv.org/abs/2001.03685)
-- [Quantum measurements and the Abelian Stabilizer Problem](https://arxiv.org/abs/quant-ph/9511026)
-- [Simulated Quantum Computation of Molecular Energies](https://doi.org/10.1126/science.1113479)
-- [QPE](https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm)
+**Foundations**
+- **Variational Quantum Eigensolver (VQE)** — overview  
+  https://en.wikipedia.org/wiki/Variational_quantum_eigensolver  
+- **Quantum Phase Estimation (QPE)** — overview  
+  https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm  
+
+**Quantum Chemistry**
+- **Hartree–Fock Method** — overview  
+  https://en.wikipedia.org/wiki/Hartree–Fock_method  
+- Seeley et al., *Fermion-to-Qubit Mappings* (Bravyi–Kitaev, JW)  
+  https://arxiv.org/abs/1701.08213  
+- Aspuru-Guzik et al., *Simulated Quantum Computation of Molecular Energies*  
+  https://doi.org/10.1126/science.1113479  
+
+**VQE Theory & Reviews**
+- McArdle et al., *Quantum Computational Chemistry* (VQE review)  
+  https://arxiv.org/abs/2001.03685  
+
+**Quantum Algorithms**
+- Kitaev, *Quantum Measurements and the Abelian Stabilizer Problem*  
+  https://arxiv.org/abs/quant-ph/9511026  
+
+**PennyLane Documentation**
+- **Templates & Ansatzes**  
+  https://docs.pennylane.ai/en/stable/code/qml.html  
+- **Optimizers & Interfaces**  
+  https://docs.pennylane.ai/en/stable/introduction/interfaces.html  
 
 ---
 
