@@ -56,6 +56,46 @@ MOLECULES = {
         "charge": 0,
         "basis": "STO-3G",
     },
+
+    # ------------------------------------------------------
+    # NEW MOLECULES (BeH2, H4-chain, HeH+)
+    # ------------------------------------------------------
+
+    "HeH+": {
+        "symbols": ["He", "H"],
+        # Typical HeH+ bond length ~1.46 Å (varies in literature)
+        "coordinates": np.array([
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 1.46],
+        ]),
+        "charge": +1,
+        "basis": "STO-3G",
+    },
+
+    "BeH2": {
+        "symbols": ["Be", "H", "H"],
+        # Linear geometry: H–Be–H with ~1.33 Å Be–H bond length
+        "coordinates": np.array([
+            [0.0,   0.0, 0.0],
+            [0.0,   0.0, 1.33],
+            [0.0,   0.0, -1.33],
+        ]),
+        "charge": 0,
+        "basis": "STO-3G",
+    },
+
+    "H4": {
+        "symbols": ["H", "H", "H", "H"],
+        # Linear H4 chain, equally spaced at 1.0 Å
+        "coordinates": np.array([
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [3.0, 0.0, 0.0],
+        ]),
+        "charge": 0,
+        "basis": "STO-3G",
+    },
 }
 
 
