@@ -20,7 +20,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from .hamiltonian import build_hamiltonian, generate_geometry
-from .ansatz import get_ansatz, init_params
 from .visualize import (
     plot_convergence,
     plot_optimizer_comparison,
@@ -90,6 +89,40 @@ def run_vqe(
     """
     Run a Variational Quantum Eigensolver (VQE) workflow end-to-end.
 
+    The behaviour is designed to match the legacy notebooks, while using the new
+    engine/ansatz modules internally.
+
+    Parameters
+    ----------
+    molecule : str
+        Molecular label (used when symbols/coordinates are not explicitly provided).
+    seed : int
+        RNG seed for parameter initialisation and any stochastic components.
+    n_steps : int
+        Number of optimisation steps.
+    stepsize : float
+        Optimizer learning rate.
+    plot : bool
+        If True, plot the convergence curve.
+    ansatz_name : str
+        Name of the ansatz from vqe.ansatz.ANSATZES.
+    optimizer_name : str
+        Name of the classical optimizer.
+    noisy : bool
+        Whether to include depolarizing / amplitude-damping noise.
+    depolarizing_prob : float
+        Depolarizing channel probability (per qubit).
+    amplitude_damping_prob : float
+        Amplitude damping probability (per qubit).
+    force : bool
+        If True, ignore cached results and rerun optimisation.
+    symbols, coordinates :
+        Optional direct molecular specification; if provided, qchem is used directly.
+    basis : str
+        Basis set string (e.g. "sto-3g", "STO-3G").
+    mapping : str
+        Fermion-to-qubit mapping label ("jordan_wigner", etc.).
+
     Returns
     -------
     dict
@@ -108,13 +141,18 @@ def run_vqe(
     # --- Hamiltonian & molecular data ---
     if symbols is not None and coordinates is not None:
         # Direct molecular override (used in geometry scans, etc.)
+        # Normalise basis for qchem
+        basis = basis.lower()
         H, qubits = qml.qchem.molecular_hamiltonian(
             symbols, coordinates, charge=0, basis=basis, unit="angstrom"
         )
     else:
+        # Use shared build_hamiltonian (which already embeds mapping logic)
         H, qubits, symbols, coordinates, basis = build_hamiltonian(
             molecule, mapping=mapping
         )
+        # Normalise basis string consistently
+        basis = basis.lower()
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -190,11 +228,14 @@ def run_vqe(
 
     for step in range(n_steps):
         try:
-            params, _ = opt.step_and_cost(energy_qnode, params)
+            # Use cost returned by step_and_cost to avoid extra QNode calls
+            params, cost = opt.step_and_cost(energy_qnode, params)
+            e = float(cost)
         except AttributeError:
+            # Optimizers without step_and_cost
             params = opt.step(energy_qnode, params)
+            e = float(energy_qnode(params))
 
-        e = float(energy_qnode(params))
         energies.append(e)
         print(f"Step {step + 1:02d}/{n_steps}: E = {e:.6f} Ha")
 
@@ -252,7 +293,9 @@ def run_vqe_noise_sweep(
         Whether to display the generated plot (via matplotlib).
     """
     depolarizing_probs = (
-        np.arange(0.0, 0.11, 0.02) if depolarizing_probs is None else np.asarray(depolarizing_probs)
+        np.arange(0.0, 0.11, 0.02)
+        if depolarizing_probs is None
+        else np.asarray(depolarizing_probs)
     )
     amplitude_damping_probs = (
         np.zeros_like(depolarizing_probs)
@@ -273,7 +316,9 @@ def run_vqe_noise_sweep(
         force=force,
     )
     reference_energy = ref["energy"]
-    pure_state = np.array(ref["final_state_real"]) + 1j * np.array(ref["final_state_imag"])
+    pure_state = np.array(ref["final_state_real"]) + 1j * np.array(
+        ref["final_state_imag"]
+    )
 
     energy_means, energy_stds = [], []
     fidelity_means, fidelity_stds = [], []
@@ -295,13 +340,15 @@ def run_vqe_noise_sweep(
         )
 
         energy = res["energy"]
-        state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
+        state = np.array(res["final_state_real"]) + 1j * np.array(
+            res["final_state_imag"]
+        )
 
         dE = energy - reference_energy
         F = compute_fidelity(pure_state, state)
 
         energy_means.append(dE)
-        energy_stds.append(0.0)       # single seed
+        energy_stds.append(0.0)  # single seed
         fidelity_means.append(F)
         fidelity_stds.append(0.0)
 
@@ -347,6 +394,7 @@ def run_vqe_optimizer_comparison(
     force=False,
     mapping: str = "jordan_wigner",
     show: bool = True,
+    seed=0,
 ):
     """
     Compare different classical optimizers on the same VQE instance.
@@ -387,6 +435,7 @@ def run_vqe_optimizer_comparison(
             amplitude_damping_prob=amplitude_damping_prob,
             mapping=mapping,
             force=force,
+            seed=seed,
         )
 
         results[opt_name] = res["energies"]
@@ -503,9 +552,8 @@ def run_vqe_multi_seed_noise(
     show: bool = True,
 ):
     """
-    Multi-seed noise statistics...
+    Multi-seed noise statistics for a given molecule and ansatz.
     """
-
     # ---------- FIXED HANDLING FOR NUMPY ARRAYS ----------
     if seeds is None:
         seeds = np.arange(0, 5)
@@ -533,8 +581,8 @@ def run_vqe_multi_seed_noise(
     # --- Reference (noiseless) ---
     print("\n🔹 Computing noiseless reference runs...")
     ref_energies, ref_states = [], []
-    for seed in seeds:
-        np.random.seed(int(seed))
+    for s in seeds:
+        np.random.seed(int(s))
         res = run_vqe(
             molecule=molecule,
             n_steps=steps,
@@ -545,10 +593,12 @@ def run_vqe_multi_seed_noise(
             noisy=False,
             mapping=mapping,
             force=force,
-            seed=int(seed),
+            seed=int(s),
         )
         ref_energies.append(res["energy"])
-        state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
+        state = np.array(res["final_state_real"]) + 1j * np.array(
+            res["final_state_imag"]
+        )
         ref_states.append(state)
 
     reference_energy = float(np.mean(ref_energies))
@@ -561,8 +611,8 @@ def run_vqe_multi_seed_noise(
 
     for p_dep, p_amp in zip(depolarizing_probs, amplitude_damping_probs):
         noisy_energies, fidelities = [], []
-        for seed in seeds:
-            np.random.seed(int(seed))
+        for s in seeds:
+            np.random.seed(int(s))
             res = run_vqe(
                 molecule=molecule,
                 n_steps=steps,
@@ -575,10 +625,12 @@ def run_vqe_multi_seed_noise(
                 amplitude_damping_prob=float(p_amp),
                 mapping=mapping,
                 force=force,
-                seed=int(seed),
+                seed=int(s),
             )
             noisy_energies.append(res["energy"])
-            state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
+            state = np.array(res["final_state_real"]) + 1j * np.array(
+                res["final_state_imag"]
+            )
             state = state / np.linalg.norm(state)
             fidelities.append(compute_fidelity(reference_state, state))
 
@@ -596,7 +648,9 @@ def run_vqe_multi_seed_noise(
             f"⟨F⟩={fidelity_means[-1]:.4f}"
         )
 
-    noise_levels = amplitude_damping_probs if noise_type == "amplitude" else depolarizing_probs
+    noise_levels = (
+        amplitude_damping_probs if noise_type == "amplitude" else depolarizing_probs
+    )
 
     plot_noise_statistics(
         molecule,
@@ -643,7 +697,11 @@ def run_vqe_geometry_scan(
     list of tuples
         [(param_value, mean_E, std_E), ...]
     """
-    from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_name
+    from vqe_qpe_common.plotting import (
+        build_filename,
+        save_plot,
+        format_molecule_name,
+    )
     import matplotlib.pyplot as plt
 
     if param_values is None:
@@ -657,8 +715,8 @@ def run_vqe_geometry_scan(
         symbols, coordinates = generate_geometry(molecule, val)
 
         energies_for_val = []
-        for seed in seeds:
-            np.random.seed(int(seed))
+        for s in seeds:
+            np.random.seed(int(s))
             res = run_vqe(
                 molecule=molecule,
                 n_steps=steps,
@@ -669,7 +727,7 @@ def run_vqe_geometry_scan(
                 coordinates=coordinates,
                 noisy=False,
                 plot=False,
-                seed=int(seed),
+                seed=int(s),
                 force=force,
                 mapping=mapping,
             )
@@ -686,7 +744,9 @@ def run_vqe_geometry_scan(
     plt.errorbar(params, means, yerr=stds, fmt="o-", capsize=4)
     plt.xlabel(f"{param_name.capitalize()} (Å or °)")
     plt.ylabel("Ground-State Energy (Ha)")
-    plt.title(f"{molecule} Energy vs {param_name.capitalize()} ({ansatz_name}, {optimizer_name})")
+    plt.title(
+        f"{molecule} Energy vs {param_name.capitalize()} ({ansatz_name}, {optimizer_name})"
+    )
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
@@ -724,9 +784,12 @@ def run_vqe_mapping_comparison(
     mappings=None,
     steps=50,
     stepsize=0.2,
-    seed=0,
+    noisy=False,
+    depolarizing_prob=0.0,
+    amplitude_damping_prob=0.0,
     force=False,
-    show: bool = True,
+    show=True,
+    mapping_kwargs=None,
 ):
     """
     Compare different fermion-to-qubit mappings by:
@@ -765,7 +828,10 @@ def run_vqe_mapping_comparison(
         print(f"\n⚙️ Running mapping: {mapping}")
 
         # Build Hamiltonian once to inspect complexity
-        H, qubits, symbols, coordinates, basis = build_hamiltonian(molecule, mapping=mapping)
+        H, qubits, symbols, coordinates, basis = build_hamiltonian(
+            molecule, mapping=mapping
+        )
+        basis = basis.lower()
 
         try:
             num_terms = len(H.ops)
@@ -773,20 +839,23 @@ def run_vqe_mapping_comparison(
             try:
                 num_terms = len(H.terms()[0]) if callable(H.terms) else len(H.data)
             except Exception:
-                num_terms = len(getattr(H, "data", [])) if hasattr(H, "data") else None
+                num_terms = (
+                    len(getattr(H, "data", [])) if hasattr(H, "data") else None
+                )
 
         # Run VQE using the high-level entrypoint (handles ansatz + noise plumbing)
         res = run_vqe(
             molecule=molecule,
-            n_steps=steps,
-            stepsize=stepsize,
-            plot=False,
             ansatz_name=ansatz_name,
             optimizer_name=optimizer_name,
-            noisy=False,
+            n_steps=steps,
+            stepsize=stepsize,
+            noisy=noisy,
+            depolarizing_prob=depolarizing_prob,
+            amplitude_damping_prob=amplitude_damping_prob,
             mapping=mapping,
-            seed=seed,
             force=force,
+            plot=False,
         )
 
         results[mapping] = {
@@ -822,11 +891,13 @@ def run_vqe_mapping_comparison(
     fname = build_filename(
         molecule=molecule,
         topic="mapping_comparison",
-        tag=f"{ansatz_name}_{optimizer_name}",
+        extras={"ansatz": ansatz_name, "opt": optimizer_name},
     )
     save_plot(fname)
 
-    print(f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:")
+    print(
+        f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:"
+    )
     for mapping, data in results.items():
         print(
             f"  {mapping:15s} → E = {data['final_energy']:.8f} Ha, "
