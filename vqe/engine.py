@@ -385,6 +385,6 @@ def make_overlap00_fn(
 
     def overlap00(p_i, p_j):
         probs = _overlap(p_i, p_j)
-        return float(probs[0])
+        return probs[0]
 
     return overlap00

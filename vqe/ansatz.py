@@ -33,26 +33,30 @@ from pennylane import qchem
 # ================================================================
 def two_qubit_ry_cnot(params, wires):
     """
-    Two-qubit toy entangler; not chemically meaningful.
+    Scalable version of the original 2-qubit RY-CNOT motif.
 
-    Matches the legacy H₂ noise-scan behaviour:
-        RY(theta) ──●────
-                    │
-        RY(-theta)──X────
+    Applies the motif to every adjacent pair of qubits:
+        RY(param) on wire i
+        CNOT(i → i+1)
+        RY(-param) on wire i+1
+        CNOT(i → i+1)
+
+    Number of parameters = len(wires) - 1.
     """
-    if len(wires) != 2:
+    if len(params) != len(wires) - 1:
         raise ValueError(
-            f"TwoQubit-RY-CNOT expects exactly 2 wires, got {len(wires)}"
-        )
-    if len(params) < 1:
-        raise ValueError(
-            f"TwoQubit-RY-CNOT expects at least 1 parameter, got {len(params)}"
+            f"TwoQubit-RY-CNOT expects {len(wires)-1} parameters for {len(wires)} wires, "
+            f"got {len(params)}."
         )
 
-    qml.RY(params[0], wires=wires[0])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.RY(-params[0], wires=wires[1])
-    qml.CNOT(wires=[wires[0], wires[1]])
+    for i in range(len(wires) - 1):
+        w0, w1 = wires[i], wires[i + 1]
+        theta = params[i]
+
+        qml.RY(theta, wires=w0)
+        qml.CNOT(wires=[w0, w1])
+        qml.RY(-theta, wires=w1)
+        qml.CNOT(wires=[w0, w1])
 
 
 def ry_cz(params, wires):
@@ -373,15 +377,18 @@ def init_params(
     np.random.seed(seed)
 
     # --- Toy ansatzes --------------------------------------------------------
-    if ansatz_name in ["TwoQubit-RY-CNOT", "Minimal"]:
+    if ansatz_name == "TwoQubit-RY-CNOT":
+        # scalable: one parameter per adjacent pair
+        if num_wires < 2:
+            raise ValueError("TwoQubit-RY-CNOT requires at least 2 wires.")
+        vals = scale * np.random.randn(num_wires - 1)
+
+    elif ansatz_name == "Minimal":
+        # still a 1-parameter global circuit
         vals = scale * np.random.randn(1)
 
     elif ansatz_name == "RY-CZ":
         vals = scale * np.random.randn(num_wires)
-
-    elif ansatz_name == "StronglyEntanglingLayers":
-        # One layer by default
-        vals = np.random.normal(0.0, np.pi, (1, num_wires, 3))
 
     # --- Chemistry ansatzes (UCC family) ------------------------------------
     elif ansatz_name in ["UCCSD", "UCC-SD", "UCC-D", "UCCD", "UCC-S", "UCCS"]:
