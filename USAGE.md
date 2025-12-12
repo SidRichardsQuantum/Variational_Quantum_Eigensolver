@@ -36,17 +36,19 @@ python -c "import vqe, qpe; print('VQE + QPE OK')"
 ## 📁 Directory Overview
 
 ```
-vqe/                # VQE CLI, engine, ansatz, optimizers, plotting, caching
-qpe/                # QPE CLI, engine, noise, trotter, plotting, caching
-vqe_qpe_common/     # Shared molecule registry, Hamiltonians, utilities
-
-data/
-    vqe/images/
-    vqe/results/
-    qpe/images/
-    qpe/results/
-
-notebooks/          # Example VQE / QPE workflows
+├── vqe/                # VQE CLI, engine, ansatz, optimizers, plotting, caching
+├── qpe/                # QPE CLI, engine, noise, trotter, plotting, caching
+├── vqe_qpe_common/     # Shared molecule registry, Hamiltonians, utilities
+│
+├── images/             # Saved figures (auto-generated)
+│   ├── vqe/            # VQE plots
+│   └── qpe/            # QPE plots
+│
+├── results/            # Cached JSON run records
+│   ├── vqe/            # VQE results
+│   └── qpe/            # QPE results
+│
+└── notebooks/          # Example VQE / QPE workflows
 ```
 
 All runs save:
@@ -162,10 +164,10 @@ python -m qpe --molecule H2 --ancillas 4
 python -m qpe --molecule H2 --ancillas 3 --shots 2000 --plot
 ```
 
-Save:
+Save and show plot:
 
 ```bash
-python -m qpe --molecule H2 --save-plot
+python -m qpe --molecule H2 --plot --save-plot
 ```
 
 ---

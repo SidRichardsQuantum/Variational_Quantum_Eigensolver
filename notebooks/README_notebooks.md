@@ -29,8 +29,7 @@ notebooks/
 │   └── LiH/
 │
 └── qpe/
-    ├── H2/
-    └── qpe_utils.py
+    └── H2/
 ```
 
 ---
@@ -100,14 +99,20 @@ H₂O is included primarily to demonstrate a **bond-angle scan** workflow.
 ### H₂ (noiseless + noisy QPE)
 Path: `notebooks/qpe/H2/`
 
-These notebooks demonstrate the QPE pipeline on H₂ (kept intentionally minimal for runtime and clarity).
+These notebooks demonstrate the full QPE pipeline on H₂, including:
+- controlled time evolution via `ApproxTimeEvolution`
+- inverse QFT on ancillas
+- phase → energy unwrapping using a Hartree–Fock reference
+- optional noise models and parameter sweeps
+
+They are kept intentionally minimal for runtime and clarity.
 
 | Notebook | Purpose |
 |---|---|
 | `Noiseless.ipynb` | Noiseless QPE distribution for H₂ |
 | `Noisy.ipynb` | Noisy QPE distribution for H₂ |
 
-`notebooks/qpe/qpe_utils.py` contains helper utilities used by some QPE notebooks.
+All QPE notebooks are now pure package clients, importing exclusively from qpe.core, qpe.hamiltonian, qpe.io_utils, and qpe.visualize. No notebook-level engines, devices, caching, or plotting utilities are used.
 
 ---
 
@@ -138,7 +143,7 @@ Running these notebooks will generate plots and JSON records via the package’s
 Typical output locations in this repo layout:
 
 - `results/vqe/` and `results/qpe/` — JSON run records
-- `images/` (and subfolders) — saved plots
+- `images/vqe/` and `images/qpe/` — saved plots
 
 If you are using the CLI workflows described in `USAGE.md`, output locations may follow the package’s configured defaults for results/images.
 
