@@ -5,7 +5,6 @@ THEORY.md
 USAGE.md
 pyproject.toml
 notebooks/README_notebooks.md
-notebooks/RESULTS.md
 qpe/__init__.py
 qpe/__main__.py
 qpe/core.py
@@ -14,8 +13,12 @@ qpe/io_utils.py
 qpe/noise.py
 qpe/visualize.py
 tests/test_cli.py
+tests/test_hamiltonian.py
 tests/test_imports.py
+tests/test_molecule_registry.py
+tests/test_molecules.py
 tests/test_qpe_minimal.py
+tests/test_vqe_engine_smoke.py
 tests/test_vqe_minimal.py
 vqe/__init__.py
 vqe/__main__.py
