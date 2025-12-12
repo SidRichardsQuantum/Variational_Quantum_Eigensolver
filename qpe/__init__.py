@@ -18,7 +18,8 @@ Primary user-facing API:
     - load_qpe_result()
 """
 
-__version__ = "0.2.0"
+from importlib.metadata import version as _pkg_version
+__version__ = _pkg_version("vqe-pennylane")
 __docformat__ = "restructuredtext"
 
 

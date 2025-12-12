@@ -309,6 +309,7 @@ def run_qpe(
         "energy": float(best_energy),
         "hf_energy": float(E_hf),
         "n_ancilla": int(n_ancilla),
+        "trotter_steps": int(trotter_steps),
         "t": float(t),
         "noise": dict(noise_params or {}),
         "shots": int(shots),

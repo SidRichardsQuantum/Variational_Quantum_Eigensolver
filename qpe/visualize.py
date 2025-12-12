@@ -101,7 +101,7 @@ def plot_qpe_distribution(
                 "pamp": p_amp,
             },
         )
-        save_plot(fname)
+        save_plot(fname, show=show, subdir="qpe")
 
     if show:
         plt.show()
@@ -204,7 +204,7 @@ def plot_qpe_sweep(
                 "tag": title.replace(" ", "_").lower(),
             },
         )
-        save_plot(fname)
+        save_plot(fname, show=show, subdir="qpe")
 
     if show:
         plt.show()

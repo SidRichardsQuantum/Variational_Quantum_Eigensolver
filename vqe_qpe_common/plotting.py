@@ -29,9 +29,13 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 IMG_DIR = os.path.join(BASE_DIR, "images")
 
 
-def ensure_plot_dirs():
-    """Ensure required directories exist."""
-    os.makedirs(IMG_DIR, exist_ok=True)
+def ensure_plot_dirs(subdir: Optional[str] = None) -> str:
+    """Ensure required directories exist and return the target directory."""
+    base = IMG_DIR
+    if subdir:
+        base = os.path.join(IMG_DIR, format_molecule_name(subdir))
+    os.makedirs(base, exist_ok=True)
+    return base
 
 
 # ---------------------------------------------------------------------
@@ -130,32 +134,13 @@ def build_filename(
 # ---------------------------------------------------------------------
 # Unified Save
 # ---------------------------------------------------------------------
-def save_plot(filename: str, show: bool = True) -> str:
-    """
-    Save the current matplotlib figure to the global IMG_DIR and optionally
-    display it inline (for notebooks).
+def save_plot(filename: str, show: bool = True, subdir: Optional[str] = None) -> str:
+    target_dir = ensure_plot_dirs(subdir=subdir)
 
-    Parameters
-    ----------
-    filename : str
-        A clean filename produced by build_filename().
-    show : bool, default=True
-        If True, display the plot (for Jupyter/VSCode notebooks).
-        If False, only save.
-
-    Returns
-    -------
-    str
-        Absolute path to the saved PNG.
-    """
-    ensure_plot_dirs()
-
-    # Ensure .png suffix
     if not filename.lower().endswith(".png"):
         filename = filename + ".png"
 
-    path = os.path.join(IMG_DIR, filename)
-
+    path = os.path.join(target_dir, filename)
     plt.savefig(path, dpi=300, bbox_inches="tight")
 
     if show:

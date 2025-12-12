@@ -21,7 +21,8 @@ Public API:
     - Plotting helpers (visualize.*)
 """
 
-__version__ = "0.2.0"
+from importlib.metadata import version as _pkg_version
+__version__ = _pkg_version("vqe-pennylane")
 
 # ------------------------------------------------------------------
 # Core VQE APIs

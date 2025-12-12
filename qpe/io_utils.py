@@ -51,6 +51,7 @@ def signature_hash(
     t: float,
     shots: int | None,
     noise: Dict[str, float] | None,
+    trotter_steps: int,
 ) -> str:
     """
     Generate a reproducible hash key for a QPE configuration.
@@ -62,6 +63,7 @@ def signature_hash(
             "molecule": molecule,
             "ancilla_qubits": n_ancilla,
             "time_param": round(float(t), 10),
+            "trotter_steps": int(trotter_steps),
             "shots": shots,
             "noise_params": noise or {},
         },
@@ -94,6 +96,7 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         molecule=result["molecule"],
         n_ancilla=result["n_ancilla"],
         t=result["t"],
+        trotter_steps=int(result.get("trotter_steps", 1)),
         shots=result.get("shots", None),
         noise=result.get("noise", {}),
     )
