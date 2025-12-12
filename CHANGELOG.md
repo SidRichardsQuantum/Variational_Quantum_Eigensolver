@@ -4,9 +4,29 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.2.2] - 2025-12-12
+### Fixed
+- Resolved GitHub Actions CI failures caused by invalid `pyproject.toml` license configuration.
+- Corrected `project.license` to a valid SPDX string to satisfy PEP 621 validation.
+- Removed deprecated and conflicting license classifiers that broke editable installs on CI.
+- Fixed CI failures on Python 3.9 by aligning supported Python versions with PennyLane requirements.
+- Ensured `pip install -e .` works reliably in clean CI environments.
+
+### Changed
+- Restricted supported Python versions to **>=3.10**, matching PennyLane ≥0.42 compatibility.
+- Updated dependency constraints to prevent incompatible PennyLane versions being selected on older Python runtimes.
+- Improved CI robustness by testing only supported Python versions.
+- Bumped package version to **0.2.2**.
+
+### Internal
+- Verified full test suite passes locally and on GitHub Actions.
+- Stabilised packaging and metadata to support future releases without CI regressions.
+
+---
+
 ## [0.2.1] - 2025-11-30
 ### Fixed
-- Resolved QPE sampling bug where 0‑D arrays caused CLI crashes.
+- Resolved QPE sampling bug where 0-D arrays caused CLI crashes.
 - Corrected `run_qpe()` handling to accept only keyword arguments.
 - Updated `run_vqe()` test usage to match refactored API (removed deprecated arguments).
 - Improved error handling in QPE CLI.
