@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.2.1"
+version = "0.2.2"
 description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
-license = { text = "MIT", file = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.9"
 
 dependencies = [
@@ -26,6 +26,10 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Physics",
 ]
@@ -34,11 +38,6 @@ classifiers = [
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
 Issues = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues"
 Documentation = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver#readme"
-
-[tool.setuptools.packages.find]
-include = ["vqe", "vqe.*", "qpe", "qpe.*", "vqe_qpe_common", "vqe_qpe_common.*"]
-
-# No package-data needed (images generated at runtime)
 
 [project.optional-dependencies]
 dev = [
@@ -56,3 +55,9 @@ docs = [
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+include = ["vqe*", "qpe*", "vqe_qpe_common*"]
