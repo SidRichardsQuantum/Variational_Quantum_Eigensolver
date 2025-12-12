@@ -181,6 +181,7 @@ def main():
         molecule=args.molecule,
         n_ancilla=args.ancillas,
         t=args.t,
+        trotter_steps=args.trotter_steps,
         noise=noise_params,
         shots=args.shots,
     )
