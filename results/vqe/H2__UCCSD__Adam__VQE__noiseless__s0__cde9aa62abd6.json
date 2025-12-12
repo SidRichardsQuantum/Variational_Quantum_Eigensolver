@@ -1,0 +1,79 @@
+{
+  "config": {
+    "symbols": [
+      "H",
+      "H"
+    ],
+    "geometry": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.7414
+      ]
+    ],
+    "basis": "sto-3g",
+    "ansatz": "UCCSD",
+    "optimizer": {
+      "name": "Adam",
+      "stepsize": 0.2,
+      "iterations_planned": 1
+    },
+    "optimizer_name": "Adam",
+    "seed": 0,
+    "noisy": false,
+    "depolarizing_prob": 0.0,
+    "amplitude_damping_prob": 0.0,
+    "mapping": "jordan_wigner",
+    "molecule": "H2"
+  },
+  "result": {
+    "energy": -1.1166843872469294,
+    "energies": [
+      -1.1166843872469294,
+      -1.1166843872469294
+    ],
+    "steps": 1,
+    "final_state_real": [
+      0.0,
+      0.0,
+      0.0,
+      -0.09983336176182821,
+      0.0,
+      0.0,
+      -2.6486965920582354e-11,
+      0.0,
+      0.0,
+      -2.5296439943024358e-11,
+      0.0,
+      0.0,
+      0.9950041707848927,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "final_state_imag": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "num_qubits": 4
+  }
+}
