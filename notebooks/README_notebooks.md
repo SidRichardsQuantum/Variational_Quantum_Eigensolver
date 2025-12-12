@@ -1,112 +1,146 @@
-# 📘 VQE & QPE Notebooks
+# 📘 Notebooks — VQE & QPE
 
-This directory contains curated Jupyter notebooks demonstrating the full workflow of the **Variational Quantum Eigensolver (VQE)** and the initial Quantum Phase Estimation (QPE) pipeline using the packaged code in `vqe/`, `qpe/`, and `vqe_qpe_common/`.
+This directory contains curated Jupyter notebooks that demonstrate the **VQE** and **QPE** workflows using the packaged code in:
 
-All notebooks are now aligned with the updated modular package structure and the reproducible result-caching system.
+- `vqe/`
+- `qpe/`
+- `vqe_qpe_common/`
 
-For theory background and recommended reading order:
+Most notebooks are written as **pure package clients** (i.e., they call `vqe.core` / `qpe.core` and do not define their own engines, devices, QNodes, caching, or plotting logic). The **H₂ folder** also includes a small number of explicitly educational notebooks that build intuition by implementing selected components “from scratch”.
 
-- **[THEORY.md](../THEORY.md)** — essential mathematical background  
-- **[USAGE.md](../USAGE.md)** — command-line tools, package entrypoints  
-- **[README.md](../README.md)** — top-level project overview  
+For background and CLI usage:
+
+- **[THEORY.md](../THEORY.md)** — essential background
+- **[USAGE.md](../USAGE.md)** — command-line usage and flags
+- **[README.md](../README.md)** — project overview
 
 ---
 
-# Directory Overview
+## Directory Structure
 
-```
+```text
 notebooks/
-├── README_notebooks.md   ← this file
+├── README_notebooks.md
 │
-├── vqe/                  
+├── vqe/
 │   ├── H2/
 │   ├── H2O/
 │   ├── H3plus/
 │   └── LiH/
 │
-└── qpe/                  
+└── qpe/
     ├── H2/
     └── qpe_utils.py
 ```
 
 ---
 
-# ⚛️ VQE Notebook Collection
+## ⚛️ VQE Notebooks
 
-## **H₂ — Benchmark Molecule**
-📁 `notebooks/vqe/H2/`
+### H₂ (educational + production workflows)
+Path: `notebooks/vqe/H2/`
 
-Minimal-qubit molecule used to demonstrate:
+H₂ is the primary educational benchmark: it is small enough to run quickly while still demonstrating the full VQE pipeline (ansatz choice, optimizers, geometry dependence, noise modelling, and excited-state methods).
 
-- Noiseless vs noisy VQE  
-- Optimizer comparison  
-- Ansatz comparison  
-- Geometry scans  
-- Reproducibility
+| Notebook | Purpose | Style |
+|---|---|---|
+| `VQE_From_Scratch.ipynb` | Walkthrough of a minimal VQE implementation and concepts | Educational |
+| `Ansatz_Comparison.ipynb` | Compare toy/intro ansätze and the packaged comparison workflow | Mixed (educational + package) |
+| `Bond_Length.ipynb` | H₂ bond-length scan using the package geometry-scan API | Package client |
+| `Mapping_Comparison.ipynb` | Compare fermion-to-qubit mappings for H₂ | Package client |
+| `Noise_Scan.ipynb` | **Multi-seed** noise statistics for H₂ (robustness under noise) | Package client |
+| `Noisy.ipynb` | Single noisy VQE run for H₂ (noise enabled) | Package client |
+| `SSVQE.ipynb` | Two-state SSVQE-style excited-state workflow using packaged building blocks | Package-aligned (custom cost wiring) |
 
----
-
-## **H₃⁺ — Excitations, Mappings, and SSVQE**
-📁 `notebooks/vqe/H3plus/`
-
-Includes:
-
-- UCCSD ground state  
-- Mapping comparisons  
-- SSVQE  
-- Noise studies
+Notes:
+- `Noise_Scan.ipynb` is intentionally **multi-seed only** (statistical behaviour), not a single-seed demo notebook.
+- `Ansatz_Comparison.ipynb` includes a pedagogical section; do not expect its curves to match the production runner exactly (initialisation, stopping criteria, caching behaviour, and implementation details can differ by design).
 
 ---
 
-## **H₂O — Geometry & UCCSD**
-📁 `notebooks/vqe/H2O/`
+### H₃⁺ (larger system benchmarks)
+Path: `notebooks/vqe/H3plus/`
 
-Includes:
+H₃⁺ is used as the “next step up” from H₂ (more qubits, more structure), but notebooks here remain focused and practical.
 
-- Noiseless UCCSD  
-- Bond-angle scan  
-- Amplitude visualisation  
+| Notebook | Purpose | Style |
+|---|---|---|
+| `Noiseless.ipynb` | Noiseless VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺ | Package client |
+| `Noisy.ipynb` | Noisy VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺ | Package client |
 
----
-
-## **LiH — Bond Length Scan**
-📁 `notebooks/vqe/LiH/`
-
-Includes:
-
-- UCCSD  
-- Bond-length energy curve  
-- Ground-state amplitudes  
+Note:
+- The former H₃⁺ noise sweep/scan notebook was removed to keep runtimes reasonable; H₂ serves as the canonical noise-scan example.
 
 ---
 
-# QPE Notebooks
+### LiH (package client example)
+Path: `notebooks/vqe/LiH/`
 
-📁 `notebooks/qpe/H2/`
+LiH demonstrates a larger chemistry system in a simple, reproducible way.
 
-Initial QPE examples for H₂ only.
-
----
-
-# Recommended Reading Order
-
-1. **H₂ (VQE)**
-2. **LiH / H₂O scans**
-3. **H₃⁺ mapping & SSVQE**
-4. **H₂ (QPE)**
+| Notebook | Purpose | Style |
+|---|---|---|
+| `Noiseless.ipynb` | Noiseless LiH ground-state VQE using **UCCSD** via `run_vqe` | Package client |
 
 ---
 
-# Reproducibility
+### H₂O (geometry example)
+Path: `notebooks/vqe/H2O/`
 
-Results written to:
+H₂O is included primarily to demonstrate a **bond-angle scan** workflow.
 
-```
-data/vqe/results/
-data/vqe/images/
-data/qpe/results/
-data/qpe/images/
-```
+| Notebook | Purpose | Style |
+|---|---|---|
+| `Bond_Angle.ipynb` | H–O–H angle scan using the package geometry-scan API | Package client |
+
+---
+
+## 🔷 QPE Notebooks
+
+### H₂ (noiseless + noisy QPE)
+Path: `notebooks/qpe/H2/`
+
+These notebooks demonstrate the QPE pipeline on H₂ (kept intentionally minimal for runtime and clarity).
+
+| Notebook | Purpose |
+|---|---|
+| `Noiseless.ipynb` | Noiseless QPE distribution for H₂ |
+| `Noisy.ipynb` | Noisy QPE distribution for H₂ |
+
+`notebooks/qpe/qpe_utils.py` contains helper utilities used by some QPE notebooks.
+
+---
+
+## Recommended Reading Order
+
+1. **VQE on H₂ (core intuition + workflows)**
+   - `VQE_From_Scratch.ipynb`
+   - `Ansatz_Comparison.ipynb`
+   - `Bond_Length.ipynb`
+2. **Noise robustness (statistical)**
+   - `Noise_Scan.ipynb`
+3. **Larger molecules (package client usage)**
+   - `LiH/Noiseless.ipynb`
+   - `H3plus/Noiseless.ipynb` and `H3plus/Noisy.ipynb`
+   - `H2O/Bond_Angle.ipynb`
+4. **Excited states**
+   - `H2/SSVQE.ipynb`
+5. **QPE**
+   - `qpe/H2/Noiseless.ipynb`
+   - `qpe/H2/Noisy.ipynb`
+
+---
+
+## Outputs and Reproducibility
+
+Running these notebooks will generate plots and JSON records via the package’s caching and I/O utilities.
+
+Typical output locations in this repo layout:
+
+- `results/vqe/` and `results/qpe/` — JSON run records
+- `images/` (and subfolders) — saved plots
+
+If you are using the CLI workflows described in `USAGE.md`, output locations may follow the package’s configured defaults for results/images.
 
 ---
 

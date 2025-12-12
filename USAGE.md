@@ -7,6 +7,10 @@ It complements `README.md` (project overview) and `THEORY.md` (background concep
 
 ## ⚙️ Installation
 
+```bash
+pip install vqe-pennylane
+```
+
 ### Install from source
 
 ```bash
@@ -121,11 +125,13 @@ python -m vqe --molecule H3+ --ssvqe --penalty-weight 10.0
 
 ---
 
-## ▶ Noise sweeps
+## ▶ Noise sweeps (multi-seed)
 
 ```bash
 python -m vqe --molecule H2 --noise-sweep --p-dep 0.02
 ```
+
+Note: Noise sweeps are intended for statistical analysis across multiple random seeds rather than single-shot demonstrations.
 
 ---
 
@@ -138,7 +144,7 @@ H2, LiH, H2O, H3+
 ```
 
 QPE supports:  
-noiseless/noisy, ancilla selection, Trotterization, time evolution parameter `t`, probability histograms.
+noiseless/noisy execution, ancilla register size, first-order Trotterization, evolution time `t`, and probability histograms.
 
 ---
 
