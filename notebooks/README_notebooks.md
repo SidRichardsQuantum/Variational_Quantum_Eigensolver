@@ -17,7 +17,6 @@ For theory background and recommended reading order:
 ```
 notebooks/
 ├── README_notebooks.md   ← this file
-├── RESULTS.md            ← consolidated notebook outputs
 │
 ├── vqe/                  
 │   ├── H2/
