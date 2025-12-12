@@ -9,15 +9,17 @@ description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (Pe
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 
 dependencies = [
-    "pennylane>=0.42,<0.45",
-    "numpy>=1.23,<2.0",
-    "scipy>=1.9,<2.0",
-    "matplotlib",
-    "openfermion",
-    "openfermionpyscf",
+  "pennylane>=0.42,<0.45",
+  "numpy>=1.23,<2.0",
+  "scipy>=1.10,<2.0; python_version>='3.10'",
+  "scipy>=1.9,<2.0; python_version=='3.9'",
+  "matplotlib",
+  "openfermion",
+  "openfermionpyscf",
 ]
 
 keywords = ["quantum", "VQE", "QPE", "simulation", "pennylane", "quantum-chemistry"]
@@ -54,9 +56,6 @@ docs = [
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"
-
-[tool.setuptools]
-license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 include = ["vqe*", "qpe*", "vqe_qpe_common*"]
