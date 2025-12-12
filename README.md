@@ -49,12 +49,6 @@ Variational_Quantum_Eigensolver/
 ├── LICENSE
 ├── pyproject.toml
 │
-├── vqe_qpe_common/          # Shared logic for VQE + QPE
-│   ├── molecules.py         # Unified molecule registry
-│   ├── geometry.py          # Bond/angle geometry generators
-│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
-│   └── plotting.py          # Shared plotting + filename builders
-│
 ├── vqe/                     # Variational Quantum Eigensolver package
 │   ├── __main__.py          # CLI: python -m vqe
 │   ├── core.py              # VQE orchestration (runs, scans, sweeps)
@@ -74,9 +68,19 @@ Variational_Quantum_Eigensolver/
 │   ├── noise.py             # Depolarizing + amplitude damping channels
 │   └── visualize.py         # Phase histograms + sweep plots
 │
+├── vqe_qpe_common/          # Shared logic for VQE + QPE
+│   ├── molecules.py         # Unified molecule registry
+│   ├── geometry.py          # Bond/angle geometry generators
+│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
+│   └── plotting.py          # Shared plotting + filename builders
+│
+├── images/                  # Saved plots
+│   ├── vqe/
+│   └── qpe/
+│
 ├── results/                 # JSON outputs
-├── images/                  # Saved plots (VQE + QPE)
-├── data/                    # Optional molecule configs, external data
+│   ├── vqe/
+│   └── qpe/
 │
 └── notebooks/               # Notebooks importing from the vqe/ and qpe/ packages
 ```
@@ -161,11 +165,17 @@ Features:
 Example:
 
 ```python
+from pennylane import qchem
 from vqe_qpe_common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
-H, n_qubits, hf_state = build_hamiltonian(["H","H"], coords, 0, "STO-3G")
-result = run_qpe(H, hf_state, n_ancilla=4)
+symbols = ["H", "H"]
+coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]]
+
+H, n_qubits = build_hamiltonian(symbols, coords, 0, "STO-3G")
+hf_state = qchem.hf_state(2, n_qubits)
+
+result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 ```
 
 ---
