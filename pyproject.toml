@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 
 dependencies = [
   "pennylane>=0.42,<0.45",
