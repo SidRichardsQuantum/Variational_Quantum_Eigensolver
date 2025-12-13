@@ -22,6 +22,8 @@ For background and CLI usage:
 notebooks/
 ├── README_notebooks.md
 │
+├── getting_started/
+│
 ├── vqe/
 │   ├── H2/
 │   ├── H2O/
@@ -31,6 +33,16 @@ notebooks/
 └── qpe/
     └── H2/
 ```
+
+---
+
+## 🚀 Getting Started
+
+If you are new to this repository, start here:
+
+`notebooks/getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb` → Conceptual, minimal implementations of VQE and QPE.
+
+This notebook explains *what* the algorithms do exactly.
 
 ---
 

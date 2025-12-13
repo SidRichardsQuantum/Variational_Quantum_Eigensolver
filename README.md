@@ -32,10 +32,13 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 This project refactors all previous notebooks into a clean Python package with  
 a shared `vqe_qpe_common/` layer for Hamiltonians, molecules, geometry, and plotting.
 
-- **[THEORY.md](THEORY.md)** — Full background on VQE, QPE, ansatzes, optimizers, mappings, and noise models.  
-- **[USAGE.md](USAGE.md)** — Practical guide for installation, CLI usage, running simulations, caching, and plotting.
+## How to get started
 
-These documents complement the README and provide both the *theoretical foundation* and the *hands-on execution details* of the VQE/QPE suite.
+- For the full background on VQE and QPE: see [THEORY.md](THEORY.md)
+- For CLI usage and automation: see [USAGE.md](USAGE.md)
+- For conceptual understanding: see [H2_VQE_vs_QPE_From_Scratch.ipynb](notebooks/getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb)
+
+These documents complement this 'README.md' and provide the *theoretical foundation* and *hands-on execution details* of the VQE/QPE suite.
 
 ---
 
@@ -49,7 +52,7 @@ Variational_Quantum_Eigensolver/
 ├── LICENSE
 ├── pyproject.toml
 │
-├── vqe/                     # Variational Quantum Eigensolver package
+├── vqe/                     # VQE package
 │   ├── __main__.py          # CLI: python -m vqe
 │   ├── core.py              # VQE orchestration (runs, scans, sweeps)
 │   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
@@ -60,7 +63,7 @@ Variational_Quantum_Eigensolver/
 │   ├── visualize.py         # Convergence, scans, noise plots
 │   └── ssvqe.py             # Subspace-search VQE (excited states)
 │
-├── qpe/                     # Quantum Phase Estimation package
+├── qpe/                     # QPE package
 │   ├── __main__.py          # CLI: python -m qpe
 │   ├── core.py              # Controlled-U, trotterized dynamics, iQFT
 │   ├── hamiltonian.py       # QPE-specific wrapper → uses vqe_qpe_common.hamiltonian
@@ -74,7 +77,7 @@ Variational_Quantum_Eigensolver/
 │   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
 │   └── plotting.py          # Shared plotting + filename builders
 │
-├── images/                  # Saved plots
+├── images/                  # Saved png files
 │   ├── vqe/
 │   └── qpe/
 │
@@ -82,7 +85,10 @@ Variational_Quantum_Eigensolver/
 │   ├── vqe/
 │   └── qpe/
 │
-└── notebooks/               # Notebooks importing from the vqe/ and qpe/ packages
+└── notebooks/
+    ├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
+    ├── vqe/                 # Importing from the vqe/ package
+    └── qpe/                 # Importing from the qpe/ package
 ```
 
 This structure ensures:
@@ -90,7 +96,6 @@ This structure ensures:
 - **VQE and QPE share the same chemistry** (`vqe_qpe_common/`)
 - **All results are cached consistently** (`results/`)
 - **All plots use one naming system** (`vqe_qpe_common/plotting.py`)
-- **Notebooks import from the real package** (no duplicated code)
 - **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
 
 ---
