@@ -1,9 +1,3 @@
-from __future__ import annotations
-
-from importlib.metadata import version as _pkg_version
-
-__version__ = _pkg_version("vqe-pennylane")
-
 """
 vqe_qpe_common
 ======
@@ -19,18 +13,14 @@ This subpackage contains:
 All high-level solvers (VQE, QPE, QSVT, etc.) should import molecule
 definitions, geometry logic, Hamiltonians, and plotting helpers from here
 to avoid duplication and ensure reproducibility.
-
-Example
--------
-    from vqe_qpe_common import (
-        MOLECULES,
-        get_molecule_config,
-        generate_geometry,
-        build_hamiltonian,
-        build_filename,
-        save_plot,
-    )
 """
+
+from __future__ import annotations
+
+from importlib.metadata import version as _pkg_version
+
+__version__ = _pkg_version("vqe-pennylane")
+
 
 # Molecule data + helpers
 from .molecules import MOLECULES, get_molecule_config  # noqa: F401
