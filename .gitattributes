@@ -22,12 +22,11 @@
 *.npz binary
 
 # -------------------------------------------------------------------
-# Hide data / result folders from language statistics
+# Hide generated / data folders from language statistics
 # -------------------------------------------------------------------
 data/** linguist-vendored
-package_ results/** linguist-vendored
-qpe/images/** linguist-vendored
-vqe/images/** linguist-vendored
+results/** linguist-vendored
+images/** linguist-vendored
 
 # -------------------------------------------------------------------
 # Python source files (explicit highlighting)
