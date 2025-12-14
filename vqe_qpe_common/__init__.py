@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-__version__ = "0.2.0"
+from importlib.metadata import version as _pkg_version
+
+__version__ = _pkg_version("vqe-pennylane")
 
 """
 vqe_qpe_common
@@ -39,6 +41,9 @@ from .geometry import generate_geometry  # noqa: F401
 # Hamiltonian construction (PennyLane + OpenFermion fallback)
 from .hamiltonian import build_hamiltonian  # noqa: F401
 
+# Molecule visualization (optional, but useful for notebooks)
+from .molecule_viz import plot_molecule, infer_bonds, infer_angles_from_bonds  # noqa: F401
+
 # Plotting utilities shared across VQE + QPE
 from .plotting import (
     build_filename,
@@ -64,4 +69,10 @@ __all__ = [
     "save_plot",
     "format_molecule_name",
     "format_token",
+
+    # Molecule visualization
+    "plot_molecule",
+    "infer_bonds",
+    "infer_angles_from_bonds",
+
 ]

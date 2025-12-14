@@ -1,5 +1,5 @@
 """
-common.hamiltonian
+vqe_qpe_common.hamiltonian
 ==================
 
 Shared Hamiltonian construction used by VQE, QPE, and future solvers.

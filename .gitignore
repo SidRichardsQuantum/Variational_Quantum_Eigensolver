@@ -40,27 +40,10 @@ Thumbs.db
 *.code-workspace
 
 # -------------------------------------------------------------------
-# Data and experiment results
+# Generated outputs
 # -------------------------------------------------------------------
-# Ignore numerical result files (JSON, CSV, logs) but keep plots/images
-data/**/*.json
-data/**/*.csv
-data/**/*.txt
-data/**/*.log
-
-# Explicitly keep any images, figures, or plots
-!data/**/*.png
-!data/**/*.jpg
-!data/**/*.jpeg
-!data/**/*.svg
-!data/**/*.pdf
-
-# ✅ NEW — Ignore generated plots from qpe/images and vqe/images
-# (you keep the directories themselves tracked)
-qpe/images/**/*.png
-vqe/images/**/*.png
-!qpe/images/.gitkeep
-!vqe/images/.gitkeep
+results/**
+images/**
 
 # -------------------------------------------------------------------
 # Test cache files
@@ -71,7 +54,7 @@ htmlcov/
 *.log
 
 # -------------------------------------------------------------------
-# Jupyter notebook outputs (optional)
+# Jupyter notebook outputs
 # -------------------------------------------------------------------
 *.nbconvert.ipynb
 *.nbconvert.*
