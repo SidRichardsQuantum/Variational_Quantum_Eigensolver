@@ -126,11 +126,12 @@ def plot_molecule(
     title: Optional[str] = None,
     bonds: Optional[Sequence[Tuple[int, int]]] = None,          # None => infer
     angles: Optional[Sequence[Tuple[int, int, int]]] = None,    # None => infer from bonds
-    atom_charges: Optional[Sequence[float]] = None,             # optional labels
+    atom_charges: Optional[Sequence[float]] = None,
     show_bond_lengths: bool = True,
     show_angles: bool = True,
     show_atom_indices: bool = False,
     ax: Optional[plt.Axes] = None,
+    **kwargs,  # <-- add this
 ) -> plt.Axes:
     """
     Minimal 2D molecule diagram:
@@ -139,6 +140,17 @@ def plot_molecule(
     - angles as text labels near the central atom
     - optional per-atom charge labels (useful for ions)
     """
+
+    # -----------------------------------------------------------------
+    # Backwards compatibility: some notebooks used `show_bond_angles=...`
+    # -----------------------------------------------------------------
+    if "show_bond_angles" in kwargs:
+        show_angles = bool(kwargs.pop("show_bond_angles"))
+
+    # If anything else was passed, fail loudly (helps catch typos)
+    if kwargs:
+        raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs.keys())}")
+
     xyz = _as_xyz(coords)
     n = len(symbols)
     if atom_charges is not None and len(atom_charges) != n:
@@ -179,7 +191,6 @@ def plot_molecule(
             ang = bond_angle_deg(xyz, i, j, k)
             if np.isnan(ang):
                 continue
-            # place label slightly offset from central atom in 2D
             v = (xy[i] - xy[j]) + (xy[k] - xy[j])
             nv = np.linalg.norm(v)
             v = v / nv if nv > 1e-12 else np.array([0.0, 1.0])
