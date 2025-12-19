@@ -383,93 +383,324 @@ def run_vqe_noise_sweep(
 # OPTIMIZER COMPARISON
 # ================================================================
 def run_vqe_optimizer_comparison(
-    molecule="H2",
-    ansatz_name="RY-CZ",
+    molecule: str = "H2",
+    ansatz_name: str = "RY-CZ",
     optimizers=None,
-    steps=50,
+    steps: int = 50,
     stepsize=0.2,
-    noisy=True,
-    depolarizing_prob=0.05,
-    amplitude_damping_prob=0.05,
-    force=False,
+    noisy: bool = True,
+    depolarizing_prob: float = 0.05,
+    amplitude_damping_prob: float = 0.05,
+    seed: int = 0,
+    mode: str = "convergence",  # "convergence" (legacy) or "noise_stats"
+    noise_type: str = "depolarizing",  # "depolarizing" | "amplitude" | "combined"
+    noise_levels=None,
+    seeds=None,
+    reference: str = "per_seed_noiseless",
+    force: bool = False,
     mapping: str = "jordan_wigner",
     show: bool = True,
-    seed=0,
+    plot: bool = True,
 ):
     """
-    Compare different classical optimizers on the same VQE instance.
+    Compare classical optimizers for a fixed VQE instance.
+
+    This function supports two modes:
+
+    1) mode="convergence" (legacy / backward-compatible)
+       - Runs each optimizer once (single seed, single noise point).
+       - Returns energy trajectories vs iteration.
+
+    2) mode="noise_stats" (new; for Noisy_Optimizer_Comparison)
+       - Sweeps noise_levels and averages over seeds for each optimizer.
+       - Computes:
+           ΔE = E_noisy - E_ref   (reference from noiseless runs)
+           Fidelity vs noiseless final state
+         and returns mean/std vs noise level per optimizer.
 
     Parameters
     ----------
-    show : bool
-        Whether to display the generated plot.
-
-    Returns
-    -------
-    dict
-        {
-            "energies": {opt_name: [E0, E1, ...], ...},
-            "final_energies": {opt_name: E_final, ...}
-        }
+    stepsize : float | dict
+    noise_type : str
+        "depolarizing", "amplitude", or "combined".
+        - depolarizing: (p_dep = level, p_amp = 0)
+        - amplitude:    (p_dep = 0,    p_amp = level)
+        - combined:     (p_dep = level, p_amp = level)
+    reference : str
+        Currently only "per_seed_noiseless" is supported:
+        compute noiseless reference energy/state for each seed (and optimizer).
     """
     import matplotlib.pyplot as plt
     from vqe_qpe_common.plotting import build_filename, save_plot
 
     optimizers = optimizers or ["Adam", "GradientDescent", "Momentum"]
-    results = {}
-    final_vals = {}
 
-    # --- Run each optimizer ---
-    for opt_name in optimizers:
-        print(f"\n⚙️ Running optimizer: {opt_name}")
+    # -----------------------------
+    # Helper: resolve stepsize
+    # -----------------------------
+    def _stepsize_for(opt_name: str) -> float:
+        if isinstance(stepsize, dict):
+            if opt_name not in stepsize:
+                raise ValueError(
+                    f"stepsize dict missing entry for optimizer '{opt_name}'. "
+                    f"Provided keys: {list(stepsize.keys())}"
+                )
+            return float(stepsize[opt_name])
+        return float(stepsize)
 
-        res = run_vqe(
-            molecule=molecule,
-            n_steps=steps,
-            stepsize=stepsize,
-            plot=False,
-            ansatz_name=ansatz_name,
-            optimizer_name=opt_name,
-            noisy=noisy,
-            depolarizing_prob=depolarizing_prob,
-            amplitude_damping_prob=amplitude_damping_prob,
-            mapping=mapping,
-            force=force,
-            seed=seed,
+    # ============================================================
+    # MODE 1: Legacy convergence comparison (single run per optimizer)
+    # ============================================================
+    if mode == "convergence":
+        results = {}
+        final_vals = {}
+
+        for opt_name in optimizers:
+            print(f"\n⚙️ Running optimizer: {opt_name}")
+            res = run_vqe(
+                molecule=molecule,
+                n_steps=steps,
+                stepsize=_stepsize_for(opt_name),
+                plot=False,
+                ansatz_name=ansatz_name,
+                optimizer_name=opt_name,
+                noisy=noisy,
+                depolarizing_prob=depolarizing_prob,
+                amplitude_damping_prob=amplitude_damping_prob,
+                mapping=mapping,
+                force=force,
+                seed=int(seed),
+            )
+            results[opt_name] = res["energies"]
+            final_vals[opt_name] = res["energy"]
+
+        if plot:
+            plt.figure(figsize=(8, 5))
+            min_len = min(len(v) for v in results.values())
+            for opt, energies in results.items():
+                plt.plot(range(min_len), energies[:min_len], label=opt)
+
+            title_noise = ""
+            if noisy:
+                title_noise = f" (dep={depolarizing_prob}, amp={amplitude_damping_prob})"
+            plt.title(f"{molecule} – Optimizer Comparison ({ansatz_name}){title_noise}")
+            plt.xlabel("Iteration")
+            plt.ylabel("Energy (Ha)")
+            plt.grid(True, alpha=0.4)
+            plt.legend()
+            plt.tight_layout()
+
+            if show:
+                plt.show()
+
+            fname = build_filename(
+                molecule=molecule,
+                topic="optimizer_comparison",
+                extras={"ans": ansatz_name, "mode": "convergence"},
+            )
+            save_plot(fname)
+
+        return {
+            "mode": "convergence",
+            "energies": results,
+            "final_energies": final_vals,
+        }
+
+    # ============================================================
+    # MODE 2: Noise sweep + multi-seed statistics
+    # ============================================================
+    if mode != "noise_stats":
+        raise ValueError(f"Unknown mode '{mode}'. Use 'convergence' or 'noise_stats'.")
+
+    if reference != "per_seed_noiseless":
+        raise ValueError(
+            f"Unknown reference '{reference}'. Only 'per_seed_noiseless' is supported."
         )
 
-        results[opt_name] = res["energies"]
-        final_vals[opt_name] = res["energy"]
+    # Defaults consistent with your existing notebooks
+    if seeds is None:
+        seeds = np.arange(0, 10)
+    else:
+        seeds = np.asarray(seeds)
 
-    # --- Plot comparison ---
-    plt.figure(figsize=(8, 5))
-    min_len = min(len(v) for v in results.values())
+    if noise_levels is None:
+        noise_levels = np.arange(0.0, 0.11, 0.02)
+    else:
+        noise_levels = np.asarray(noise_levels)
 
-    for opt, energies in results.items():
-        plt.plot(range(min_len), energies[:min_len], label=opt)
+    # Build dep/amp arrays from noise_type
+    noise_type = str(noise_type).lower()
+    if noise_type == "depolarizing":
+        dep_levels = noise_levels
+        amp_levels = np.zeros_like(noise_levels)
+    elif noise_type == "amplitude":
+        dep_levels = np.zeros_like(noise_levels)
+        amp_levels = noise_levels
+    elif noise_type == "combined":
+        dep_levels = noise_levels
+        amp_levels = noise_levels
+    else:
+        raise ValueError(f"Unknown noise_type '{noise_type}' (use depolarizing/amplitude/combined).")
 
-    plt.title(f"{molecule} – Optimizer Comparison ({ansatz_name})")
-    plt.xlabel("Iteration")
-    plt.ylabel("Energy (Ha)")
-    plt.grid(True, alpha=0.4)
-    plt.legend()
-    plt.tight_layout()
-
-    # Show first (for notebooks), then save (save_plot will close the figure)
-    if show:
-        plt.show()
-
-    fname = build_filename(
-        molecule=molecule,
-        topic="optimizer_comparison",
-        extras={"ans": ansatz_name},
-    )
-    save_plot(fname)
-
-    return {
-        "energies": results,
-        "final_energies": final_vals,
+    out = {
+        "mode": "noise_stats",
+        "molecule": molecule,
+        "ansatz_name": ansatz_name,
+        "steps": int(steps),
+        "mapping": mapping,
+        "noise_type": noise_type,
+        "noise_levels": [float(x) for x in noise_levels],
+        "seeds": [int(s) for s in seeds],
+        "optimizers": {},
     }
+    
+    for opt_name in optimizers:
+        lr = _stepsize_for(opt_name)
+        print(f"\n⚙️ Optimizer: {opt_name} (stepsize={lr})")
+
+        deltaE_mean, deltaE_std = [], []
+        fid_mean, fid_std = [], []
+
+        # Reference runs per seed for this optimizer (noiseless)
+        print("  🔹 Computing noiseless references per seed...")
+        ref_E = {}
+        ref_state = {}
+        for s in seeds:
+            s_int = int(s)
+            np.random.seed(s_int)
+            ref = run_vqe(
+                molecule=molecule,
+                n_steps=steps,
+                stepsize=lr,
+                plot=False,
+                ansatz_name=ansatz_name,
+                optimizer_name=opt_name,
+                noisy=False,
+                mapping=mapping,
+                force=force,
+                seed=s_int,
+            )
+            ref_E[s_int] = float(ref["energy"])
+            psi = np.array(ref["final_state_real"]) + 1j * np.array(ref["final_state_imag"])
+            # Normalise defensively
+            psi = psi / np.linalg.norm(psi)
+            ref_state[s_int] = psi
+
+        # Noisy sweep
+        print("  🔹 Sweeping noise levels...")
+        for p_dep, p_amp in zip(dep_levels, amp_levels):
+            p_dep_f = float(p_dep)
+            p_amp_f = float(p_amp)
+
+            dEs = []
+            Fs = []
+            for s in seeds:
+                s_int = int(s)
+                np.random.seed(s_int)
+                res = run_vqe(
+                    molecule=molecule,
+                    n_steps=steps,
+                    stepsize=lr,
+                    plot=False,
+                    ansatz_name=ansatz_name,
+                    optimizer_name=opt_name,
+                    noisy=True,
+                    depolarizing_prob=p_dep_f,
+                    amplitude_damping_prob=p_amp_f,
+                    mapping=mapping,
+                    force=force,
+                    seed=s_int,
+                )
+
+                E_noisy = float(res["energy"])
+                rho_or_state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
+                rho_or_state = rho_or_state.reshape(ref_state[s_int].shape) if rho_or_state.shape == ref_state[s_int].shape else rho_or_state
+
+                # Normalise statevector case (density matrix case handled in compute_fidelity)
+                if rho_or_state.ndim == 1:
+                    rho_or_state = rho_or_state / np.linalg.norm(rho_or_state)
+
+                dEs.append(E_noisy - ref_E[s_int])
+                Fs.append(compute_fidelity(ref_state[s_int], rho_or_state))
+
+            dEs = np.asarray(dEs, dtype=float)
+            Fs = np.asarray(Fs, dtype=float)
+
+            deltaE_mean.append(float(np.mean(dEs)))
+            deltaE_std.append(float(np.std(dEs)))
+            fid_mean.append(float(np.mean(Fs)))
+            fid_std.append(float(np.std(Fs)))
+
+            print(
+                f"    p_dep={p_dep_f:.2f}, p_amp={p_amp_f:.2f}: "
+                f"ΔE={deltaE_mean[-1]:.6f} ± {deltaE_std[-1]:.6f}, "
+                f"⟨F⟩={fid_mean[-1]:.4f} ± {fid_std[-1]:.4f}"
+            )
+
+        out["optimizers"][opt_name] = {
+            "stepsize": lr,
+            "deltaE_mean": deltaE_mean,
+            "deltaE_std": deltaE_std,
+            "fidelity_mean": fid_mean,
+            "fidelity_std": fid_std,
+        }
+
+    if plot:
+        # ΔE overlay
+        plt.figure(figsize=(8, 5))
+        for opt_name in optimizers:
+            data = out["optimizers"][opt_name]
+            plt.errorbar(
+                noise_levels,
+                data["deltaE_mean"],
+                yerr=data["deltaE_std"],
+                fmt="o-",
+                capsize=3,
+                label=opt_name,
+            )
+        plt.title(f"{molecule} — ΔE vs Noise ({noise_type}, {ansatz_name})")
+        plt.xlabel("Noise Probability")
+        plt.ylabel("ΔE (Ha)")
+        plt.grid(True, alpha=0.4)
+        plt.legend()
+        plt.tight_layout()
+        if show:
+            plt.show()
+        fname = build_filename(
+            molecule=molecule,
+            topic="noisy_optimizer_comparison_deltaE",
+            extras={"ans": ansatz_name, "noise": noise_type},
+        )
+        save_plot(fname)
+
+        # Fidelity overlay
+        plt.figure(figsize=(8, 5))
+        for opt_name in optimizers:
+            data = out["optimizers"][opt_name]
+            plt.errorbar(
+                noise_levels,
+                data["fidelity_mean"],
+                yerr=data["fidelity_std"],
+                fmt="s-",
+                capsize=3,
+                label=opt_name,
+            )
+        plt.title(f"{molecule} — Fidelity vs Noise ({noise_type}, {ansatz_name})")
+        plt.xlabel("Noise Probability")
+        plt.ylabel("Fidelity")
+        plt.grid(True, alpha=0.4)
+        plt.legend()
+        plt.tight_layout()
+        if show:
+            plt.show()
+        fname = build_filename(
+            molecule=molecule,
+            topic="noisy_optimizer_comparison_fidelity",
+            extras={"ans": ansatz_name, "noise": noise_type},
+        )
+        save_plot(fname)
+
+    return out
 
 
 # ================================================================
