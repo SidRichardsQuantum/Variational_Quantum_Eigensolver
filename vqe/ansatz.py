@@ -376,6 +376,8 @@ def init_params(
     """
     np.random.seed(seed)
 
+    ansatz_name = str(ansatz_name).strip()
+
     # --- Toy ansatzes --------------------------------------------------------
     if ansatz_name == "TwoQubit-RY-CNOT":
         # scalable: one parameter per adjacent pair
@@ -391,6 +393,10 @@ def init_params(
         vals = scale * np.random.randn(num_wires)
 
     # --- Chemistry ansatzes (UCC family) ------------------------------------
+    elif ansatz_name == "StronglyEntanglingLayers":
+        # 1 layer, 3 parameters per wire
+        vals = np.random.normal(loc=0.0, scale=np.pi, size=(1, num_wires, 3))
+
     elif ansatz_name in ["UCCSD", "UCC-SD", "UCC-D", "UCCD", "UCC-S", "UCCS"]:
         if symbols is None or coordinates is None:
             raise ValueError(
