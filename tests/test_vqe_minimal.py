@@ -15,7 +15,7 @@ def test_vqe_minimal():
         "H2",
         ansatz_name="Minimal",
         optimizer_name="Adam",
-        n_steps=2
+        steps=2
     )
 
     assert "energy" in result

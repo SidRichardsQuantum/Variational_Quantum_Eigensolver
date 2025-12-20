@@ -63,7 +63,6 @@ MOLECULES = {
         "basis": "STO-3G",
     },
     # Canonical H3+ geometry: equilateral triangle in the xy-plane
-    # (matches your H3+_Noiseless_both_Adam JSON and SSVQE notebook)
     "H3+": {
         "symbols": ["H", "H", "H"],
         "coordinates": np.array(
@@ -208,7 +207,6 @@ def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
     # Parametric molecules: delegate to generator with defaults
     # ------------------------------------------------------------
     if "BOND" in mol or "ANGLE" in mol:
-        # Use reasonable defaults consistent with your notebooks:
         # - H2_BOND, LiH_BOND: bond length default is ~0.74–1.0 Å,
         #                      but actual scans always call generate_geometry
         # - H2O_ANGLE: default around 104.5°

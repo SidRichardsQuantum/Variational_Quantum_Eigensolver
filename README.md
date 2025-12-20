@@ -152,7 +152,7 @@ Run example:
 
 ```python
 from vqe.core import run_vqe
-result = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", n_steps=50)
+result = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", steps=50)
 print(result["energy"])
 ```
 

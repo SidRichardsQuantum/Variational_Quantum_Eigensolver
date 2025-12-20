@@ -297,7 +297,7 @@ def main():
     print(f"🔹 Running standard VQE for {args.molecule}")
     result = run_vqe(
         molecule=args.molecule,
-        n_steps=args.steps,
+        steps=args.steps,
         stepsize=args.stepsize,
         ansatz_name=args.ansatz,
         optimizer_name=args.optimizer,

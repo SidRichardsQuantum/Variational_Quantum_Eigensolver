@@ -6,7 +6,7 @@ def test_vqe_engine_runs_minimal():
 
     result = run_vqe(
         molecule="H2",
-        n_steps=2,
+        steps=2,
         stepsize=0.1,
         ansatz_name="UCCSD",
         optimizer_name="Adam",

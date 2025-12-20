@@ -97,7 +97,6 @@ def run_ssvqe(
     if symbols is None or coordinates is None:
         H, num_wires, symbols, coordinates, basis = build_hamiltonian(molecule)
     else:
-        # Default charge heuristic (matches your prior H3+ usage)
         charge = +1 if molecule.upper() == "H3+" else 0
         H, num_wires = qml.qchem.molecular_hamiltonian(
             symbols, coordinates, charge=charge, basis=basis, unit="angstrom"

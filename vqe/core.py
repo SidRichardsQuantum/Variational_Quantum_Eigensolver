@@ -72,7 +72,7 @@ def compute_fidelity(pure_state, state_or_rho):
 def run_vqe(
     molecule: str = "H2",
     seed: int = 0,
-    n_steps: int = 50,
+    steps: int = 50,
     stepsize: float = 0.2,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
@@ -98,7 +98,7 @@ def run_vqe(
         Molecular label (used when symbols/coordinates are not explicitly provided).
     seed : int
         RNG seed for parameter initialisation and any stochastic components.
-    n_steps : int
+    steps : int
         Number of optimisation steps.
     stepsize : float
         Optimizer learning rate.
@@ -162,7 +162,7 @@ def run_vqe(
         ansatz_desc=ansatz_name,
         optimizer_name=optimizer_name,
         stepsize=stepsize,
-        max_iterations=n_steps,
+        max_iterations=steps,
         seed=seed,
         mapping=mapping,
         noisy=noisy,
@@ -226,7 +226,7 @@ def run_vqe(
     params = np.array(params, requires_grad=True)
     energies = [float(energy_qnode(params))]
 
-    for step in range(n_steps):
+    for step in range(steps):
         try:
             # Use cost returned by step_and_cost to avoid extra QNode calls
             params, cost = opt.step_and_cost(energy_qnode, params)
@@ -237,7 +237,7 @@ def run_vqe(
             e = float(energy_qnode(params))
 
         energies.append(e)
-        print(f"Step {step + 1:02d}/{n_steps}: E = {e:.6f} Ha")
+        print(f"Step {step + 1:02d}/{steps}: E = {e:.6f} Ha")
 
     final_energy = float(energies[-1])
     final_state = state_qnode(params)
@@ -255,7 +255,7 @@ def run_vqe(
     result = {
         "energy": final_energy,
         "energies": [float(e) for e in energies],
-        "steps": n_steps,
+        "steps": steps,
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
         "num_qubits": qubits,
@@ -306,7 +306,7 @@ def run_vqe_noise_sweep(
     # --- Reference run (noiseless) ---
     ref = run_vqe(
         molecule=molecule,
-        n_steps=steps,
+        steps=steps,
         stepsize=0.2,
         plot=False,
         ansatz_name=ansatz_name,
@@ -327,7 +327,7 @@ def run_vqe_noise_sweep(
     for p_dep, p_amp in zip(depolarizing_probs, amplitude_damping_probs):
         res = run_vqe(
             molecule=molecule,
-            n_steps=steps,
+            steps=steps,
             stepsize=0.2,
             plot=False,
             ansatz_name=ansatz_name,
@@ -459,7 +459,7 @@ def run_vqe_optimizer_comparison(
             print(f"\n⚙️ Running optimizer: {opt_name}")
             res = run_vqe(
                 molecule=molecule,
-                n_steps=steps,
+                steps=steps,
                 stepsize=_stepsize_for(opt_name),
                 plot=False,
                 ansatz_name=ansatz_name,
@@ -517,7 +517,6 @@ def run_vqe_optimizer_comparison(
             f"Unknown reference '{reference}'. Only 'per_seed_noiseless' is supported."
         )
 
-    # Defaults consistent with your existing notebooks
     if seeds is None:
         seeds = np.arange(0, 10)
     else:
@@ -570,7 +569,7 @@ def run_vqe_optimizer_comparison(
             np.random.seed(s_int)
             ref = run_vqe(
                 molecule=molecule,
-                n_steps=steps,
+                steps=steps,
                 stepsize=lr,
                 plot=False,
                 ansatz_name=ansatz_name,
@@ -599,7 +598,7 @@ def run_vqe_optimizer_comparison(
                 np.random.seed(s_int)
                 res = run_vqe(
                     molecule=molecule,
-                    n_steps=steps,
+                    steps=steps,
                     stepsize=lr,
                     plot=False,
                     ansatz_name=ansatz_name,
@@ -742,7 +741,7 @@ def run_vqe_ansatz_comparison(
         print(f"\n🔹 Running ansatz: {ans_name}")
         res = run_vqe(
             molecule=molecule,
-            n_steps=steps,
+            steps=steps,
             stepsize=stepsize,
             plot=False,
             ansatz_name=ans_name,
@@ -816,7 +815,7 @@ def run_vqe_multi_seed_noise(
         np.random.seed(int(s))
         res = run_vqe(
             molecule=molecule,
-            n_steps=steps,
+            steps=steps,
             stepsize=stepsize,
             plot=False,
             ansatz_name=ansatz_name,
@@ -846,7 +845,7 @@ def run_vqe_multi_seed_noise(
             np.random.seed(int(s))
             res = run_vqe(
                 molecule=molecule,
-                n_steps=steps,
+                steps=steps,
                 stepsize=stepsize,
                 plot=False,
                 ansatz_name=ansatz_name,
@@ -950,7 +949,7 @@ def run_vqe_geometry_scan(
             np.random.seed(int(s))
             res = run_vqe(
                 molecule=molecule,
-                n_steps=steps,
+                steps=steps,
                 stepsize=stepsize,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
@@ -1079,7 +1078,7 @@ def run_vqe_mapping_comparison(
             molecule=molecule,
             ansatz_name=ansatz_name,
             optimizer_name=optimizer_name,
-            n_steps=steps,
+            steps=steps,
             stepsize=stepsize,
             noisy=noisy,
             depolarizing_prob=depolarizing_prob,

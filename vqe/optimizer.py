@@ -26,10 +26,6 @@ _OPTIMIZERS = {
 
     "RMSProp": qml.RMSPropOptimizer,
     "Adagrad": qml.AdagradOptimizer,
-
-    # ---- NEW ADDITIONS (SPSA SUPPORT) ----
-    "SPSA": qml.SPSAOptimizer,
-    "spsa": qml.SPSAOptimizer,  # alias
 }
 
 
