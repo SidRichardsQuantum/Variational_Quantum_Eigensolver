@@ -498,7 +498,7 @@ def run_vqe_optimizer_comparison(
                 topic="optimizer_comparison",
                 extras={"ans": ansatz_name, "mode": "convergence"},
             )
-            save_plot(fname)
+            save_plot(fname, kind="vqe")
 
         return {
             "mode": "convergence",
@@ -670,7 +670,7 @@ def run_vqe_optimizer_comparison(
             topic="noisy_optimizer_comparison_deltaE",
             extras={"ans": ansatz_name, "noise": noise_type},
         )
-        save_plot(fname)
+        save_plot(fname, kind="vqe")
 
         # Fidelity overlay
         plt.figure(figsize=(8, 5))
@@ -697,7 +697,7 @@ def run_vqe_optimizer_comparison(
             topic="noisy_optimizer_comparison_fidelity",
             extras={"ans": ansatz_name, "noise": noise_type},
         )
-        save_plot(fname)
+        save_plot(fname, kind="vqe")
 
     return out
 
@@ -787,7 +787,7 @@ def run_vqe_ansatz_comparison(
                 topic="ansatz_comparison",
                 extras={"opt": optimizer_name, "mode": "convergence"},
             )
-            save_plot(fname)
+            save_plot(fname, kind="vqe")
 
         return {
             "mode": "convergence",
@@ -953,7 +953,7 @@ def run_vqe_ansatz_comparison(
             topic="noisy_ansatz_comparison_deltaE",
             extras={"opt": optimizer_name, "noise": noise_type_l},
         )
-        save_plot(fname)
+        save_plot(fname, kind="vqe")
 
         plt.figure(figsize=(8, 5))
         for ans_name in ansatzes:
@@ -979,7 +979,7 @@ def run_vqe_ansatz_comparison(
             topic="noisy_ansatz_comparison_fidelity",
             extras={"opt": optimizer_name, "noise": noise_type_l},
         )
-        save_plot(fname)
+        save_plot(fname, kind="vqe")
 
     return out
 
@@ -1213,7 +1213,7 @@ def run_vqe_geometry_scan(
             "param": param_name,
         },
     )
-    save_plot(fname)
+    save_plot(fname, kind="vqe")
 
     min_idx = int(np.argmin(means))
     print(
@@ -1343,7 +1343,7 @@ def run_vqe_mapping_comparison(
         topic="mapping_comparison",
         extras={"ansatz": ansatz_name, "opt": optimizer_name},
     )
-    save_plot(fname)
+    save_plot(fname, kind="vqe")
 
     print(
         f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:"

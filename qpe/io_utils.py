@@ -132,4 +132,4 @@ def save_qpe_plot(filename: str) -> str:
 
     filename should be produced by build_filename().
     """
-    return save_plot(filename)
+    return save_plot(filename, kind="qpe")
