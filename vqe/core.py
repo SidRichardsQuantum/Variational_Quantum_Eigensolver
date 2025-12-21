@@ -765,7 +765,22 @@ def run_vqe_ansatz_comparison(
             final_vals[ans_name] = res["energy"]
 
         if plot:
-            plot_ansatz_comparison(molecule, results, optimizer=optimizer_name, show=show)
+            import matplotlib.pyplot as plt
+
+            plt.figure(figsize=(8, 5))
+            min_len = min(len(v) for v in results.values())
+            for ans, energies in results.items():
+                plt.plot(range(min_len), energies[:min_len], label=ans)
+
+            plt.title(f"{molecule} – Ansatz Comparison (opt={optimizer_name})")
+            plt.xlabel("Iteration")
+            plt.ylabel("Energy (Ha)")
+            plt.grid(True, alpha=0.4)
+            plt.legend()
+            plt.tight_layout()
+
+            if show:
+                plt.show()
 
             fname = build_filename(
                 molecule=molecule,
