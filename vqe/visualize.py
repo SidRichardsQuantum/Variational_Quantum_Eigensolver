@@ -10,6 +10,8 @@ for maximum portability and internal cohesion.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import os
 import matplotlib.pyplot as plt
 
@@ -42,8 +44,8 @@ def _safe_title(*parts):
 
 
 def _save_plot(fname):
-    os.makedirs(IMG_DIR, exist_ok=True)
-    path = os.path.join(IMG_DIR, fname)
+    Path(IMG_DIR).mkdir(parents=True, exist_ok=True)
+    path = Path(IMG_DIR) / fname
     plt.savefig(path, dpi=300, bbox_inches="tight")
     print(f"📁 Saved → {path}")
 
@@ -231,40 +233,46 @@ def plot_noise_statistics(
 # SSVQE Multi-State Convergence Plot
 # ---------------------------------------------------------------------
 def plot_ssvqe_convergence_multi(
-    energies_per_state,
+    energies_per_state=None,
     *,
     molecule="molecule",
     ansatz="UCCSD",
     optimizer="Adam",
+    optimizer_name=None,   # alias for backward-compat
+    E0_list=None,          # legacy-style inputs
+    E1_list=None,
     show=True,
     save=True,
 ):
     """
     Plot convergence for multiple states from SSVQE.
 
-    Parameters
-    ----------
-    energies_per_state : dict or list
-        Either:
-            {0: [...], 1: [...], 2: [...]}  
-        or a list-of-lists:
-            [[...], [...], [...]]
-        Each entry is the energy trajectory for one state.
+    This function supports two calling conventions:
 
-    molecule : str
-        Molecule label.
-    ansatz : str
-        Ansatz name.
-    optimizer : str
-        Optimizer name.
-    show : bool
-        Whether to display the plot.
-    save : bool
-        Whether to save the PNG via common.plotting.
+    1) New / canonical:
+        plot_ssvqe_convergence_multi(
+            energies_per_state=[[...], [...], ...],
+            molecule="H2", ansatz="UCCSD", optimizer="Adam"
+        )
+
+    2) Legacy (used by current vqe/ssvqe.py):
+        plot_ssvqe_convergence_multi(
+            molecule="H2", ansatz="UCCSD", optimizer_name="Adam",
+            E0_list=[...], E1_list=[...]
+        )
     """
-
     import matplotlib.pyplot as plt
     from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_name
+
+    # Backward-compat: accept optimizer_name
+    if optimizer_name is not None:
+        optimizer = optimizer_name
+
+    # Backward-compat: accept E0_list / E1_list
+    if energies_per_state is None:
+        if E0_list is None:
+            raise TypeError("Provide energies_per_state or (E0_list, E1_list).")
+        energies_per_state = [E0_list] if E1_list is None else [E0_list, E1_list]
 
     # Normalise molecule name
     mol_norm = format_molecule_name(molecule)
@@ -300,7 +308,7 @@ def plot_ssvqe_convergence_multi(
                 "opt": optimizer,
             }
         )
-        save_plot(fname)
+        save_plot(fname, show=False)
 
     if show:
         plt.show()

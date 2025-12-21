@@ -95,6 +95,7 @@ def handle_special_modes(args):
             stepsize=args.stepsize,
             noise_type=args.noise_type,
             force=args.force,
+            mapping=args.mapping,
         )
         return True
 
@@ -129,6 +130,7 @@ def handle_special_modes(args):
             noisy=args.noisy,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
+            mapping=args.mapping,
         )
         return True
 
@@ -145,6 +147,7 @@ def handle_special_modes(args):
             noisy=args.noisy,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
+            mapping=args.mapping,
         )
         return True
 
@@ -159,6 +162,7 @@ def handle_special_modes(args):
             steps=args.steps,
             stepsize=args.stepsize,
             force=args.force,
+            mapping=args.mapping,
         )
         return True
 
@@ -174,6 +178,7 @@ def handle_special_modes(args):
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=False,
+            mapping=args.mapping,
         )
         res_noisy = run_vqe(
             args.molecule,
@@ -184,6 +189,7 @@ def handle_special_modes(args):
             noisy=True,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
+            mapping=args.mapping,
         )
         plot_convergence(
             res_noiseless["energies"],
