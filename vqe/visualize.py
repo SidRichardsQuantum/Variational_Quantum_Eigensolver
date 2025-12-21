@@ -308,7 +308,7 @@ def plot_ssvqe_convergence_multi(
                 "opt": optimizer,
             }
         )
-        save_plot(fname, show=False)
+        save_plot(fname, kind="vqe", show=False)
 
     if show:
         plt.show()
