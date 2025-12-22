@@ -27,10 +27,9 @@ Requires-Dist: openfermion
 Requires-Dist: openfermionpyscf
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
-Requires-Dist: black[jupyter]; extra == "dev"
+Requires-Dist: black; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
-Requires-Dist: jupyterlab; extra == "dev"
 Provides-Extra: docs
 Requires-Dist: sphinx; extra == "docs"
 Requires-Dist: furo; extra == "docs"

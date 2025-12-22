@@ -7,10 +7,9 @@ openfermionpyscf
 
 [dev]
 pytest>=8.0
-black[jupyter]
+black
 ruff
 mypy
-jupyterlab
 
 [docs]
 sphinx
