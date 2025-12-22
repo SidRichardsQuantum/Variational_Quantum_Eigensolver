@@ -41,7 +41,7 @@ def apply_noise_all(
     >>> apply_noise_all([0, 1, 2], p_dep=0.02, p_amp=0.01)
     """
     if p_dep <= 0.0 and p_amp <= 0.0:
-        return  # Skip if no noise configured
+        return
 
     for w in wires:
         if p_dep > 0.0:

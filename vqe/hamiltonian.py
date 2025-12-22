@@ -102,9 +102,6 @@ def _apply_mapping_if_possible(
     try:
         import openfermion  # noqa: F401
 
-        # Convert PennyLane Hamiltonian -> OpenFermion QubitOperator
-        # PennyLane Hamiltonian stores ops + coeffs; use qml.pauli_decompose if needed.
-        # The most robust path is qml.qchem.convert.to_openfermion, if present.
         try:
             from pennylane.qchem.convert import to_openfermion
         except Exception:

@@ -350,7 +350,7 @@ def run_vqe_noise_sweep(
         F = compute_fidelity(pure_state, state)
 
         energy_means.append(dE)
-        energy_stds.append(0.0)  # single seed
+        energy_stds.append(0.0)  # single-seed: no stddev
         fidelity_means.append(F)
         fidelity_stds.append(0.0)
 
@@ -363,7 +363,7 @@ def run_vqe_noise_sweep(
         noise_levels = amplitude_damping_probs
     else:
         noise_type = "Combined"
-        noise_levels = depolarizing_probs  # x-axis label; both are meaningful
+        noise_levels = depolarizing_probs
 
     plot_noise_statistics(
         molecule,

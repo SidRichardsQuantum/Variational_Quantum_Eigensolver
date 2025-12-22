@@ -80,8 +80,6 @@ def apply_optional_noise(
 # ANSATZ CONSTRUCTION
 # ======================================================================
 
-# Cache which keyword arguments each ansatz function supports so we
-# don't repeatedly call inspect.signature inside QNodes.
 _ANSATZ_KWARG_CACHE: dict[Callable, set[str]] = {}
 
 

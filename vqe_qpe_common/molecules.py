@@ -67,7 +67,7 @@ MOLECULES = {
     # ------------------------------------------------------
     "HeH+": {
         "symbols": ["He", "H"],
-        # Typical HeH+ bond length ~1.46 Å (varies in literature)
+        # Typical HeH+ bond length ~1.46 Å
         "coordinates": np.array(
             [
                 [0.0, 0.0, 0.0],

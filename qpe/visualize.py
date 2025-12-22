@@ -71,7 +71,6 @@ def plot_qpe_distribution(
     xs = [f"|{b}⟩" for b, _ in items]
     ys = [float(p) for _, p in items]
 
-    # Figure
     plt.figure(figsize=(8, 4))
     plt.bar(xs, ys, alpha=0.85, edgecolor="black")
 

@@ -150,7 +150,6 @@ def _build_ucc_data(symbols, coordinates, basis: str = "STO-3G"):
         try:
             mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
         except TypeError:
-            # Backwards-compat for older PennyLane versions without basis kwarg
             mol = qchem.Molecule(symbols, coordinates, charge=0)
 
         electrons = mol.n_electrons
@@ -159,8 +158,6 @@ def _build_ucc_data(symbols, coordinates, basis: str = "STO-3G"):
         singles, doubles = qchem.excitations(electrons, spin_orbitals)
         hf_state = qchem.hf_state(electrons, spin_orbitals)
 
-        # Store as simple Python containers so that using them inside QNodes
-        # is cheap and avoids unnecessary object conversions.
         singles = [tuple(ex) for ex in singles]
         doubles = [tuple(ex) for ex in doubles]
         hf_state = np.array(hf_state, dtype=int)

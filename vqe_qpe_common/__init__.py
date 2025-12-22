@@ -31,7 +31,7 @@ from .geometry import generate_geometry  # noqa: F401
 # Hamiltonian construction (PennyLane + OpenFermion fallback)
 from .hamiltonian import build_hamiltonian  # noqa: F401
 
-# Molecule visualization (optional, but useful for notebooks)
+# Molecule visualization
 from .molecule_viz import (
     plot_molecule,
     infer_bonds,

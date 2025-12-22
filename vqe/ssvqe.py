@@ -173,7 +173,7 @@ def run_ssvqe(
         noisy=noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
-        molecule_label=molecule,  # <<< add this
+        molecule_label=molecule,
     )
     cfg["penalty_weight"] = float(penalty_weight)
     cfg["num_states"] = int(num_states)

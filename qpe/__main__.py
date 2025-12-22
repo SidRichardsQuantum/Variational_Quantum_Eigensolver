@@ -136,20 +136,16 @@ def main():
     if cached is not None:
         print("\n📂 Loaded cached result.")
         result = cached
-        # For summary printing
+        
         n_qubits = int(
             cached.get("system_qubits", -1)
-        )  # may not exist in older records
+        )
         elapsed = 0.0
     else:
         print("\n▶️ Running new QPE simulation...")
         start_time = time.time()
 
-        # ------------------------------------------------------------
         # Build Hamiltonian + HF state via the unified pipeline
-        # NOTE: qpe.hamiltonian.build_hamiltonian(...) is now the
-        #       single entry-point for QPE Hamiltonian construction.
-        # ------------------------------------------------------------
         H, n_qubits, hf_state, symbols, coordinates, basis, charge = build_hamiltonian(
             args.molecule
         )
@@ -165,7 +161,6 @@ def main():
             molecule_name=args.molecule,
         )
 
-        # Optional: store system qubit count for CLI summary convenience
         result["system_qubits"] = int(n_qubits)
 
         save_qpe_result(result)

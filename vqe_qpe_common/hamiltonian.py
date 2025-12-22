@@ -62,7 +62,6 @@ def hartree_fock_state_from_molecule(
     try:
         mol = qchem.Molecule(symbols, coords, charge=charge, basis=basis)
     except TypeError:
-        # Backwards compatibility: older PL versions may not accept basis kwarg
         mol = qchem.Molecule(symbols, coords, charge=charge)
 
     electrons = int(mol.n_electrons)
@@ -115,14 +114,12 @@ def build_molecular_hamiltonian(
             unit=unit,
         )
         if mapping_kw is not None:
-            # Some PennyLane versions accept mapping=, others do not.
             kwargs["mapping"] = mapping_kw
 
         H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
         return H, int(n_qubits)
 
     except TypeError as exc_type:
-        # Likely: mapping= or unit= not supported in that PL version signature.
         # Retry without mapping if that was provided.
         if mapping_kw is not None:
             try:
@@ -161,7 +158,6 @@ def build_molecular_hamiltonian(
             unit=unit,
             method="openfermion",
         )
-        # mapping is not always supported with openfermion backend; try if possible.
         if mapping_kw is not None:
             try:
                 kwargs["mapping"] = mapping_kw

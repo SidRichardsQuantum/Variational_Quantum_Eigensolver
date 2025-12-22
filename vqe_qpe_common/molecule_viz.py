@@ -48,11 +48,9 @@ def _project_to_2d(coords: np.ndarray) -> np.ndarray:
     """
     X = _as_xyz(coords)
     Xc = X - X.mean(axis=0, keepdims=True)
-    # principal directions in 3D
     _, _, Vt = np.linalg.svd(Xc, full_matrices=False)
-    # take top-2 components
-    P = Vt[:2].T  # (3,2)
-    return Xc @ P  # (N,2)
+    P = Vt[:2].T
+    return Xc @ P
 
 
 def infer_bonds(
@@ -125,14 +123,14 @@ def plot_molecule(
     coords: np.ndarray,
     *,
     title: Optional[str] = None,
-    bonds: Optional[Sequence[Tuple[int, int]]] = None,  # None => infer
-    angles: Optional[Sequence[Tuple[int, int, int]]] = None,  # None => infer from bonds
+    bonds: Optional[Sequence[Tuple[int, int]]] = None,
+    angles: Optional[Sequence[Tuple[int, int, int]]] = None,
     atom_charges: Optional[Sequence[float]] = None,
     show_bond_lengths: bool = True,
     show_angles: bool = True,
     show_atom_indices: bool = False,
     ax: Optional[plt.Axes] = None,
-    **kwargs,  # <-- add this
+    **kwargs,
 ) -> plt.Axes:
     """
     Minimal 2D molecule diagram:
@@ -143,12 +141,12 @@ def plot_molecule(
     """
 
     # -----------------------------------------------------------------
-    # Backwards compatibility: some notebooks used `show_bond_angles=...`
+    # Backwards compatibility for noteboooks
     # -----------------------------------------------------------------
     if "show_bond_angles" in kwargs:
         show_angles = bool(kwargs.pop("show_bond_angles"))
 
-    # If anything else was passed, fail loudly (helps catch typos)
+    # If anything else was passed, fail loudly
     if kwargs:
         raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs.keys())}")
 

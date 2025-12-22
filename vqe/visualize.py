@@ -213,7 +213,7 @@ def plot_ssvqe_convergence_multi(
     ansatz="UCCSD",
     optimizer="Adam",
     optimizer_name=None,  # alias for backward-compat
-    E0_list=None,  # legacy-style inputs
+    E0_list=None,
     E1_list=None,
     show=True,
     save=True,

@@ -251,9 +251,8 @@ def make_filename_prefix(
     cfg: dict, *, noisy: bool, seed: int, hash_str: str, ssvqe: bool = False
 ):
     """Return unified Option-C filename prefix."""
-    # Molecule lives in config only indirectly; infer from symbols
-    # OR require callers to inject molecule into cfg beforehand.
-    mol = cfg.get("molecule", "MOL")  # We will fix cfg in core/ssvqe.
+    # Molecule label taken directly, default "MOL"
+    mol = cfg.get("molecule", "MOL")
 
     # Ansatz string taken directly
     ans = cfg.get("ansatz", "ANSATZ")

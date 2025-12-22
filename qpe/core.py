@@ -92,7 +92,7 @@ def controlled_powered_evolution(
             hamiltonian, t, trotter_steps
         )
 
-        # Optional noise on all active wires
+        # Noise on all active wires
         if noise_params:
             apply_noise_all(
                 wires=system_wires + [control_wire],
