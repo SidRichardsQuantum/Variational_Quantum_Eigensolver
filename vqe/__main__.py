@@ -20,19 +20,21 @@ All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe.
 """
 
 from __future__ import annotations
+
 import argparse
+
 import numpy as np
 
 from vqe import (
+    plot_convergence,
+    run_ssvqe,
     run_vqe,
-    run_vqe_noise_sweep,
-    run_vqe_optimizer_comparison,
     run_vqe_ansatz_comparison,
-    run_vqe_multi_seed_noise,
     run_vqe_geometry_scan,
     run_vqe_mapping_comparison,
-    run_ssvqe,
-    plot_convergence,
+    run_vqe_multi_seed_noise,
+    run_vqe_noise_sweep,
+    run_vqe_optimizer_comparison,
 )
 
 
@@ -219,20 +221,27 @@ def main():
     # Core parameters
     # ------------------------------------------------------------------
     core = parser.add_argument_group("Core")
-    core.add_argument("-m", "--molecule", type=str, default="H2",
-                      help="Molecule (H2, LiH, H2O, H3+)")
-    core.add_argument("-a", "--ansatz", type=str, default="UCCSD",
-                      help="Ansatz name")
-    core.add_argument("-o", "--optimizer", type=str, default="Adam",
-                      help="Optimizer name")
-    core.add_argument("-map", "--mapping", type=str,
-                      default="jordan_wigner",
-                      choices=["jordan_wigner", "bravyi_kitaev", "parity"],
-                      help="Fermion-to-qubit mapping")
-    core.add_argument("-s", "--steps", type=int, default=50,
-                      help="Number of optimization iterations")
-    core.add_argument("-lr", "--stepsize", type=float, default=0.2,
-                      help="Optimizer step size")
+    core.add_argument(
+        "-m", "--molecule", type=str, default="H2", help="Molecule (H2, LiH, H2O, H3+)"
+    )
+    core.add_argument("-a", "--ansatz", type=str, default="UCCSD", help="Ansatz name")
+    core.add_argument(
+        "-o", "--optimizer", type=str, default="Adam", help="Optimizer name"
+    )
+    core.add_argument(
+        "-map",
+        "--mapping",
+        type=str,
+        default="jordan_wigner",
+        choices=["jordan_wigner", "bravyi_kitaev", "parity"],
+        help="Fermion-to-qubit mapping",
+    )
+    core.add_argument(
+        "-s", "--steps", type=int, default=50, help="Number of optimization iterations"
+    )
+    core.add_argument(
+        "-lr", "--stepsize", type=float, default=0.2, help="Optimizer step size"
+    )
 
     # ------------------------------------------------------------------
     # Noise controls
@@ -251,9 +260,12 @@ def main():
     exp.add_argument("--compare-optimizers", nargs="+")
     exp.add_argument("--compare-ansatzes", nargs="+")
     exp.add_argument("--multi-seed-noise", action="store_true")
-    exp.add_argument("--noise-type", type=str,
-                     choices=["depolarizing", "amplitude", "combined"],
-                     default="depolarizing")
+    exp.add_argument(
+        "--noise-type",
+        type=str,
+        choices=["depolarizing", "amplitude", "combined"],
+        default="depolarizing",
+    )
 
     exp.add_argument("--mapping-comparison", action="store_true")
 
@@ -261,11 +273,18 @@ def main():
     # Geometry & SSVQE
     # ------------------------------------------------------------------
     geom = parser.add_argument_group("Geometry / SSVQE")
-    geom.add_argument("--scan-geometry", type=str,
-                      help="Parametric geometry: H2_BOND, LiH_BOND, H2O_ANGLE")
-    geom.add_argument("--range", nargs=3, type=float,
-                      metavar=("START", "END", "NUM"),
-                      help="Geometry scan range")
+    geom.add_argument(
+        "--scan-geometry",
+        type=str,
+        help="Parametric geometry: H2_BOND, LiH_BOND, H2O_ANGLE",
+    )
+    geom.add_argument(
+        "--range",
+        nargs=3,
+        type=float,
+        metavar=("START", "END", "NUM"),
+        help="Geometry scan range",
+    )
     geom.add_argument("--param-name", type=str, default="param")
     geom.add_argument("--ssvqe", action="store_true")
     geom.add_argument("--penalty-weight", type=float, default=10.0)
@@ -316,8 +335,7 @@ def main():
     )
 
     print("\nFinal result:")
-    print({k: (float(v) if hasattr(v, "item") else v)
-           for k, v in result.items()})
+    print({k: (float(v) if hasattr(v, "item") else v) for k, v in result.items()})
 
 
 if __name__ == "__main__":

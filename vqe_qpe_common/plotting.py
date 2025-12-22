@@ -19,7 +19,6 @@ from typing import Dict, Optional
 
 import matplotlib.pyplot as plt
 
-
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 IMG_ROOT = os.path.join(BASE_DIR, "images")
 

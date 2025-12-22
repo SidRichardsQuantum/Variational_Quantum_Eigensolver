@@ -22,14 +22,14 @@ This guarantees:
 
 from __future__ import annotations
 
-from typing import Dict, Any, Sequence, Optional
+from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
 from vqe_qpe_common.plotting import (
     build_filename,
-    save_plot,
     format_molecule_name,
+    save_plot,
 )
 
 
@@ -83,8 +83,7 @@ def plot_qpe_distribution(
         noise_suffix = f" • noise(p_dep={p_dep}, p_amp={p_amp})"
 
     plt.title(
-        f"{molecule} QPE Distribution ({n_anc} ancilla){noise_suffix}",
-        fontsize=12
+        f"{molecule} QPE Distribution ({n_anc} ancilla){noise_suffix}", fontsize=12
     )
 
     plt.xticks(rotation=45, ha="right")

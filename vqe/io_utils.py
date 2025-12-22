@@ -14,11 +14,10 @@ This module is the single source of truth for:
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 from pathlib import Path
 from typing import Any, Dict
-
 
 # ================================================================
 # BASE PATHS
@@ -46,6 +45,7 @@ def ensure_dirs() -> None:
 # ================================================================
 # INTERNAL HELPERS
 # ================================================================
+
 
 def _round_floats(x: Any, ndigits: int = 8) -> Any:
     """
@@ -126,6 +126,7 @@ def _to_serializable(obj: Any) -> Any:
 # RUN CONFIGURATION & HASHING
 # ================================================================
 
+
 def make_run_config_dict(
     symbols,
     coordinates,
@@ -198,6 +199,7 @@ def run_signature(cfg: Dict[str, Any]) -> str:
 # FILESYSTEM UTILITIES
 # ================================================================
 
+
 def _result_path_from_prefix(prefix: str) -> Path:
     """
     Build the full JSON path from a filename prefix (without extension).
@@ -245,12 +247,14 @@ def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     return str(path)
 
 
-def make_filename_prefix(cfg: dict, *, noisy: bool, seed: int, hash_str: str, ssvqe: bool = False):
+def make_filename_prefix(
+    cfg: dict, *, noisy: bool, seed: int, hash_str: str, ssvqe: bool = False
+):
     """Return unified Option-C filename prefix."""
     # Molecule lives in config only indirectly; infer from symbols
     # OR require callers to inject molecule into cfg beforehand.
     mol = cfg.get("molecule", "MOL")  # We will fix cfg in core/ssvqe.
-    
+
     # Ansatz string taken directly
     ans = cfg.get("ansatz", "ANSATZ")
 
@@ -261,6 +265,6 @@ def make_filename_prefix(cfg: dict, *, noisy: bool, seed: int, hash_str: str, ss
         opt = "OPT"
 
     noise_tag = "noisy" if noisy else "noiseless"
-    algo_tag  = "SSVQE" if ssvqe else "VQE"
+    algo_tag = "SSVQE" if ssvqe else "VQE"
 
     return f"{mol}__{ans}__{opt}__{algo_tag}__{noise_tag}__s{seed}__{hash_str}"

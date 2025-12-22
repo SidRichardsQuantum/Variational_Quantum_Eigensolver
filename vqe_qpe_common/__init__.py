@@ -32,7 +32,11 @@ from .geometry import generate_geometry  # noqa: F401
 from .hamiltonian import build_hamiltonian  # noqa: F401
 
 # Molecule visualization (optional, but useful for notebooks)
-from .molecule_viz import plot_molecule, infer_bonds, infer_angles_from_bonds  # noqa: F401
+from .molecule_viz import (
+    plot_molecule,
+    infer_bonds,
+    infer_angles_from_bonds,
+)  # noqa: F401
 
 # Plotting utilities shared across VQE + QPE
 from .plotting import (
@@ -47,22 +51,17 @@ __all__ = [
     # Molecules
     "MOLECULES",
     "get_molecule_config",
-
     # Geometry
     "generate_geometry",
-
     # Hamiltonian
     "build_hamiltonian",
-
     # Plotting
     "build_filename",
     "save_plot",
     "format_molecule_name",
     "format_token",
-
     # Molecule visualization
     "plot_molecule",
     "infer_bonds",
     "infer_angles_from_bonds",
-
 ]

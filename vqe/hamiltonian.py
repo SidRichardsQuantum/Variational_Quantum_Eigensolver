@@ -26,10 +26,10 @@ from typing import Tuple
 import numpy as np
 import pennylane as qml
 
-from vqe_qpe_common.molecules import MOLECULES as _COMMON_MOLECULES, get_molecule_config
 from vqe_qpe_common.geometry import generate_geometry as _common_generate_geometry
 from vqe_qpe_common.hamiltonian import build_hamiltonian as _build_common_hamiltonian
-
+from vqe_qpe_common.molecules import MOLECULES as _COMMON_MOLECULES
+from vqe_qpe_common.molecules import get_molecule_config
 
 # ---------------------------------------------------------------------
 # Public re-export: molecule registry (backwards compatible)
@@ -40,7 +40,9 @@ MOLECULES = _COMMON_MOLECULES
 # ---------------------------------------------------------------------
 # Compatibility: parametric geometry generation
 # ---------------------------------------------------------------------
-def generate_geometry(molecule: str, param_value: float) -> Tuple[list[str], np.ndarray]:
+def generate_geometry(
+    molecule: str, param_value: float
+) -> Tuple[list[str], np.ndarray]:
     """
     Compatibility wrapper.
 
@@ -99,7 +101,6 @@ def _apply_mapping_if_possible(
     # Best-effort OpenFermion conversion path
     try:
         import openfermion  # noqa: F401
-        from pennylane.qchem.convert import import_operator
 
         # Convert PennyLane Hamiltonian -> OpenFermion QubitOperator
         # PennyLane Hamiltonian stores ops + coeffs; use qml.pauli_decompose if needed.
@@ -110,17 +111,10 @@ def _apply_mapping_if_possible(
             to_openfermion = None
 
         if to_openfermion is None:
-            raise RuntimeError("PennyLane 'to_openfermion' not available in this environment.")
+            raise RuntimeError(
+                "PennyLane 'to_openfermion' not available in this environment."
+            )
 
-        qubit_op = to_openfermion(H)
-
-        # Apply alternate mapping by interpreting the operator as coming from fermionic mapping.
-        # NOTE: We cannot “re-map” a qubit operator without the fermionic operator.
-        # However, PennyLane/OpenFermion mapping differences are meaningful at the *fermion → qubit* step.
-        # If we only have a qubit operator, an exact remap is not well-defined.
-        #
-        # Therefore: this function only supports environments where qchem can produce the target mapping
-        # upstream. If you require strict mapping comparisons, prefer building H with mapping in qchem.
         raise RuntimeError(
             "Exact remapping requires constructing the Hamiltonian with mapping at build time. "
             "Use vqe.hamiltonian.build_hamiltonian(..., mapping=...) with a PennyLane version "
@@ -190,4 +184,10 @@ def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
     # Best-effort mapping application
     H_mapped = _apply_mapping_if_possible(H, mapping=mapping)
 
-    return H_mapped, int(num_qubits), list(symbols), np.array(coordinates, dtype=float), str(basis)
+    return (
+        H_mapped,
+        int(num_qubits),
+        list(symbols),
+        np.array(coordinates, dtype=float),
+        str(basis),
+    )

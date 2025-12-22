@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: vqe-pennylane
-Version: 0.2.2
+Version: 0.2.3
 Summary: Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)
 Author-email: Sid Richards <siddrichards@hotmail.co.uk>
 License-Expression: MIT
@@ -12,7 +12,6 @@ Classifier: Development Status :: 4 - Beta
 Classifier: Intended Audience :: Science/Research
 Classifier: Operating System :: OS Independent
 Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
@@ -22,15 +21,14 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: pennylane<0.45,>=0.42
 Requires-Dist: numpy<2.0,>=1.23
-Requires-Dist: scipy<2.0,>=1.10; python_version >= "3.10"
-Requires-Dist: scipy<2.0,>=1.9; python_version == "3.9"
+Requires-Dist: scipy<2.0,>=1.10
 Requires-Dist: matplotlib
 Requires-Dist: openfermion
 Requires-Dist: openfermionpyscf
 Provides-Extra: dev
 Requires-Dist: pytest>=8.0; extra == "dev"
-Requires-Dist: black; extra == "dev"
-Requires-Dist: flake8; extra == "dev"
+Requires-Dist: black[jupyter]; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
 Requires-Dist: jupyterlab; extra == "dev"
 Provides-Extra: docs
@@ -72,10 +70,13 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 This project refactors all previous notebooks into a clean Python package with  
 a shared `vqe_qpe_common/` layer for Hamiltonians, molecules, geometry, and plotting.
 
-- **[THEORY.md](THEORY.md)** — Full background on VQE, QPE, ansatzes, optimizers, mappings, and noise models.  
-- **[USAGE.md](USAGE.md)** — Practical guide for installation, CLI usage, running simulations, caching, and plotting.
+## How to get started
 
-These documents complement the README and provide both the *theoretical foundation* and the *hands-on execution details* of the VQE/QPE suite.
+- For the full background on VQE and QPE: see [THEORY.md](THEORY.md)
+- For CLI usage and automation: see [USAGE.md](USAGE.md)
+- For example notebooks: see [notebooks/README_notebooks.md](notebooks/README_notebooks.md)
+
+These documents complement this 'README.md' and provide the *theoretical foundation* and *hands-on execution details* of the VQE/QPE suite.
 
 ---
 
@@ -87,15 +88,10 @@ Variational_Quantum_Eigensolver/
 ├── THEORY.md
 ├── USAGE.md
 ├── LICENSE
+├── requirements.txt
 ├── pyproject.toml
 │
-├── vqe_qpe_common/          # Shared logic for VQE + QPE
-│   ├── molecules.py         # Unified molecule registry
-│   ├── geometry.py          # Bond/angle geometry generators
-│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
-│   └── plotting.py          # Shared plotting + filename builders
-│
-├── vqe/                     # Variational Quantum Eigensolver package
+├── vqe/                     # VQE package
 │   ├── __main__.py          # CLI: python -m vqe
 │   ├── core.py              # VQE orchestration (runs, scans, sweeps)
 │   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
@@ -106,7 +102,7 @@ Variational_Quantum_Eigensolver/
 │   ├── visualize.py         # Convergence, scans, noise plots
 │   └── ssvqe.py             # Subspace-search VQE (excited states)
 │
-├── qpe/                     # Quantum Phase Estimation package
+├── qpe/                     # QPE package
 │   ├── __main__.py          # CLI: python -m qpe
 │   ├── core.py              # Controlled-U, trotterized dynamics, iQFT
 │   ├── hamiltonian.py       # QPE-specific wrapper → uses vqe_qpe_common.hamiltonian
@@ -114,11 +110,26 @@ Variational_Quantum_Eigensolver/
 │   ├── noise.py             # Depolarizing + amplitude damping channels
 │   └── visualize.py         # Phase histograms + sweep plots
 │
-├── results/                 # JSON outputs
-├── images/                  # Saved plots (VQE + QPE)
-├── data/                    # Optional molecule configs, external data
+├── vqe_qpe_common/          # Shared logic for VQE + QPE
+│   ├── geometry.py          # Bond/angle geometry generators
+│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
+│   ├── molecules.py         # Unified molecule registry
+│   ├── molecule_viz.py      # Draw molecules
+│   └── plotting.py          # Shared plotting + filename builders
 │
-└── notebooks/               # Notebooks importing from the vqe/ and qpe/ packages
+├── images/                  # Saved png files
+│   ├── vqe/
+│   └── qpe/
+│
+├── results/                 # JSON outputs
+│   ├── vqe/
+│   └── qpe/
+│
+└── notebooks/
+    ├── README_notebooks.md  # Markdown for the example notebooks
+    ├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
+    ├── vqe/                 # Importing from the vqe/ package
+    └── qpe/                 # Importing from the qpe/ package
 ```
 
 This structure ensures:
@@ -126,7 +137,6 @@ This structure ensures:
 - **VQE and QPE share the same chemistry** (`vqe_qpe_common/`)
 - **All results are cached consistently** (`results/`)
 - **All plots use one naming system** (`vqe_qpe_common/plotting.py`)
-- **Notebooks import from the real package** (no duplicated code)
 - **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
 
 ---
@@ -204,8 +214,11 @@ Example:
 from vqe_qpe_common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
-H, n_qubits, hf_state = build_hamiltonian(["H","H"], coords, 0, "STO-3G")
-result = run_qpe(H, hf_state, n_ancilla=4)
+symbols = ["H", "H"]
+coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]]
+
+H, n_qubits, hf_state = build_hamiltonian(symbols, coords, charge=0, basis="STO-3G")
+result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 ```
 
 ---

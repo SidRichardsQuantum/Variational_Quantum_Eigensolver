@@ -13,34 +13,36 @@ Includes:
 
 from __future__ import annotations
 
-import os
 import json
+import os
 
 import pennylane as qml
 from pennylane import numpy as np
 
-from .hamiltonian import build_hamiltonian, generate_geometry
-from .visualize import (
-    plot_convergence,
-    plot_optimizer_comparison,
-    plot_ansatz_comparison,
-    plot_noise_statistics,
+from .engine import (
+    build_ansatz as engine_build_ansatz,
 )
-from .io_utils import (
-    IMG_DIR,
-    RESULTS_DIR,
-    make_run_config_dict,
-    make_filename_prefix,
-    run_signature,
-    save_run_record,
-    ensure_dirs,
+from .engine import (
+    build_optimizer as engine_build_optimizer,
 )
 from .engine import (
     make_device,
-    build_ansatz as engine_build_ansatz,
-    build_optimizer as engine_build_optimizer,
     make_energy_qnode,
     make_state_qnode,
+)
+from .hamiltonian import build_hamiltonian, generate_geometry
+from .io_utils import (
+    IMG_DIR,
+    RESULTS_DIR,
+    ensure_dirs,
+    make_filename_prefix,
+    make_run_config_dict,
+    run_signature,
+    save_run_record,
+)
+from .visualize import (
+    plot_convergence,
+    plot_noise_statistics,
 )
 
 
@@ -431,6 +433,7 @@ def run_vqe_optimizer_comparison(
         compute noiseless reference energy/state for each seed (and optimizer).
     """
     import matplotlib.pyplot as plt
+
     from vqe_qpe_common.plotting import build_filename, save_plot
 
     optimizers = optimizers or ["Adam", "GradientDescent", "Momentum"]
@@ -482,7 +485,9 @@ def run_vqe_optimizer_comparison(
 
             title_noise = ""
             if noisy:
-                title_noise = f" (dep={depolarizing_prob}, amp={amplitude_damping_prob})"
+                title_noise = (
+                    f" (dep={depolarizing_prob}, amp={amplitude_damping_prob})"
+                )
             plt.title(f"{molecule} – Optimizer Comparison ({ansatz_name}){title_noise}")
             plt.xlabel("Iteration")
             plt.ylabel("Energy (Ha)")
@@ -539,7 +544,9 @@ def run_vqe_optimizer_comparison(
         dep_levels = noise_levels
         amp_levels = noise_levels
     else:
-        raise ValueError(f"Unknown noise_type '{noise_type}' (use depolarizing/amplitude/combined).")
+        raise ValueError(
+            f"Unknown noise_type '{noise_type}' (use depolarizing/amplitude/combined)."
+        )
 
     out = {
         "mode": "noise_stats",
@@ -552,7 +559,7 @@ def run_vqe_optimizer_comparison(
         "seeds": [int(s) for s in seeds],
         "optimizers": {},
     }
-    
+
     for opt_name in optimizers:
         lr = _stepsize_for(opt_name)
         print(f"\n⚙️ Optimizer: {opt_name} (stepsize={lr})")
@@ -580,7 +587,9 @@ def run_vqe_optimizer_comparison(
                 seed=s_int,
             )
             ref_E[s_int] = float(ref["energy"])
-            psi = np.array(ref["final_state_real"]) + 1j * np.array(ref["final_state_imag"])
+            psi = np.array(ref["final_state_real"]) + 1j * np.array(
+                ref["final_state_imag"]
+            )
             # Normalise defensively
             psi = psi / np.linalg.norm(psi)
             ref_state[s_int] = psi
@@ -612,8 +621,14 @@ def run_vqe_optimizer_comparison(
                 )
 
                 E_noisy = float(res["energy"])
-                rho_or_state = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
-                rho_or_state = rho_or_state.reshape(ref_state[s_int].shape) if rho_or_state.shape == ref_state[s_int].shape else rho_or_state
+                rho_or_state = np.array(res["final_state_real"]) + 1j * np.array(
+                    res["final_state_imag"]
+                )
+                rho_or_state = (
+                    rho_or_state.reshape(ref_state[s_int].shape)
+                    if rho_or_state.shape == ref_state[s_int].shape
+                    else rho_or_state
+                )
 
                 # Normalise statevector case (density matrix case handled in compute_fidelity)
                 if rho_or_state.ndim == 1:
@@ -737,9 +752,15 @@ def run_vqe_ansatz_comparison(
         - computes ΔE (vs per-seed noiseless reference) and fidelity mean/std vs noise
     """
     import matplotlib.pyplot as plt
+
     from vqe_qpe_common.plotting import build_filename, save_plot
 
-    ansatzes = ansatzes or ["UCCSD", "RY-CZ", "TwoQubit-RY-CNOT", "StronglyEntanglingLayers"]
+    ansatzes = ansatzes or [
+        "UCCSD",
+        "RY-CZ",
+        "TwoQubit-RY-CNOT",
+        "StronglyEntanglingLayers",
+    ]
 
     if mode == "convergence":
         results = {}
@@ -845,7 +866,9 @@ def run_vqe_ansatz_comparison(
     }
 
     for ans_name in ansatzes:
-        print(f"\n🔹 Ansatz: {ans_name} (optimizer={optimizer_name}, stepsize={float(stepsize)})")
+        print(
+            f"\n🔹 Ansatz: {ans_name} (optimizer={optimizer_name}, stepsize={float(stepsize)})"
+        )
 
         deltaE_mean, deltaE_std = [], []
         fid_mean, fid_std = [], []
@@ -869,7 +892,9 @@ def run_vqe_ansatz_comparison(
                 seed=s_int,
             )
             ref_E[s_int] = float(ref["energy"])
-            psi = np.array(ref["final_state_real"]) + 1j * np.array(ref["final_state_imag"])
+            psi = np.array(ref["final_state_real"]) + 1j * np.array(
+                ref["final_state_imag"]
+            )
             psi = psi / np.linalg.norm(psi)
             ref_state[s_int] = psi
 
@@ -899,7 +924,9 @@ def run_vqe_ansatz_comparison(
                 )
 
                 E_noisy = float(res["energy"])
-                state_or_rho = np.array(res["final_state_real"]) + 1j * np.array(res["final_state_imag"])
+                state_or_rho = np.array(res["final_state_real"]) + 1j * np.array(
+                    res["final_state_imag"]
+                )
 
                 if state_or_rho.ndim == 1:
                     state_or_rho = state_or_rho / np.linalg.norm(state_or_rho)
@@ -966,7 +993,9 @@ def run_vqe_ansatz_comparison(
                 capsize=3,
                 label=ans_name,
             )
-        plt.title(f"{molecule} — Fidelity vs Noise ({noise_type_l}, opt={optimizer_name})")
+        plt.title(
+            f"{molecule} — Fidelity vs Noise ({noise_type_l}, opt={optimizer_name})"
+        )
         plt.xlabel("Noise Probability")
         plt.ylabel("Fidelity")
         plt.grid(True, alpha=0.4)
@@ -1147,12 +1176,13 @@ def run_vqe_geometry_scan(
     list of tuples
         [(param_value, mean_E, std_E), ...]
     """
+    import matplotlib.pyplot as plt
+
     from vqe_qpe_common.plotting import (
         build_filename,
-        save_plot,
         format_molecule_name,
+        save_plot,
     )
-    import matplotlib.pyplot as plt
 
     if param_values is None:
         raise ValueError("param_values must be specified")
@@ -1267,6 +1297,7 @@ def run_vqe_mapping_comparison(
         }
     """
     import matplotlib.pyplot as plt
+
     from vqe_qpe_common.plotting import build_filename, save_plot
 
     mappings = mappings or ["jordan_wigner", "bravyi_kitaev", "parity"]
@@ -1289,9 +1320,7 @@ def run_vqe_mapping_comparison(
             try:
                 num_terms = len(H.terms()[0]) if callable(H.terms) else len(H.data)
             except Exception:
-                num_terms = (
-                    len(getattr(H, "data", [])) if hasattr(H, "data") else None
-                )
+                num_terms = len(getattr(H, "data", [])) if hasattr(H, "data") else None
 
         # Run VQE using the high-level entrypoint (handles ansatz + noise plumbing)
         res = run_vqe(
@@ -1345,9 +1374,7 @@ def run_vqe_mapping_comparison(
     )
     save_plot(fname, kind="vqe")
 
-    print(
-        f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:"
-    )
+    print(f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:")
     for mapping, data in results.items():
         print(
             f"  {mapping:15s} → E = {data['final_energy']:.8f} Ha, "

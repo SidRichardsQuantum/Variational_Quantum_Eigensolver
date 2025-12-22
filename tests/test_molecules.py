@@ -1,5 +1,6 @@
 import pytest
 
+
 def test_molecule_registry_has_new_entries():
     """Ensure newly added molecules exist in the central registry."""
     from vqe_qpe_common.molecules import MOLECULES

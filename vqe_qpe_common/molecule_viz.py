@@ -14,9 +14,8 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Sequence, Tuple
 
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 _COVALENT_RADII: Dict[str, float] = {
     "H": 0.31,
@@ -80,7 +79,9 @@ def infer_bonds(
     return bonds
 
 
-def infer_angles_from_bonds(bonds: Sequence[Tuple[int, int]]) -> List[Tuple[int, int, int]]:
+def infer_angles_from_bonds(
+    bonds: Sequence[Tuple[int, int]],
+) -> List[Tuple[int, int, int]]:
     """
     Return angle triplets (i, j, k) where j is central and (i-j), (j-k) are bonds.
     """
@@ -124,8 +125,8 @@ def plot_molecule(
     coords: np.ndarray,
     *,
     title: Optional[str] = None,
-    bonds: Optional[Sequence[Tuple[int, int]]] = None,          # None => infer
-    angles: Optional[Sequence[Tuple[int, int, int]]] = None,    # None => infer from bonds
+    bonds: Optional[Sequence[Tuple[int, int]]] = None,  # None => infer
+    angles: Optional[Sequence[Tuple[int, int, int]]] = None,  # None => infer from bonds
     atom_charges: Optional[Sequence[float]] = None,
     show_bond_lengths: bool = True,
     show_angles: bool = True,

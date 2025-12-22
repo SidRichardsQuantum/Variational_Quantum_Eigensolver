@@ -95,9 +95,7 @@ def minimal(params, wires):
         - Requires at least 2 wires, but can be embedded in a larger register.
     """
     if len(wires) < 2:
-        raise ValueError(
-            f"Minimal ansatz expects at least 2 wires, got {len(wires)}"
-        )
+        raise ValueError(f"Minimal ansatz expects at least 2 wires, got {len(wires)}")
 
     qml.RY(params[0], wires=wires[0])
     qml.CNOT(wires=[wires[0], wires[1]])
@@ -320,9 +318,9 @@ ANSATZES = {
     "UCCSD": uccsd_ansatz,
     "UCC-SD": uccsd_ansatz,  # alias
     "UCC-D": uccd_ansatz,
-    "UCCD": uccd_ansatz,     # alias
+    "UCCD": uccd_ansatz,  # alias
     "UCC-S": uccs_ansatz,
-    "UCCS": uccs_ansatz,     # alias
+    "UCCS": uccs_ansatz,  # alias
 }
 
 

@@ -8,8 +8,8 @@ Provides:
 """
 
 from __future__ import annotations
-import pennylane as qml
 
+import pennylane as qml
 
 # ================================================================
 # AVAILABLE OPTIMIZERS
@@ -17,13 +17,10 @@ import pennylane as qml
 _OPTIMIZERS = {
     "Adam": qml.AdamOptimizer,
     "adam": qml.AdamOptimizer,  # alias
-
     "GradientDescent": qml.GradientDescentOptimizer,
     "gd": qml.GradientDescentOptimizer,  # alias
-
     "Momentum": qml.MomentumOptimizer,
     "Nesterov": qml.NesterovMomentumOptimizer,
-
     "RMSProp": qml.RMSPropOptimizer,
     "Adagrad": qml.AdagradOptimizer,
 }
@@ -49,6 +46,5 @@ def get_optimizer(name: str = "Adam", stepsize: float = 0.2):
             return cls(stepsize)
 
     raise ValueError(
-        f"Unknown optimizer '{name}'. "
-        f"Available: {', '.join(_OPTIMIZERS.keys())}"
+        f"Unknown optimizer '{name}'. " f"Available: {', '.join(_OPTIMIZERS.keys())}"
     )

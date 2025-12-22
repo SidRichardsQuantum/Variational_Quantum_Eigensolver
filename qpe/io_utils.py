@@ -8,7 +8,7 @@ This version is fully aligned with the VQE I/O stack:
     results/
       ├── vqe/
       └── qpe/
-    
+
 All QPE JSON output files live in: results/qpe/
 
 All PNG figures must be saved through common.plotting.save_plot(),
@@ -21,14 +21,14 @@ This file intentionally contains:
 """
 
 from __future__ import annotations
-import os
-import json
+
 import hashlib
+import json
+import os
 from pathlib import Path
 from typing import Any, Dict
 
-from vqe_qpe_common.plotting import save_plot, build_filename
-
+from vqe_qpe_common.plotting import save_plot
 
 # ---------------------------------------------------------------------
 # Base Directories (mirrors VQE)

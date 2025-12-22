@@ -7,7 +7,6 @@ All figures are saved via vqe_qpe_common.plotting.save_plot(kind="vqe"),
 which guarantees routing to images/vqe/.
 """
 
-
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
@@ -62,8 +61,13 @@ def plot_convergence(
 
     noisy = energies_noisy is not None
     if noisy:
-        plt.plot(range(len(energies_noisy)), energies_noisy,
-                 label="Noisy", lw=2, linestyle="--")
+        plt.plot(
+            range(len(energies_noisy)),
+            energies_noisy,
+            label="Noisy",
+            lw=2,
+            linestyle="--",
+        )
 
     # Title
     if noisy:
@@ -73,9 +77,7 @@ def plot_convergence(
             f"Noise: dep={dep_prob}, amp={amp_prob}",
         )
     else:
-        title = _safe_title(
-            f"{molecule}", f"VQE Convergence ({optimizer}, {ansatz})"
-        )
+        title = _safe_title(f"{molecule}", f"VQE Convergence ({optimizer}, {ansatz})")
 
     plt.title(title)
     plt.xlabel("Iteration")
@@ -100,7 +102,9 @@ def plot_convergence(
 # ================================================================
 # OPTIMIZER COMPARISON
 # ================================================================
-def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD", show=True):
+def plot_optimizer_comparison(
+    molecule: str, results: dict, ansatz: str = "UCCSD", show=True
+):
     """
     Plot multiple optimizers on a shared convergence graph.
     """
@@ -125,7 +129,9 @@ def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD
 # ================================================================
 # ANSATZ COMPARISON
 # ================================================================
-def plot_ansatz_comparison(molecule: str, results: dict, show=True, optimizer: str = "Adam"):
+def plot_ansatz_comparison(
+    molecule: str, results: dict, show=True, optimizer: str = "Adam"
+):
     """
     Plot multiple ansatzes on a shared convergence graph.
     """
@@ -168,8 +174,7 @@ def plot_noise_statistics(
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
     # ΔE vs noise level
-    ax1.errorbar(noise_levels, energy_means, yerr=energy_stds,
-                 fmt="o-", capsize=4)
+    ax1.errorbar(noise_levels, energy_means, yerr=energy_stds, fmt="o-", capsize=4)
     ax1.set_ylabel("ΔE (Ha)")
     ax1.set_title(
         _safe_title(
@@ -181,8 +186,7 @@ def plot_noise_statistics(
     ax1.grid(True, alpha=0.4)
 
     # Fidelity vs noise level
-    ax2.errorbar(noise_levels, fidelity_means, yerr=fidelity_stds,
-                 fmt="s-", capsize=4)
+    ax2.errorbar(noise_levels, fidelity_means, yerr=fidelity_stds, fmt="s-", capsize=4)
     ax2.set_xlabel("Noise Probability")
     ax2.set_ylabel("Fidelity")
     ax2.grid(True, alpha=0.4)
@@ -208,8 +212,8 @@ def plot_ssvqe_convergence_multi(
     molecule="molecule",
     ansatz="UCCSD",
     optimizer="Adam",
-    optimizer_name=None,   # alias for backward-compat
-    E0_list=None,          # legacy-style inputs
+    optimizer_name=None,  # alias for backward-compat
+    E0_list=None,  # legacy-style inputs
     E1_list=None,
     show=True,
     save=True,
@@ -248,7 +252,9 @@ def plot_ssvqe_convergence_multi(
 
     # Handle dict or list input
     if isinstance(energies_per_state, dict):
-        trajectories = [energies_per_state[k] for k in sorted(energies_per_state.keys())]
+        trajectories = [
+            energies_per_state[k] for k in sorted(energies_per_state.keys())
+        ]
     else:
         trajectories = energies_per_state
 
@@ -275,6 +281,6 @@ def plot_ssvqe_convergence_multi(
                 "states": n_states,
                 "ans": ansatz,
                 "opt": optimizer,
-            }
+            },
         )
         save_plot(fname, kind="vqe", show=show)

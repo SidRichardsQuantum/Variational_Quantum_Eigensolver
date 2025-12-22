@@ -20,7 +20,6 @@ import inspect
 from typing import Callable, Iterable, Optional
 
 import pennylane as qml
-from pennylane import numpy as np
 
 from .ansatz import get_ansatz, init_params
 from .optimizer import get_optimizer
@@ -92,7 +91,11 @@ def _supported_ansatz_kwargs(ansatz_fn: Callable) -> set[str]:
         return _ANSATZ_KWARG_CACHE[ansatz_fn]
 
     sig = inspect.signature(ansatz_fn).parameters
-    supported = {name for name, p in sig.items() if p.kind in (p.KEYWORD_ONLY, p.POSITIONAL_OR_KEYWORD)}
+    supported = {
+        name
+        for name, p in sig.items()
+        if p.kind in (p.KEYWORD_ONLY, p.POSITIONAL_OR_KEYWORD)
+    }
     _ANSATZ_KWARG_CACHE[ansatz_fn] = supported
     return supported
 

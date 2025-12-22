@@ -27,7 +27,6 @@ from qpe.io_utils import (
     signature_hash,
 )
 from qpe.visualize import plot_qpe_distribution
-
 from vqe_qpe_common.molecules import MOLECULES
 
 
@@ -78,14 +77,24 @@ def parse_args():
 
     # Noise model
     parser.add_argument("--noisy", action="store_true", help="Enable noise model")
-    parser.add_argument("--p-dep", type=float, default=0.0, help="Depolarizing probability")
-    parser.add_argument("--p-amp", type=float, default=0.0, help="Amplitude damping probability")
+    parser.add_argument(
+        "--p-dep", type=float, default=0.0, help="Depolarizing probability"
+    )
+    parser.add_argument(
+        "--p-amp", type=float, default=0.0, help="Amplitude damping probability"
+    )
 
     # Plotting
-    parser.add_argument("--plot", action="store_true", help="Show plot after simulation")
-    parser.add_argument("--save-plot", action="store_true", help="Save QPE probability distribution")
+    parser.add_argument(
+        "--plot", action="store_true", help="Show plot after simulation"
+    )
+    parser.add_argument(
+        "--save-plot", action="store_true", help="Save QPE probability distribution"
+    )
 
-    parser.add_argument("--force", action="store_true", help="Force rerun even if cached result exists")
+    parser.add_argument(
+        "--force", action="store_true", help="Force rerun even if cached result exists"
+    )
 
     return parser.parse_args()
 
@@ -128,7 +137,9 @@ def main():
         print("\n📂 Loaded cached result.")
         result = cached
         # For summary printing
-        n_qubits = int(cached.get("system_qubits", -1))  # may not exist in older records
+        n_qubits = int(
+            cached.get("system_qubits", -1)
+        )  # may not exist in older records
         elapsed = 0.0
     else:
         print("\n▶️ Running new QPE simulation...")
@@ -139,7 +150,9 @@ def main():
         # NOTE: qpe.hamiltonian.build_hamiltonian(...) is now the
         #       single entry-point for QPE Hamiltonian construction.
         # ------------------------------------------------------------
-        H, n_qubits, hf_state, symbols, coordinates, basis, charge = build_hamiltonian(args.molecule)
+        H, n_qubits, hf_state, symbols, coordinates, basis, charge = build_hamiltonian(
+            args.molecule
+        )
 
         result = run_qpe(
             hamiltonian=H,
@@ -174,7 +187,9 @@ def main():
     if sys_n >= 0:
         print(f"Total qubits        : system={sys_n}, ancillas={args.ancillas}")
     else:
-        print(f"Total qubits        : ancillas={args.ancillas} (system qubits unknown in this record)")
+        print(
+            f"Total qubits        : ancillas={args.ancillas} (system qubits unknown in this record)"
+        )
 
     # ------------------------------------------------------------
     # Plot

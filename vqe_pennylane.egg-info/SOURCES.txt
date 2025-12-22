@@ -39,5 +39,6 @@ vqe_pennylane.egg-info/top_level.txt
 vqe_qpe_common/__init__.py
 vqe_qpe_common/geometry.py
 vqe_qpe_common/hamiltonian.py
+vqe_qpe_common/molecule_viz.py
 vqe_qpe_common/molecules.py
 vqe_qpe_common/plotting.py

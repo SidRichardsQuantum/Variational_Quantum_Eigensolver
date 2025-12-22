@@ -17,14 +17,14 @@ Rationale:
 
 from __future__ import annotations
 
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
 import pennylane as qml
 
-from vqe_qpe_common.molecules import MOLECULES, get_molecule_config
 from vqe_qpe_common.geometry import generate_geometry as _common_generate_geometry
 from vqe_qpe_common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
+from vqe_qpe_common.molecules import MOLECULES, get_molecule_config
 
 
 def _normalise_static_key(molecule: str) -> str:
@@ -86,7 +86,13 @@ def build_hamiltonian(
         symbols, coordinates = _common_generate_geometry(mol, float(default_param))
 
         # Charge: infer for the parametric H3+ variant; otherwise neutral.
-        charge = +1 if up.startswith("H3+") or up.startswith("H3PLUS") or up.startswith("H3_PLUS") else 0
+        charge = (
+            +1
+            if up.startswith("H3+")
+            or up.startswith("H3PLUS")
+            or up.startswith("H3_PLUS")
+            else 0
+        )
         basis = "STO-3G"
 
     # Static molecules from registry
@@ -105,4 +111,12 @@ def build_hamiltonian(
         basis=basis,
     )
 
-    return H, int(n_qubits), np.array(hf_state, dtype=int), symbols, coordinates, basis, charge
+    return (
+        H,
+        int(n_qubits),
+        np.array(hf_state, dtype=int),
+        symbols,
+        coordinates,
+        basis,
+        charge,
+    )

@@ -22,6 +22,7 @@ Public API:
 """
 
 from importlib.metadata import version as _pkg_version
+
 __version__ = _pkg_version("vqe-pennylane")
 
 # ------------------------------------------------------------------
@@ -88,28 +89,22 @@ __all__ = [
     "run_vqe_multi_seed_noise",
     "run_vqe_geometry_scan",
     "run_vqe_mapping_comparison",
-
     # Ansatz tools
     "get_ansatz",
     "init_params",
     "ANSATZES",
-
     # Optimizers
     "get_optimizer",
-
     # Hamiltonian
     "build_hamiltonian",
     "generate_geometry",
-
     # I/O
     "make_run_config_dict",
     "run_signature",
     "save_run_record",
     "ensure_dirs",
-
     # SSVQE
     "run_ssvqe",
-
     # Visualization
     "plot_convergence",
     "plot_optimizer_comparison",

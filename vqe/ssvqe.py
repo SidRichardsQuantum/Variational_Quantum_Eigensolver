@@ -13,27 +13,27 @@ Features:
 
 from __future__ import annotations
 
-import json
-import os
 import itertools
+import json
+
 import pennylane as qml
 from pennylane import numpy as np
 
-from .hamiltonian import build_hamiltonian
 from .engine import (
-    make_device,
     build_ansatz,
     build_optimizer,
+    make_device,
     make_energy_qnode,
     make_overlap00_fn,
 )
+from .hamiltonian import build_hamiltonian
 from .io_utils import (
+    RESULTS_DIR,
     ensure_dirs,
+    make_filename_prefix,
     make_run_config_dict,
     run_signature,
     save_run_record,
-    make_filename_prefix,
-    RESULTS_DIR,
 )
 from .visualize import plot_ssvqe_convergence_multi
 
@@ -173,13 +173,12 @@ def run_ssvqe(
         noisy=noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
-        molecule_label=molecule,   # <<< add this
+        molecule_label=molecule,  # <<< add this
     )
     cfg["penalty_weight"] = float(penalty_weight)
     cfg["num_states"] = int(num_states)
 
     sig = run_signature(cfg)
-    safe_molecule = molecule.replace("+", "plus")
     prefix = make_filename_prefix(
         cfg,
         noisy=noisy,
@@ -206,7 +205,7 @@ def run_ssvqe(
         idx = 0
         for tmpl in templates:
             size = int(np.prod(tmpl.shape))
-            vec = flat[idx:idx + size]
+            vec = flat[idx : idx + size]
             arrays.append(np.reshape(vec, tmpl.shape))
             idx += size
         return arrays

@@ -11,8 +11,11 @@ Both can be applied together to all wires in a circuit segment.
 """
 
 from __future__ import annotations
-import pennylane as qml
+
 from typing import Iterable
+
+import pennylane as qml
+
 
 def apply_noise_all(
     wires: Iterable[int],

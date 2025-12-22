@@ -25,7 +25,7 @@ New recommended API:
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import pennylane as qml

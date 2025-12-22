@@ -5,12 +5,9 @@ import numpy as np
 
 def test_qpe_minimal():
     atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0],
-                       [0.0, 0.0, 0.7]])
+    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
 
-    H, n_qubits, hf_state = build_hamiltonian(
-        atoms, coords, charge=0, basis="sto-3g"
-    )
+    H, n_qubits, hf_state = build_hamiltonian(atoms, coords, charge=0, basis="sto-3g")
 
     result = run_qpe(
         hamiltonian=H,
@@ -29,8 +26,7 @@ def test_qpe_output_is_normalized():
         • at least one outcome exists
     """
     atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0],
-                       [0.0, 0.0, 0.7]])
+    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
 
     H, nq, hf = build_hamiltonian(atoms, coords, charge=0, basis="sto-3g")
 

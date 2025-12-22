@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.2.2"
+version = "0.2.3"
 description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -15,8 +15,7 @@ requires-python = ">=3.10"
 dependencies = [
   "pennylane>=0.42,<0.45",
   "numpy>=1.23,<2.0",
-  "scipy>=1.10,<2.0; python_version>='3.10'",
-  "scipy>=1.9,<2.0; python_version=='3.9'",
+  "scipy>=1.10,<2.0",
   "matplotlib",
   "openfermion",
   "openfermionpyscf",
@@ -28,7 +27,6 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -42,15 +40,14 @@ Documentation = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigen
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
-    "black",
-    "flake8",
-    "mypy",
-    "jupyterlab",
+  "pytest>=8.0",
+  "black",
+  "ruff",
+  "mypy",
 ]
 docs = [
-    "sphinx",
-    "furo",
+  "sphinx",
+  "furo",
 ]
 
 [project.scripts]
@@ -59,3 +56,46 @@ qpe = "qpe.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["vqe*", "qpe*", "vqe_qpe_common*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+extend-exclude = '''
+/(
+  \.venv
+  | venv
+  | build
+  | dist
+  | results
+  | images
+  | vendor_wheels
+  | notebooks
+)/
+| \.ipynb$
+'''
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+exclude = [
+  ".venv",
+  "venv",
+  "build",
+  "dist",
+  "results",
+  "images",
+  "vendor_wheels",
+  "**/*.ipynb",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vqe", "qpe", "vqe_qpe_common"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401", "I001"]
+"tests/test_*.py" = ["I001"]
+"tests/test_imports.py" = ["F401"]
