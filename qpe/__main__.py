@@ -136,10 +136,8 @@ def main():
     if cached is not None:
         print("\n📂 Loaded cached result.")
         result = cached
-        
-        n_qubits = int(
-            cached.get("system_qubits", -1)
-        )
+
+        n_qubits = int(cached.get("system_qubits", -1))
         elapsed = 0.0
     else:
         print("\n▶️ Running new QPE simulation...")

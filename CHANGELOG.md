@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.2.3] – 2025-12-22
+
+### Added
+- QPE CLI stability improvements
+- Shared VQE/QPE common layer refinements
+
+### Changed
+- Notebook structure finalized (educational vs package-client split)
+- Linting and CI workflows added (Black, Ruff, pytest)
+
+### Fixed
+- QPE CLI argument handling
+- Import ordering and unused variables
+
+---
+
 ## [0.2.2] - 2025-12-12
 ### Fixed
 - Resolved GitHub Actions CI failures caused by invalid `pyproject.toml` license configuration.
