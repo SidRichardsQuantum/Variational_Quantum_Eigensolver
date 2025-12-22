@@ -1,21 +1,18 @@
 """
 vqe.visualize
 -------------
-Unified plotting utilities for VQE and SSVQE.
-All plots save into vqe/io_utils.IMG_DIR.
+Plotting utilities for VQE and SSVQE.
 
-This module intentionally avoids external dependencies (e.g. common.plotting)
-for maximum portability and internal cohesion.
+All figures are saved via vqe_qpe_common.plotting.save_plot(kind="vqe"),
+which guarantees routing to images/vqe/.
 """
+
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import os
 import matplotlib.pyplot as plt
 
-from .io_utils import IMG_DIR
+from vqe_qpe_common.plotting import save_plot
 
 
 # ================================================================
@@ -41,13 +38,6 @@ def _safe_title(*parts):
     Build a human-readable plot title.
     """
     return " — ".join([str(p) for p in parts if p is not None])
-
-
-def _save_plot(fname):
-    Path(IMG_DIR).mkdir(parents=True, exist_ok=True)
-    path = Path(IMG_DIR) / fname
-    plt.savefig(path, dpi=300, bbox_inches="tight")
-    print(f"📁 Saved → {path}")
 
 
 # ================================================================
@@ -104,12 +94,7 @@ def plot_convergence(
         f"dep{dep_prob}" if noisy else "",
         f"amp{amp_prob}" if noisy else "",
     )
-    _save_plot(fname)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    save_plot(fname, kind="vqe", show=show)
 
 
 # ================================================================
@@ -134,12 +119,7 @@ def plot_optimizer_comparison(molecule: str, results: dict, ansatz: str = "UCCSD
     plt.tight_layout()
 
     fname = _safe_filename("VQE_Optimizer_Comparison", molecule, ansatz)
-    _save_plot(fname)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    save_plot(fname, kind="vqe", show=show)
 
 
 # ================================================================
@@ -164,12 +144,7 @@ def plot_ansatz_comparison(molecule: str, results: dict, show=True, optimizer: s
     plt.tight_layout()
 
     fname = _safe_filename("VQE_Ansatz_Comparison", molecule, optimizer)
-    _save_plot(fname)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    save_plot(fname, kind="vqe", show=show)
 
 
 # ================================================================
@@ -221,12 +196,7 @@ def plot_noise_statistics(
         ansatz_name,
         noise_type,
     )
-    _save_plot(fname)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()
+    save_plot(fname, kind="vqe", show=show)
 
 
 # ---------------------------------------------------------------------
@@ -261,8 +231,7 @@ def plot_ssvqe_convergence_multi(
             E0_list=[...], E1_list=[...]
         )
     """
-    import matplotlib.pyplot as plt
-    from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_name
+    from vqe_qpe_common.plotting import build_filename, format_molecule_name
 
     # Backward-compat: accept optimizer_name
     if optimizer_name is not None:
@@ -309,8 +278,3 @@ def plot_ssvqe_convergence_multi(
             }
         )
         save_plot(fname, kind="vqe", show=show)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()

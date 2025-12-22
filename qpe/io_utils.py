@@ -24,6 +24,7 @@ from __future__ import annotations
 import os
 import json
 import hashlib
+from pathlib import Path
 from typing import Any, Dict
 
 from vqe_qpe_common.plotting import save_plot, build_filename
@@ -32,13 +33,24 @@ from vqe_qpe_common.plotting import save_plot, build_filename
 # ---------------------------------------------------------------------
 # Base Directories (mirrors VQE)
 # ---------------------------------------------------------------------
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-RESULTS_DIR = os.path.join(BASE_DIR, "results", "qpe")
+
+# Root of the repository/package (qpe / io_utils.py)
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
+
+# New, package-scoped locations for results and images
+RESULTS_DIR = BASE_DIR / "results" / "qpe"
+IMG_DIR = BASE_DIR / "images" / "qpe"
 
 
 def ensure_dirs() -> None:
-    """Ensure that the QPE results directory exists."""
-    os.makedirs(RESULTS_DIR, exist_ok=True)
+    """
+    Ensure that the standard result and image directories exist.
+
+    - RESULTS_DIR: where JSON run records are written (package_results/)
+    - IMG_DIR:     where plots and figures are saved (qpe/images/)
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ---------------------------------------------------------------------

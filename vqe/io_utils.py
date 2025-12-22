@@ -14,21 +14,33 @@ This module is the single source of truth for:
 
 from __future__ import annotations
 
-import json, os
+import json
 import hashlib
 from pathlib import Path
 from typing import Any, Dict
+
 
 # ================================================================
 # BASE PATHS
 # ================================================================
 
-# Root of the repository/package (…/ <repo_root> / vqe / io_utils.py)
+# Root of the repository/package (vqe / io_utils.py)
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 # New, package-scoped locations for results and images
 RESULTS_DIR = BASE_DIR / "results" / "vqe"
 IMG_DIR = BASE_DIR / "images" / "vqe"
+
+
+def ensure_dirs() -> None:
+    """
+    Ensure that the standard result and image directories exist.
+
+    - RESULTS_DIR: where JSON run records are written (package_results/)
+    - IMG_DIR:     where plots and figures are saved (vqe/images/)
+    """
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ================================================================
@@ -185,17 +197,6 @@ def run_signature(cfg: Dict[str, Any]) -> str:
 # ================================================================
 # FILESYSTEM UTILITIES
 # ================================================================
-
-def ensure_dirs() -> None:
-    """
-    Ensure that the standard result and image directories exist.
-
-    - RESULTS_DIR: where JSON run records are written (package_results/)
-    - IMG_DIR:     where plots and figures are saved (vqe/images/)
-    """
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    IMG_DIR.mkdir(parents=True, exist_ok=True)
-
 
 def _result_path_from_prefix(prefix: str) -> Path:
     """

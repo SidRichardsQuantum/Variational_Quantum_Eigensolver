@@ -103,9 +103,10 @@ def run_ssvqe(
         )
 
     # ============================================================
-    # 2. Ansatz and initial parameters (shared structure)
+    # 2. Ansatz and different initial parameters
     # ============================================================
-    ansatz_fn, init_params = build_ansatz(
+
+    ansatz_fn, p0 = build_ansatz(
         ansatz_name,
         num_wires,
         seed=seed,
@@ -113,8 +114,18 @@ def run_ssvqe(
         coordinates=coordinates,
         basis=basis,
     )
-    # One parameter set per state, all with same shape
-    param_sets = [np.array(init_params, requires_grad=True) for _ in range(num_states)]
+
+    param_sets = [np.array(p0, requires_grad=True)]
+    for k in range(1, num_states):
+        _, pk = build_ansatz(
+            ansatz_name,
+            num_wires,
+            seed=seed + k,
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=basis,
+        )
+        param_sets.append(np.array(pk, requires_grad=True))
 
     # ============================================================
     # 3. Device and QNodes
@@ -258,13 +269,16 @@ def run_ssvqe(
             E0 = energies_per_state[0]
             E1 = energies_per_state[1]
             plot_ssvqe_convergence_multi(
-                molecule,
+                molecule=molecule,
+                ansatz=ansatz_name,
+                optimizer_name=optimizer_name,
                 E0_list=E0,
                 E1_list=E1,
-                optimizer_name=optimizer_name,
-                ansatz=ansatz_name,
+                show=True,
+                save=True,
             )
-        except Exception as exc:  # plotting is non-fatal
+
+        except Exception as exc:
             print(f"⚠️ SSVQE plotting failed (non-fatal): {exc}")
 
     return result
