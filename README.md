@@ -36,7 +36,7 @@ a shared `vqe_qpe_common/` layer for Hamiltonians, molecules, geometry, and plot
 
 - For the full background on VQE and QPE: see [THEORY.md](THEORY.md)
 - For CLI usage and automation: see [USAGE.md](USAGE.md)
-- For conceptual understanding: see [H2_VQE_vs_QPE_From_Scratch.ipynb](notebooks/getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb)
+- For example notebooks: see [notebooks/README_notebooks.md](notebooks/README_notebooks.md)
 
 These documents complement this 'README.md' and provide the *theoretical foundation* and *hands-on execution details* of the VQE/QPE suite.
 
@@ -50,6 +50,7 @@ Variational_Quantum_Eigensolver/
 ├── THEORY.md
 ├── USAGE.md
 ├── LICENSE
+├── requirements.txt
 ├── pyproject.toml
 │
 ├── vqe/                     # VQE package
@@ -72,9 +73,10 @@ Variational_Quantum_Eigensolver/
 │   └── visualize.py         # Phase histograms + sweep plots
 │
 ├── vqe_qpe_common/          # Shared logic for VQE + QPE
-│   ├── molecules.py         # Unified molecule registry
 │   ├── geometry.py          # Bond/angle geometry generators
 │   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
+│   ├── molecules.py         # Unified molecule registry
+│   ├── molecule_viz.py      # Draw molecules
 │   └── plotting.py          # Shared plotting + filename builders
 │
 ├── images/                  # Saved png files
@@ -86,6 +88,7 @@ Variational_Quantum_Eigensolver/
 │   └── qpe/
 │
 └── notebooks/
+    ├── README_notebooks.md  # Markdown for the example notebooks
     ├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
     ├── vqe/                 # Importing from the vqe/ package
     └── qpe/                 # Importing from the qpe/ package
@@ -170,16 +173,13 @@ Features:
 Example:
 
 ```python
-from pennylane import qchem
 from vqe_qpe_common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
 symbols = ["H", "H"]
 coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]]
 
-H, n_qubits = build_hamiltonian(symbols, coords, 0, "STO-3G")
-hf_state = qchem.hf_state(2, n_qubits)
-
+H, n_qubits, hf_state = build_hamiltonian(symbols, coords, charge=0, basis="STO-3G")
 result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 ```
 

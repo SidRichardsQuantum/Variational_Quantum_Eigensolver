@@ -55,17 +55,20 @@ H₂ is the primary educational benchmark: it is small enough to run quickly whi
 
 | Notebook | Purpose | Style |
 |---|---|---|
-| `VQE_From_Scratch.ipynb` | Walkthrough of a minimal VQE implementation and concepts | Educational |
-| `Ansatz_Comparison.ipynb` | Compare toy/intro ansätze and the packaged comparison workflow | Mixed (educational + package) |
+| `VQE_From_Scratch.ipynb` | Walkthrough of a minimal VQE implementation and concepts | Educational (no package usage) |
+| `Ansatz_Comparison.ipynb` | Compare ansätze with an educational section plus a pure package-client workflow | Mixed (educational + package client) |
 | `Bond_Length.ipynb` | H₂ bond-length scan using the package geometry-scan API | Package client |
 | `Mapping_Comparison.ipynb` | Compare fermion-to-qubit mappings for H₂ | Package client |
 | `Noise_Scan.ipynb` | **Multi-seed** noise statistics for H₂ (robustness under noise) | Package client |
-| `Noisy.ipynb` | Single noisy VQE run for H₂ (noise enabled) | Package client |
-| `SSVQE.ipynb` | Two-state SSVQE-style excited-state workflow using packaged building blocks | Package-aligned (custom cost wiring) |
+| `Noisy_Ansatz_Comparison.ipynb` | Compare ansätze under noise (summary metrics / curves) | Package client |
+| `Noisy_Ansatz_Convergence.ipynb` | Noisy convergence behaviour for ansatz choices | Package client |
+| `Noisy_Optimizer_Comparison.ipynb` | Compare optimizers under noise (summary metrics / curves) | Package client |
+| `Noisy_Optimizer_Convergence.ipynb` | Noisy convergence behaviour for optimizer choices | Package client |
+| `SSVQE.ipynb` | Excited-state workflow via SSVQE-style objective using packaged building blocks | Package client |
 
 Notes:
 - `Noise_Scan.ipynb` is intentionally **multi-seed only** (statistical behaviour), not a single-seed demo notebook.
-- `Ansatz_Comparison.ipynb` includes a pedagogical section; do not expect its curves to match the production runner exactly (initialisation, stopping criteria, caching behaviour, and implementation details can differ by design).
+- `Ansatz_Comparison.ipynb` contains an explicitly educational section; the remainder of the notebook demonstrates the production workflow as a pure package client.
 
 ---
 

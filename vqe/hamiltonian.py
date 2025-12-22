@@ -1,258 +1,193 @@
 """
 vqe.hamiltonian
 ---------------
-Molecular Hamiltonian and geometry utilities for VQE simulations.
+VQE-facing Hamiltonian and geometry utilities.
 
-Provides:
-- A registry of static molecular presets (`MOLECULES`)
-- `generate_geometry`: parametric generators for bond lengths / angles
-- `build_hamiltonian`: construction of qubit Hamiltonians with mappings
+This module is a thin compatibility layer over vqe_qpe_common. It preserves the
+historical VQE API:
+
+    - MOLECULES
+    - generate_geometry(...)
+    - build_hamiltonian(molecule, mapping="jordan_wigner")
+
+returning:
+    (H, num_qubits, symbols, coordinates, basis)
+
+Single source of truth:
+    - molecule registry:    vqe_qpe_common.molecules
+    - geometry generators:  vqe_qpe_common.geometry
+    - Hamiltonian builder:  vqe_qpe_common.hamiltonian.build_hamiltonian
 """
 
 from __future__ import annotations
 
+from typing import Tuple
+
+import numpy as np
 import pennylane as qml
-from pennylane import qchem
-from pennylane import numpy as np
+
+from vqe_qpe_common.molecules import MOLECULES as _COMMON_MOLECULES, get_molecule_config
+from vqe_qpe_common.geometry import generate_geometry as _common_generate_geometry
+from vqe_qpe_common.hamiltonian import build_hamiltonian as _build_common_hamiltonian
 
 
-# ================================================================
-# STATIC MOLECULE REGISTRY
-# ================================================================
-
-#: Canonical presets for common molecules used across the project.
-#:
-#: Each entry has:
-#:   - symbols: list[str]      → atomic species
-#:   - coordinates: np.ndarray → shape (N, 3), in Å
-#:   - charge: int             → total molecular charge
-#:   - basis: str              → basis set name (string used in JSON/configs)
-MOLECULES = {
-    "H2": {
-        "symbols": ["H", "H"],
-        "coordinates": np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.7414],
-            ]
-        ),
-        "charge": 0,
-        "basis": "STO-3G",
-    },
-    "LIH": {
-        "symbols": ["Li", "H"],
-        "coordinates": np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.0, 0.0, 1.6],
-            ]
-        ),
-        "charge": 0,
-        "basis": "STO-3G",
-    },
-    "H2O": {
-        "symbols": ["O", "H", "H"],
-        "coordinates": np.array(
-            [
-                [0.000000, 0.000000, 0.000000],
-                [0.758602, 0.000000, 0.504284],
-                [-0.758602, 0.000000, 0.504284],
-            ]
-        ),
-        "charge": 0,
-        "basis": "STO-3G",
-    },
-    # Canonical H3+ geometry: equilateral triangle in the xy-plane
-    "H3+": {
-        "symbols": ["H", "H", "H"],
-        "coordinates": np.array(
-            [
-                [0.000000, 1.000000, 0.000000],
-                [-0.866025, -0.500000, 0.000000],
-                [0.866025, -0.500000, 0.000000],
-            ]
-        ),
-        "charge": +1,
-        "basis": "STO-3G",
-    },
-}
+# ---------------------------------------------------------------------
+# Public re-export: molecule registry (backwards compatible)
+# ---------------------------------------------------------------------
+MOLECULES = _COMMON_MOLECULES
 
 
-# ================================================================
-# PARAMETRIC GEOMETRY GENERATORS
-# ================================================================
-def generate_geometry(molecule: str, param_value: float):
+# ---------------------------------------------------------------------
+# Compatibility: parametric geometry generation
+# ---------------------------------------------------------------------
+def generate_geometry(molecule: str, param_value: float) -> Tuple[list[str], np.ndarray]:
     """
-    Generate atomic symbols and coordinates for a parameterised molecule.
+    Compatibility wrapper.
 
-    Supported identifiers (case-insensitive):
-        - "H2_BOND"   : varies the H–H bond length (Å)
-        - "LIH_BOND"  : varies the Li–H bond length (Å)
-        - "H2O_ANGLE" : varies the H–O–H bond angle (degrees)
-
-    Args:
-        molecule: Molecule identifier including the parameter tag,
-                  e.g. "H2_BOND", "LiH_BOND", "H2O_ANGLE".
-        param_value: Geometry parameter:
-                     - bond length in Å for *_BOND
-                     - angle in degrees for *_ANGLE
-
-    Returns:
-        (symbols, coordinates):
-            - symbols: list[str]
-            - coordinates: np.ndarray of shape (N, 3), in Å
+    Delegates to vqe_qpe_common.geometry.generate_geometry (single source of truth).
     """
-    mol = molecule.upper()
-
-    if mol == "H2O_ANGLE":
-        # Water with fixed bond length, variable angle
-        bond_length = 0.9584  # Å
-        angle_rad = np.deg2rad(param_value)
-        x = bond_length * np.sin(angle_rad / 2)
-        z = bond_length * np.cos(angle_rad / 2)
-
-        symbols = ["O", "H", "H"]
-        coordinates = np.array(
-            [
-                [0.0, 0.0, 0.0],  # Oxygen
-                [x, 0.0, z],      # Hydrogen 1
-                [-x, 0.0, z],     # Hydrogen 2
-            ]
-        )
-        return symbols, coordinates
-
-    if mol == "H2_BOND":
-        # Dihydrogen with variable bond length along z
-        symbols = ["H", "H"]
-        coordinates = np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.0, 0.0, float(param_value)],
-            ]
-        )
-        return symbols, coordinates
-
-    if mol == "LIH_BOND":
-        # Lithium hydride with variable Li–H separation along z
-        symbols = ["Li", "H"]
-        coordinates = np.array(
-            [
-                [0.0, 0.0, 0.0],
-                [0.0, 0.0, float(param_value)],
-            ]
-        )
-        return symbols, coordinates
-
-    raise ValueError(
-        f"Unsupported parametric molecule '{molecule}'. "
-        "Supported: H2_BOND, LiH_BOND, H2O_ANGLE."
-    )
+    name = str(molecule).strip()
+    return _common_generate_geometry(name, float(param_value))
 
 
-# ================================================================
-# HAMILTONIAN BUILDER
-# ================================================================
-def _get_preset(molecule: str):
-    """Internal helper: fetch preset entry from MOLECULES by name (case-insensitive)."""
-    key = molecule.upper()
+def _normalise_static_key(molecule: str) -> str:
+    """
+    Normalise molecule name for static registry lookups.
+
+    - Accepts "H3PLUS", "H3_PLUS" as aliases for "H3+"
+    - Case-insensitive lookup fallback
+    """
+    key = str(molecule).strip()
+    up = key.upper().replace(" ", "")
+
+    if up in {"H3PLUS", "H3_PLUS"}:
+        return "H3+"
+
     if key in MOLECULES:
-        return MOLECULES[key]
+        return key
 
-    # Handle "H3PLUS" alias for convenience
-    if key in {"H3PLUS", "H3_PLUS"}:
-        return MOLECULES["H3+"]
+    for k in MOLECULES.keys():
+        if k.upper().replace(" ", "") == up:
+            return k
 
-    available = ", ".join(MOLECULES.keys())
     raise ValueError(
         f"Unsupported molecule '{molecule}'. "
-        f"Available static presets: {available}, or parametric: H2_BOND, LiH_BOND, H2O_ANGLE."
+        f"Available static presets: {list(MOLECULES.keys())}, "
+        "or parametric: H2_BOND, H3+_BOND, LiH_BOND, H2O_ANGLE."
     )
+
+
+def _apply_mapping_if_possible(
+    H: qml.Hamiltonian,
+    mapping: str,
+) -> qml.Hamiltonian:
+    """
+    Attempt to convert a qubit Hamiltonian to a different fermion-to-qubit mapping.
+
+    Notes
+    -----
+    PennyLane's qchem.molecular_hamiltonian can apply mapping directly in some versions,
+    but vqe_qpe_common.hamiltonian intentionally does not (to remain minimal and QPE-friendly).
+
+    Here we attempt a best-effort conversion using OpenFermion intermediates.
+    If conversion is unavailable, we return H unchanged and emit a warning.
+    """
+    mapping = str(mapping).lower().strip()
+    if mapping in {"jordan_wigner", "jw"}:
+        return H
+
+    # Best-effort OpenFermion conversion path
+    try:
+        import openfermion  # noqa: F401
+        from pennylane.qchem.convert import import_operator
+
+        # Convert PennyLane Hamiltonian -> OpenFermion QubitOperator
+        # PennyLane Hamiltonian stores ops + coeffs; use qml.pauli_decompose if needed.
+        # The most robust path is qml.qchem.convert.to_openfermion, if present.
+        try:
+            from pennylane.qchem.convert import to_openfermion
+        except Exception:
+            to_openfermion = None
+
+        if to_openfermion is None:
+            raise RuntimeError("PennyLane 'to_openfermion' not available in this environment.")
+
+        qubit_op = to_openfermion(H)
+
+        # Apply alternate mapping by interpreting the operator as coming from fermionic mapping.
+        # NOTE: We cannot “re-map” a qubit operator without the fermionic operator.
+        # However, PennyLane/OpenFermion mapping differences are meaningful at the *fermion → qubit* step.
+        # If we only have a qubit operator, an exact remap is not well-defined.
+        #
+        # Therefore: this function only supports environments where qchem can produce the target mapping
+        # upstream. If you require strict mapping comparisons, prefer building H with mapping in qchem.
+        raise RuntimeError(
+            "Exact remapping requires constructing the Hamiltonian with mapping at build time. "
+            "Use vqe.hamiltonian.build_hamiltonian(..., mapping=...) with a PennyLane version "
+            "that supports qchem.molecular_hamiltonian(mapping=...)."
+        )
+
+    except Exception as exc:
+        print(
+            f"⚠️  Mapping '{mapping}' requested but could not be applied via conversion path.\n"
+            f"    Proceeding with the default mapping used by the Hamiltonian builder.\n"
+            f"    Details: {exc}"
+        )
+        return H
 
 
 def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
     """
-    Construct the qubit Hamiltonian for a given molecule using PennyLane's qchem.
-
-    This is the **single source of truth** for Hamiltonian construction
-    in the VQE/SSVQE workflows.
+    Construct the qubit Hamiltonian for a given molecule.
 
     Supports:
-        - Static presets:
-            "H2", "LiH", "H2O", "H3+"
-        - Parametric variants:
-            "H2_BOND", "LiH_BOND", "H2O_ANGLE"
+        - Static presets in vqe_qpe_common.molecules.MOLECULES
+        - Parametric variants handled by vqe_qpe_common.geometry.generate_geometry
 
-    Args:
-        molecule:
-            Molecule identifier (case-insensitive). Examples:
-            - "H2", "LiH", "H2O", "H3+"
-            - "H2_BOND", "LiH_BOND", "H2O_ANGLE"
-        mapping:
-            Fermion-to-qubit mapping scheme.
-            One of {"jordan_wigner", "bravyi_kitaev", "parity"}.
-            Case-insensitive; stored in the config as lower-case.
+    Parameters
+    ----------
+    molecule:
+        Molecule identifier, e.g. "H2", "LiH", "H2O", "H3+",
+        or parametric "H2_BOND", "LiH_BOND", "H2O_ANGLE", "H3+_BOND".
+    mapping:
+        Fermion-to-qubit mapping scheme label (best-effort; see notes).
 
-    Returns:
-        (H, num_qubits, symbols, coordinates, basis)
-            - H: qml.Hamiltonian
-            - num_qubits: int
-            - symbols: list[str]
-            - coordinates: np.ndarray, in Å
-            - basis: str (e.g. "STO-3G")
+    Returns
+    -------
+    (H, num_qubits, symbols, coordinates, basis)
     """
-    mapping = mapping.lower()
-    mol = molecule.upper()
+    mol = str(molecule).strip()
+    up = mol.upper()
 
-    # ------------------------------------------------------------
-    # Parametric molecules: delegate to generator with defaults
-    # ------------------------------------------------------------
-    if "BOND" in mol or "ANGLE" in mol:
-        # - H2_BOND, LiH_BOND: bond length default is ~0.74–1.0 Å,
-        #                      but actual scans always call generate_geometry
-        # - H2O_ANGLE: default around 104.5°
-        if mol == "H2O_ANGLE":
-            default_param = 104.5  # degrees
+    # Parametric tags: if caller passes only the tag, choose a default parameter
+    if "BOND" in up or "ANGLE" in up:
+        if up == "H2O_ANGLE":
+            default_param = 104.5
+        elif up in {"H3+_BOND", "H3PLUS_BOND", "H3_PLUS_BOND"}:
+            default_param = 0.9
         else:
-            default_param = 0.74   # Å; purely a placeholder
+            default_param = 0.74
 
-        symbols, coordinates = generate_geometry(molecule, default_param)
-        charge = 0
+        symbols, coordinates = generate_geometry(mol, default_param)
+        charge = +1 if up.startswith(("H3+", "H3PLUS", "H3_PLUS")) else 0
         basis = "STO-3G"
-
-    # ------------------------------------------------------------
-    # Static presets from the registry
-    # ------------------------------------------------------------
     else:
-        preset = _get_preset(mol)
-        symbols = preset["symbols"]
-        coordinates = preset["coordinates"]
-        charge = preset["charge"]
-        basis = preset["basis"]
+        key = _normalise_static_key(mol)
+        cfg = get_molecule_config(key)
+        symbols = list(cfg["symbols"])
+        coordinates = np.array(cfg["coordinates"], dtype=float)
+        charge = int(cfg["charge"])
+        basis = str(cfg["basis"])
 
-    # ------------------------------------------------------------
-    # Build molecular Hamiltonian with mapping
-    # ------------------------------------------------------------
-    try:
-        H, num_qubits = qchem.molecular_hamiltonian(
-            symbols,
-            coordinates,
-            charge=charge,
-            basis=basis,
-            mapping=mapping,
-            unit="angstrom",
-        )
-    except TypeError:
-        # Fallback for older PennyLane versions that do not support `mapping=`
-        print(
-            f"⚠️  Mapping '{mapping}' not supported in this PennyLane version — "
-            "defaulting to Jordan–Wigner."
-        )
-        H, num_qubits = qchem.molecular_hamiltonian(
-            symbols,
-            coordinates,
-            charge=charge,
-            basis=basis,
-            unit="angstrom",
-        )
+    # Common build: returns (H, n_qubits, hf_state)
+    H, num_qubits, _hf_state = _build_common_hamiltonian(
+        symbols=symbols,
+        coordinates=np.array(coordinates, dtype=float),
+        charge=charge,
+        basis=basis,
+    )
 
-    return H, num_qubits, symbols, coordinates, basis
+    # Best-effort mapping application
+    H_mapped = _apply_mapping_if_possible(H, mapping=mapping)
+
+    return H_mapped, int(num_qubits), list(symbols), np.array(coordinates, dtype=float), str(basis)

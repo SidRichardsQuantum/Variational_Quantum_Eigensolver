@@ -1,100 +1,108 @@
 """
-common.hamiltonian.py
-==================
+qpe.hamiltonian
+---------------
+QPE-facing Hamiltonian utilities.
 
-Shared molecular configuration + Hamiltonian construction for QPE.
+This module is a *thin compatibility layer* over vqe_qpe_common.
 
-This module mirrors the VQE architecture and ensures that QPE uses
-the *exact same Hamiltonian pipeline* as VQE, guaranteeing consistent
-chemistry, reproducibility, and shared geometry generation.
+Public API:
+    - build_hamiltonian(molecule: str) -> (H, n_qubits, hf_state, symbols, coordinates, basis, charge)
 
-Provides:
-    • get_molecule_config(name)
-    • generate_geometry(name, param)
-    • build_hamiltonian(symbols, coordinates, charge, basis)
+Rationale:
+    QPE needs:
+      (1) the molecular Hamiltonian (qubit-mapped)
+      (2) the Hartree–Fock reference state (bitstring)
+    Both are produced by vqe_qpe_common.hamiltonian.build_hamiltonian.
 """
 
 from __future__ import annotations
+
+from typing import Tuple, List
+
 import numpy as np
 import pennylane as qml
-from pennylane import qchem
-from typing import Dict, Any, Tuple
 
-# ---------------------------------------------------------------------
-# Import from VQE: SINGLE SOURCE OF TRUTH
-# ---------------------------------------------------------------------
-from vqe.hamiltonian import (
-    MOLECULES as VQE_MOLECULES,
-    generate_geometry as vqe_generate_geometry,
-)
-
-# Expose VQE molecule registry to QPE
-MOLECULES: Dict[str, Dict[str, Any]] = VQE_MOLECULES
+from vqe_qpe_common.molecules import MOLECULES, get_molecule_config
+from vqe_qpe_common.geometry import generate_geometry as _common_generate_geometry
+from vqe_qpe_common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
 
 
-def get_molecule_config(name: str) -> Dict[str, Any]:
+def _normalise_static_key(molecule: str) -> str:
     """
-    Retrieve molecular configuration from the unified registry.
+    Normalise molecule name for registry lookups.
+
+    Accepts aliases:
+      - "H3PLUS", "H3_PLUS" -> "H3+"
     """
-    if name not in MOLECULES:
-        raise KeyError(
-            f"Unknown molecule '{name}'. Available: {list(MOLECULES.keys())}"
-        )
-    return MOLECULES[name]
+    key = str(molecule).strip()
+    up = key.upper().replace(" ", "")
+
+    if up in {"H3PLUS", "H3_PLUS"}:
+        return "H3+"
+
+    if key in MOLECULES:
+        return key
+
+    # Case-insensitive match fallback
+    for k in MOLECULES.keys():
+        if k.upper() == up:
+            return k
+
+    raise ValueError(
+        f"Unsupported molecule '{molecule}'. Available static presets: {list(MOLECULES.keys())} "
+        "or parametric: H2_BOND, H3+_BOND, LiH_BOND, H2O_ANGLE."
+    )
 
 
-# ---------------------------------------------------------------------
-# Geometry variation (bond scans, angles)
-# ---------------------------------------------------------------------
-def generate_geometry(name: str, param: float):
-    """
-    Geometry generation wrapper for QPE.
-
-    Calls the VQE geometry generator directly.
-    """
-    return vqe_generate_geometry(name, param)
-
-
-# ---------------------------------------------------------------------
-# Hamiltonian Builder
-# ---------------------------------------------------------------------
 def build_hamiltonian(
-    symbols: list[str],
-    coordinates: np.ndarray,
-    charge: int,
-    basis: str,
-) -> Tuple[qml.Hamiltonian, int]:
+    molecule: str,
+) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int]:
     """
-    Build the molecular Hamiltonian using PennyLane-qchem,
-    with OpenFermion fallback.
+    Build the molecular Hamiltonian + HF state for QPE.
+
+    Parameters
+    ----------
+    molecule:
+        Molecule identifier, e.g. "H2", "LiH", "H2O", "H3+",
+        or parametric tags "H2_BOND", "LiH_BOND", "H2O_ANGLE", "H3+_BOND".
+
+    Returns
+    -------
+    (H, n_qubits, hf_state, symbols, coordinates, basis, charge)
     """
-    try:
-        H, n_qubits = qchem.molecular_hamiltonian(
-            symbols=symbols,
-            coordinates=coordinates,
-            charge=charge,
-            basis=basis,
-        )
-        return H, n_qubits
+    mol = str(molecule).strip()
+    up = mol.upper()
 
-    except Exception as e_primary:
-        print("⚠️ PennyLane-qchem failed — retrying with OpenFermion backend...")
+    # Parametric molecules
+    if "BOND" in up or "ANGLE" in up:
+        # Default only used if caller provides just the tag.
+        if up == "H2O_ANGLE":
+            default_param = 104.5
+        elif up in {"H3+_BOND", "H3PLUS_BOND", "H3_PLUS_BOND"}:
+            default_param = 0.9
+        else:
+            default_param = 0.74
 
-        try:
-            H, n_qubits = qchem.molecular_hamiltonian(
-                symbols=symbols,
-                coordinates=coordinates,
-                charge=charge,
-                basis=basis,
-                method="openfermion",
-            )
-            return H, n_qubits
+        symbols, coordinates = _common_generate_geometry(mol, float(default_param))
 
-        except Exception as e_fallback:
-            raise RuntimeError(
-                "Failed to construct Hamiltonian.\n"
-                f"Primary error:\n  {e_primary}\n"
-                f"OpenFermion fallback error:\n  {e_fallback}\n"
-                "Try installing OpenFermion:\n"
-                "    pip install openfermion openfermionpyscf\n"
-            )
+        # Charge: infer for the parametric H3+ variant; otherwise neutral.
+        charge = +1 if up.startswith("H3+") or up.startswith("H3PLUS") or up.startswith("H3_PLUS") else 0
+        basis = "STO-3G"
+
+    # Static molecules from registry
+    else:
+        key = _normalise_static_key(mol)
+        cfg = get_molecule_config(key)
+        symbols = list(cfg["symbols"])
+        coordinates = np.array(cfg["coordinates"], dtype=float)
+        charge = int(cfg["charge"])
+        basis = str(cfg["basis"])
+
+    H, n_qubits, hf_state = _common_build_hamiltonian(
+        symbols=symbols,
+        coordinates=coordinates,
+        charge=charge,
+        basis=basis,
+    )
+
+    return H, int(n_qubits), np.array(hf_state, dtype=int), symbols, coordinates, basis, charge
