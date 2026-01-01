@@ -101,11 +101,6 @@ def plot_qpe_distribution(
         )
         save_plot(fname, kind="qpe", show=show)
 
-    if show:
-        plt.show()
-    else:
-        plt.close()
-
 
 # ---------------------------------------------------------------------
 # Generic QPE Sweep Plot
@@ -203,8 +198,3 @@ def plot_qpe_sweep(
             },
         )
         save_plot(fname, kind="qpe", show=show)
-
-    if show:
-        plt.show()
-    else:
-        plt.close()

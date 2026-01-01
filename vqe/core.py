@@ -495,15 +495,12 @@ def run_vqe_optimizer_comparison(
             plt.legend()
             plt.tight_layout()
 
-            if show:
-                plt.show()
-
             fname = build_filename(
                 molecule=molecule,
                 topic="optimizer_comparison",
                 extras={"ans": ansatz_name, "mode": "convergence"},
             )
-            save_plot(fname, kind="vqe")
+            save_plot(fname, kind="vqe", show=show)
 
         return {
             "mode": "convergence",
@@ -678,14 +675,13 @@ def run_vqe_optimizer_comparison(
         plt.grid(True, alpha=0.4)
         plt.legend()
         plt.tight_layout()
-        if show:
-            plt.show()
+
         fname = build_filename(
             molecule=molecule,
             topic="noisy_optimizer_comparison_deltaE",
             extras={"ans": ansatz_name, "noise": noise_type},
         )
-        save_plot(fname, kind="vqe")
+        save_plot(fname, kind="vqe", show=show)
 
         # Fidelity overlay
         plt.figure(figsize=(8, 5))
@@ -705,14 +701,13 @@ def run_vqe_optimizer_comparison(
         plt.grid(True, alpha=0.4)
         plt.legend()
         plt.tight_layout()
-        if show:
-            plt.show()
+        
         fname = build_filename(
             molecule=molecule,
             topic="noisy_optimizer_comparison_fidelity",
             extras={"ans": ansatz_name, "noise": noise_type},
         )
-        save_plot(fname, kind="vqe")
+        save_plot(fname, kind="vqe", show=show)
 
     return out
 
@@ -800,15 +795,12 @@ def run_vqe_ansatz_comparison(
             plt.legend()
             plt.tight_layout()
 
-            if show:
-                plt.show()
-
             fname = build_filename(
                 molecule=molecule,
                 topic="ansatz_comparison",
                 extras={"opt": optimizer_name, "mode": "convergence"},
             )
-            save_plot(fname, kind="vqe")
+            save_plot(fname, kind="vqe", show=show)
 
         return {
             "mode": "convergence",
@@ -973,14 +965,13 @@ def run_vqe_ansatz_comparison(
         plt.grid(True, alpha=0.4)
         plt.legend()
         plt.tight_layout()
-        if show:
-            plt.show()
+
         fname = build_filename(
             molecule=molecule,
             topic="noisy_ansatz_comparison_deltaE",
             extras={"opt": optimizer_name, "noise": noise_type_l},
         )
-        save_plot(fname, kind="vqe")
+        save_plot(fname, kind="vqe", show=show)
 
         plt.figure(figsize=(8, 5))
         for ans_name in ansatzes:
@@ -1001,14 +992,13 @@ def run_vqe_ansatz_comparison(
         plt.grid(True, alpha=0.4)
         plt.legend()
         plt.tight_layout()
-        if show:
-            plt.show()
+
         fname = build_filename(
             molecule=molecule,
             topic="noisy_ansatz_comparison_fidelity",
             extras={"opt": optimizer_name, "noise": noise_type_l},
         )
-        save_plot(fname, kind="vqe")
+        save_plot(fname, kind="vqe", show=show)
 
     return out
 
@@ -1230,9 +1220,6 @@ def run_vqe_geometry_scan(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    if show:
-        plt.show()
-
     mol_norm = format_molecule_name(molecule)
     fname = build_filename(
         molecule=mol_norm,
@@ -1243,7 +1230,7 @@ def run_vqe_geometry_scan(
             "param": param_name,
         },
     )
-    save_plot(fname, kind="vqe")
+    save_plot(fname, kind="vqe", show=show)
 
     min_idx = int(np.argmin(means))
     print(
@@ -1364,15 +1351,12 @@ def run_vqe_mapping_comparison(
     plt.grid(True, alpha=0.3)
     plt.tight_layout(pad=2)
 
-    if show:
-        plt.show()
-
     fname = build_filename(
         molecule=molecule,
         topic="mapping_comparison",
         extras={"ansatz": ansatz_name, "opt": optimizer_name},
     )
-    save_plot(fname, kind="vqe")
+    save_plot(fname, kind="vqe", show=show)
 
     print(f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:")
     for mapping, data in results.items():
