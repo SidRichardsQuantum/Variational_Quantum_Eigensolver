@@ -200,7 +200,9 @@ def plot_ssvqe_convergence_multi(
         energies_per_state = [E0_list] if E1_list is None else [E0_list, E1_list]
 
     if isinstance(energies_per_state, dict):
-        trajectories = [energies_per_state[k] for k in sorted(energies_per_state.keys())]
+        trajectories = [
+            energies_per_state[k] for k in sorted(energies_per_state.keys())
+        ]
     else:
         trajectories = energies_per_state
 

@@ -707,7 +707,7 @@ def run_vqe_optimizer_comparison(
         plt.grid(True, alpha=0.4)
         plt.legend()
         plt.tight_layout()
-        
+
         fname = build_filename(
             topic="noisy_optimizer_comparison_fidelity",
             ansatz=ansatz_name,
@@ -1233,11 +1233,11 @@ def run_vqe_geometry_scan(
     plt.tight_layout()
 
     fname = build_filename(
-            topic=f"vqe_geometry_scan_{param_name}",
-            ansatz=ansatz_name,
-            optimizer=optimizer_name,
-            multi_seed=True,
-        )
+        topic=f"vqe_geometry_scan_{param_name}",
+        ansatz=ansatz_name,
+        optimizer=optimizer_name,
+        multi_seed=True,
+    )
     save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
     min_idx = int(np.argmin(means))
@@ -1368,7 +1368,7 @@ def run_vqe_mapping_comparison(
     path = save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
     print(f"\n📉 Saved mapping comparison plot → {path}\nResults Summary:")
-    
+
     for mapping, data in results.items():
         print(
             f"  {mapping:15s} → E = {data['final_energy']:.8f} Ha, "

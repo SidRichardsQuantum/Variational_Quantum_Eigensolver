@@ -157,12 +157,7 @@ def plot_qpe_sweep(
             amp=p_amp if p_amp > 0 else None,
             noise_scan=is_noise_scan,
             noise_type=noise_type,
-            tag=(
-                title.lower()
-                .replace(" ", "_")
-                .replace("(", "")
-                .replace(")", "")
-            ),
+            tag=(title.lower().replace(" ", "_").replace("(", "").replace(")", "")),
             multi_seed=False,
         )
         save_plot(fname, kind="qpe", molecule=molecule, show=show)
