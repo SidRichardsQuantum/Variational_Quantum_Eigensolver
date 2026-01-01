@@ -1038,7 +1038,6 @@ def run_vqe_multi_seed_noise(
     """
     Multi-seed noise statistics for a given molecule and ansatz.
     """
-    # ---------- FIXED HANDLING FOR NUMPY ARRAYS ----------
     if seeds is None:
         seeds = np.arange(0, 5)
 
@@ -1048,7 +1047,6 @@ def run_vqe_multi_seed_noise(
     if amplitude_damping_probs is None:
         amplitude_damping_probs = np.zeros_like(depolarizing_probs)
 
-    # ---------- NOISE TYPE HANDLING ----------
     if noise_type == "depolarizing":
         amplitude_damping_probs = [0.0] * len(depolarizing_probs)
 
@@ -1062,7 +1060,6 @@ def run_vqe_multi_seed_noise(
     else:
         raise ValueError(f"Unknown noise type '{noise_type}'")
 
-    # --- Reference (noiseless) ---
     print("\n🔹 Computing noiseless reference runs...")
     ref_energies, ref_states = [], []
     for s in seeds:
