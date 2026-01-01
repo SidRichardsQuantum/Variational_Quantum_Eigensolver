@@ -1182,7 +1182,6 @@ def run_vqe_geometry_scan(
 
     from vqe_qpe_common.plotting import (
         build_filename,
-        format_molecule_name,
         save_plot,
     )
 
