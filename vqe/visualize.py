@@ -2,46 +2,19 @@
 vqe.visualize
 -------------
 Plotting utilities for VQE and SSVQE.
-
-All figures are saved via vqe_qpe_common.plotting.save_plot(kind="vqe"),
-which guarantees routing to images/vqe/.
 """
 
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import save_plot
-
-
-# ================================================================
-# INTERNAL HELPERS
-# ================================================================
-def _safe_filename(*parts):
-    """
-    Build a safe filename from components such as:
-        ("VQE", "H2", "Adam", "UCCSD", "noisy")
-    """
-    clean = []
-    for p in parts:
-        if p is None:
-            continue
-        # Basic sanitisation
-        p = str(p).replace(" ", "_").replace("+", "plus")
-        clean.append(p)
-    return "_".join(clean) + ".png"
+from vqe_qpe_common.plotting import build_filename, save_plot
 
 
 def _safe_title(*parts):
-    """
-    Build a human-readable plot title.
-    """
     return " — ".join([str(p) for p in parts if p is not None])
 
 
-# ================================================================
-# BASIC VQE CONVERGENCE
-# ================================================================
 def plot_convergence(
     energies_noiseless,
     molecule: str,
@@ -50,11 +23,9 @@ def plot_convergence(
     ansatz: str = "UCCSD",
     dep_prob: float = 0.0,
     amp_prob: float = 0.0,
-    show=True,
+    seed: int | None = None,
+    show: bool = True,
 ):
-    """
-    Plot VQE energy convergence (noisy + noiseless overlay).
-    """
     plt.figure(figsize=(8, 5))
     steps = range(len(energies_noiseless))
     plt.plot(steps, energies_noiseless, label="Noiseless", lw=2)
@@ -69,7 +40,6 @@ def plot_convergence(
             linestyle="--",
         )
 
-    # Title
     if noisy:
         title = _safe_title(
             f"{molecule}",
@@ -86,30 +56,27 @@ def plot_convergence(
     plt.legend()
     plt.tight_layout()
 
-    # Filename
-    fname = _safe_filename(
-        "VQE_Convergence",
-        molecule,
-        optimizer,
-        ansatz,
-        "noisy" if noisy else "noiseless",
-        f"dep{dep_prob}" if noisy else "",
-        f"amp{amp_prob}" if noisy else "",
+    fname = build_filename(
+        topic="convergence",
+        ansatz=ansatz,
+        optimizer=optimizer,
+        seed=seed,
+        dep=dep_prob if noisy else None,
+        amp=amp_prob if noisy else None,
+        noise_scan=False,
+        multi_seed=False,
     )
-    save_plot(fname, kind="vqe", show=show)
+    save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
 
-# ================================================================
-# OPTIMIZER COMPARISON
-# ================================================================
 def plot_optimizer_comparison(
-    molecule: str, results: dict, ansatz: str = "UCCSD", show=True
+    molecule: str,
+    results: dict,
+    ansatz: str = "UCCSD",
+    seed: int | None = None,
+    show: bool = True,
 ):
-    """
-    Plot multiple optimizers on a shared convergence graph.
-    """
     plt.figure(figsize=(8, 5))
-
     min_len = min(len(v) for v in results.values())
 
     for opt, energies in results.items():
@@ -122,21 +89,23 @@ def plot_optimizer_comparison(
     plt.grid(True, alpha=0.4)
     plt.tight_layout()
 
-    fname = _safe_filename("VQE_Optimizer_Comparison", molecule, ansatz)
-    save_plot(fname, kind="vqe", show=show)
+    fname = build_filename(
+        topic="optimizer_conv",
+        ansatz=ansatz,
+        seed=seed,
+        multi_seed=False,
+    )
+    save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
 
-# ================================================================
-# ANSATZ COMPARISON
-# ================================================================
 def plot_ansatz_comparison(
-    molecule: str, results: dict, show=True, optimizer: str = "Adam"
+    molecule: str,
+    results: dict,
+    optimizer: str = "Adam",
+    seed: int | None = None,
+    show: bool = True,
 ):
-    """
-    Plot multiple ansatzes on a shared convergence graph.
-    """
     plt.figure(figsize=(8, 5))
-
     min_len = min(len(v) for v in results.values())
 
     for ans, energies in results.items():
@@ -149,13 +118,15 @@ def plot_ansatz_comparison(
     plt.grid(True, alpha=0.4)
     plt.tight_layout()
 
-    fname = _safe_filename("VQE_Ansatz_Comparison", molecule, optimizer)
-    save_plot(fname, kind="vqe", show=show)
+    fname = build_filename(
+        topic="ansatz_conv",
+        optimizer=optimizer,
+        seed=seed,
+        multi_seed=False,
+    )
+    save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
 
-# ================================================================
-# NOISE STATISTICS
-# ================================================================
 def plot_noise_statistics(
     molecule: str,
     noise_levels,
@@ -163,17 +134,13 @@ def plot_noise_statistics(
     energy_stds,
     fidelity_means,
     fidelity_stds,
-    show=True,
-    optimizer_name="Adam",
-    ansatz_name="UCCSD",
-    noise_type="Depolarizing",
+    optimizer_name: str = "Adam",
+    ansatz_name: str = "UCCSD",
+    noise_type: str = "Depolarizing",
+    show: bool = True,
 ):
-    """
-    Plot (ΔE vs noise) and (fidelity vs noise) as two subplots.
-    """
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
-    # ΔE vs noise level
     ax1.errorbar(noise_levels, energy_means, yerr=energy_stds, fmt="o-", capsize=4)
     ax1.set_ylabel("ΔE (Ha)")
     ax1.set_title(
@@ -185,7 +152,6 @@ def plot_noise_statistics(
     )
     ax1.grid(True, alpha=0.4)
 
-    # Fidelity vs noise level
     ax2.errorbar(noise_levels, fidelity_means, yerr=fidelity_stds, fmt="s-", capsize=4)
     ax2.set_xlabel("Noise Probability")
     ax2.set_ylabel("Fidelity")
@@ -193,74 +159,53 @@ def plot_noise_statistics(
 
     plt.tight_layout()
 
-    fname = _safe_filename(
-        "VQE_Noise_Stats",
-        molecule,
-        optimizer_name,
-        ansatz_name,
-        noise_type,
+    nt = str(noise_type).strip().lower()
+    if nt.startswith("dep"):
+        nt = "depolarizing"
+    elif nt.startswith("amp"):
+        nt = "amplitude"
+    elif nt.startswith("comb"):
+        nt = "combined"
+
+    fname = build_filename(
+        topic="noise_stats",
+        ansatz=ansatz_name,
+        optimizer=optimizer_name,
+        noise_scan=True,
+        noise_type=nt,
+        multi_seed=True,
     )
-    save_plot(fname, kind="vqe", show=show)
+    save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
 
-# ---------------------------------------------------------------------
-# SSVQE Multi-State Convergence Plot
-# ---------------------------------------------------------------------
 def plot_ssvqe_convergence_multi(
     energies_per_state=None,
     *,
-    molecule="molecule",
-    ansatz="UCCSD",
-    optimizer="Adam",
-    optimizer_name=None,  # alias for backward-compat
+    molecule: str = "molecule",
+    ansatz: str = "UCCSD",
+    optimizer: str = "Adam",
+    optimizer_name=None,
     E0_list=None,
     E1_list=None,
-    show=True,
-    save=True,
+    seed: int | None = None,
+    show: bool = True,
+    save: bool = True,
 ):
-    """
-    Plot convergence for multiple states from SSVQE.
-
-    This function supports two calling conventions:
-
-    1) New / canonical:
-        plot_ssvqe_convergence_multi(
-            energies_per_state=[[...], [...], ...],
-            molecule="H2", ansatz="UCCSD", optimizer="Adam"
-        )
-
-    2) Legacy (used by current vqe/ssvqe.py):
-        plot_ssvqe_convergence_multi(
-            molecule="H2", ansatz="UCCSD", optimizer_name="Adam",
-            E0_list=[...], E1_list=[...]
-        )
-    """
-    from vqe_qpe_common.plotting import build_filename, format_molecule_name
-
-    # Backward-compat: accept optimizer_name
     if optimizer_name is not None:
         optimizer = optimizer_name
 
-    # Backward-compat: accept E0_list / E1_list
     if energies_per_state is None:
         if E0_list is None:
             raise TypeError("Provide energies_per_state or (E0_list, E1_list).")
         energies_per_state = [E0_list] if E1_list is None else [E0_list, E1_list]
 
-    # Normalise molecule name
-    mol_norm = format_molecule_name(molecule)
-
-    # Handle dict or list input
     if isinstance(energies_per_state, dict):
-        trajectories = [
-            energies_per_state[k] for k in sorted(energies_per_state.keys())
-        ]
+        trajectories = [energies_per_state[k] for k in sorted(energies_per_state.keys())]
     else:
         trajectories = energies_per_state
 
     n_states = len(trajectories)
 
-    # Plot
     plt.figure(figsize=(7, 4.5))
     for i, E_list in enumerate(trajectories):
         plt.plot(E_list, label=f"State {i}")
@@ -272,15 +217,16 @@ def plot_ssvqe_convergence_multi(
     plt.legend()
     plt.tight_layout()
 
-    # Save if requested
     if save:
         fname = build_filename(
-            molecule=mol_norm,
-            topic="ssvqe_convergence",
-            extras={
-                "states": n_states,
-                "ans": ansatz,
-                "opt": optimizer,
-            },
+            topic="ssvqe_conv",
+            ansatz=ansatz,
+            optimizer=optimizer,
+            seed=seed,
+            multi_seed=False,
         )
-        save_plot(fname, kind="vqe", show=show)
+        save_plot(fname, kind="vqe", molecule=molecule, show=show)
+    elif show:
+        plt.show()
+    else:
+        plt.close()

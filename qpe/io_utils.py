@@ -1,83 +1,55 @@
 """
-qpe/io_utils.py
-================
-Unified result persistence, caching, and filename utilities for QPE.
+qpe.io_utils
+------------
+Result persistence + caching utilities for QPE.
 
-This version is fully aligned with the VQE I/O stack:
+JSON outputs:
+    results/qpe/
 
-    results/
-      ├── vqe/
-      └── qpe/
-
-All QPE JSON output files live in: results/qpe/
-
-All PNG figures must be saved through common.plotting.save_plot(),
-which stores everything under: plots/
-
-This file intentionally contains:
-    • No plotting
-    • No PennyLane logic
-    • Only JSON I/O + persistent directory management
+PNG outputs:
+    images/qpe/<MOLECULE>/
+    (handled via vqe_qpe_common.plotting.save_plot)
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from vqe_qpe_common.plotting import save_plot
+from vqe_qpe_common.plotting import format_molecule_name, save_plot
 
-# ---------------------------------------------------------------------
-# Base Directories (mirrors VQE)
-# ---------------------------------------------------------------------
-
-# Root of the repository/package (qpe / io_utils.py)
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
-
-# New, package-scoped locations for results and images
-RESULTS_DIR = BASE_DIR / "results" / "qpe"
-IMG_DIR = BASE_DIR / "images" / "qpe"
+RESULTS_DIR: Path = BASE_DIR / "results" / "qpe"
 
 
 def ensure_dirs() -> None:
-    """
-    Ensure that the standard result and image directories exist.
-
-    - RESULTS_DIR: where JSON run records are written (package_results/)
-    - IMG_DIR:     where plots and figures are saved (qpe/images/)
-    """
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    IMG_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ---------------------------------------------------------------------
-# Hashing: repeatable, human-stable, JSON-safe
-# ---------------------------------------------------------------------
+# Backwards-compatible alias (optional, but harmless)
+def ensure_qpe_dirs() -> None:
+    ensure_dirs()
+
+
 def signature_hash(
     *,
     molecule: str,
     n_ancilla: int,
     t: float,
-    shots: int | None,
-    noise: Dict[str, float] | None,
+    shots: Optional[int],
+    noise: Optional[Dict[str, float]],
     trotter_steps: int,
 ) -> str:
-    """
-    Generate a reproducible hash key for a QPE configuration.
-
-    All important run parameters are included.
-    """
     key = json.dumps(
         {
-            "molecule": molecule,
-            "ancilla_qubits": n_ancilla,
-            "time_param": round(float(t), 10),
+            "molecule": format_molecule_name(molecule),
+            "n_ancilla": int(n_ancilla),
+            "t": round(float(t), 10),
             "trotter_steps": int(trotter_steps),
             "shots": shots,
-            "noise_params": noise or {},
+            "noise": noise or {},
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -85,63 +57,44 @@ def signature_hash(
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
 
 
-def cache_path(molecule: str, key: str) -> str:
-    """Create the canonical JSON file path for a cached QPE result."""
+def cache_path(molecule: str, key: str) -> Path:
     ensure_dirs()
-    safe_mol = molecule.replace("+", "plus").replace(" ", "_")
-    return os.path.join(RESULTS_DIR, f"{safe_mol}_QPE_{key}.json")
+    mol = format_molecule_name(molecule)
+    return RESULTS_DIR / f"{mol}__QPE__{key}.json"
 
 
-# ---------------------------------------------------------------------
-# JSON Save / Load
-# ---------------------------------------------------------------------
 def save_qpe_result(result: Dict[str, Any]) -> str:
-    """
-    Save a QPE result to JSON using the canonical naming convention.
-
-    Fields that MUST be present in result:
-        molecule, n_ancilla, t, shots, noise
-    """
     ensure_dirs()
 
     key = signature_hash(
         molecule=result["molecule"],
-        n_ancilla=result["n_ancilla"],
-        t=result["t"],
+        n_ancilla=int(result.get("n_ancilla", result.get("n_ancilla", 0))),
+        t=float(result["t"]),
         trotter_steps=int(result.get("trotter_steps", 1)),
         shots=result.get("shots", None),
-        noise=result.get("noise", {}),
+        noise=result.get("noise", {}) or {},
     )
 
     path = cache_path(result["molecule"], key)
-
-    with open(path, "w", encoding="utf-8") as f:
+    with path.open("w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
 
     print(f"💾 Saved QPE result → {path}")
-    return path
+    return str(path)
 
 
-def load_qpe_result(molecule: str, key: str) -> Dict[str, Any] | None:
-    """
-    Load a cached QPE JSON result if it exists, otherwise return None.
-    """
+def load_qpe_result(molecule: str, key: str) -> Optional[Dict[str, Any]]:
     path = cache_path(molecule, key)
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return None
+    if not path.exists():
+        return None
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
 
-# ---------------------------------------------------------------------
-# Unified PNG Save Wrapper
-# ---------------------------------------------------------------------
-def save_qpe_plot(filename: str) -> str:
-    """
-    Save a QPE plot using the unified project-wide plotting logic.
-
-    This stores all images under the root-level plots/ directory.
-
-    filename should be produced by build_filename().
-    """
-    return save_plot(filename, kind="qpe")
+def save_qpe_plot(
+    filename: str,
+    *,
+    molecule: str,
+    show: bool = True,
+) -> str:
+    return save_plot(filename, kind="qpe", molecule=molecule, show=show)

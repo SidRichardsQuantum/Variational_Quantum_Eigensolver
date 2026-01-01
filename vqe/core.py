@@ -32,7 +32,6 @@ from .engine import (
 )
 from .hamiltonian import build_hamiltonian, generate_geometry
 from .io_utils import (
-    IMG_DIR,
     RESULTS_DIR,
     ensure_dirs,
     make_filename_prefix,
@@ -495,12 +494,17 @@ def run_vqe_optimizer_comparison(
             plt.legend()
             plt.tight_layout()
 
+            multi = bool(seeds) and (len(seeds) > 1)
+
             fname = build_filename(
-                molecule=molecule,
-                topic="optimizer_comparison",
-                extras={"ans": ansatz_name, "mode": "convergence"},
+                topic="optimizer_conv",
+                ansatz=ansatz_name,
+                dep=depolarizing_prob if noisy else None,
+                amp=amplitude_damping_prob if noisy else None,
+                seed=None if multi else seed,
+                multi_seed=multi,
             )
-            save_plot(fname, kind="vqe", show=show)
+            save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
         return {
             "mode": "convergence",
@@ -677,11 +681,13 @@ def run_vqe_optimizer_comparison(
         plt.tight_layout()
 
         fname = build_filename(
-            molecule=molecule,
             topic="noisy_optimizer_comparison_deltaE",
-            extras={"ans": ansatz_name, "noise": noise_type},
+            ansatz=ansatz_name,
+            noise_scan=True,
+            noise_type=noise_type,
+            multi_seed=True,
         )
-        save_plot(fname, kind="vqe", show=show)
+        save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
         # Fidelity overlay
         plt.figure(figsize=(8, 5))
@@ -703,11 +709,13 @@ def run_vqe_optimizer_comparison(
         plt.tight_layout()
         
         fname = build_filename(
-            molecule=molecule,
             topic="noisy_optimizer_comparison_fidelity",
-            extras={"ans": ansatz_name, "noise": noise_type},
+            ansatz=ansatz_name,
+            noise_scan=True,
+            noise_type=noise_type,
+            multi_seed=True,
         )
-        save_plot(fname, kind="vqe", show=show)
+        save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
     return out
 
@@ -796,11 +804,14 @@ def run_vqe_ansatz_comparison(
             plt.tight_layout()
 
             fname = build_filename(
-                molecule=molecule,
-                topic="ansatz_comparison",
-                extras={"opt": optimizer_name, "mode": "convergence"},
+                topic="ansatz_conv",
+                optimizer=optimizer_name,
+                dep=depolarizing_prob if noisy else None,
+                amp=amplitude_damping_prob if noisy else None,
+                seed=seed,
+                multi_seed=bool(seeds) and (len(seeds) > 1),
             )
-            save_plot(fname, kind="vqe", show=show)
+            save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
         return {
             "mode": "convergence",
@@ -967,11 +978,13 @@ def run_vqe_ansatz_comparison(
         plt.tight_layout()
 
         fname = build_filename(
-            molecule=molecule,
             topic="noisy_ansatz_comparison_deltaE",
-            extras={"opt": optimizer_name, "noise": noise_type_l},
+            optimizer=optimizer_name,
+            noise_scan=True,
+            noise_type=noise_type_l,
+            multi_seed=True,
         )
-        save_plot(fname, kind="vqe", show=show)
+        save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
         plt.figure(figsize=(8, 5))
         for ans_name in ansatzes:
@@ -994,11 +1007,13 @@ def run_vqe_ansatz_comparison(
         plt.tight_layout()
 
         fname = build_filename(
-            molecule=molecule,
             topic="noisy_ansatz_comparison_fidelity",
-            extras={"opt": optimizer_name, "noise": noise_type_l},
+            optimizer=optimizer_name,
+            noise_scan=True,
+            noise_type=noise_type_l,
+            multi_seed=True,
         )
-        save_plot(fname, kind="vqe", show=show)
+        save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
     return out
 
@@ -1220,17 +1235,13 @@ def run_vqe_geometry_scan(
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
 
-    mol_norm = format_molecule_name(molecule)
     fname = build_filename(
-        molecule=mol_norm,
-        topic="vqe_geometry_scan",
-        extras={
-            "ans": ansatz_name,
-            "opt": optimizer_name,
-            "param": param_name,
-        },
-    )
-    save_plot(fname, kind="vqe", show=show)
+            topic=f"vqe_geometry_scan_{param_name}",
+            ansatz=ansatz_name,
+            optimizer=optimizer_name,
+            multi_seed=True,
+        )
+    save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
     min_idx = int(np.argmin(means))
     print(
@@ -1352,13 +1363,15 @@ def run_vqe_mapping_comparison(
     plt.tight_layout(pad=2)
 
     fname = build_filename(
-        molecule=molecule,
         topic="mapping_comparison",
-        extras={"ansatz": ansatz_name, "opt": optimizer_name},
+        ansatz=ansatz_name,
+        optimizer=optimizer_name,
+        multi_seed=True,
     )
-    save_plot(fname, kind="vqe", show=show)
+    path = save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
-    print(f"\n📉 Saved mapping comparison plot to {IMG_DIR}/{fname}\nResults Summary:")
+    print(f"\n📉 Saved mapping comparison plot → {path}\nResults Summary:")
+    
     for mapping, data in results.items():
         print(
             f"  {mapping:15s} → E = {data['final_energy']:.8f} Ha, "
