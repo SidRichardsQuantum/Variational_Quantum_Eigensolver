@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: vqe-pennylane
-Version: 0.2.3
+Version: 0.2.4
 Summary: Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)
 Author-email: Sid Richards <siddrichards@hotmail.co.uk>
 License-Expression: MIT
