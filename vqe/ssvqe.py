@@ -1,30 +1,18 @@
-"""
-vqe.ssvqe
----------
-Subspace-Search Variational Quantum Eigensolver (SSVQE).
-
-Features:
-    - Ground and excited states via a shared variational ansatz
-    - Orthogonality enforced with |⟨ψ_i|ψ_j⟩|² penalties
-    - Any ansatz and optimizer defined in the vqe package
-    - Optional depolarizing / amplitude-damping noise
-    - Caching and reproducibility via vqe.io_utils
-"""
-
+# vqe/ssvqe.py
 from __future__ import annotations
 
-import itertools
 import json
+from typing import List, Optional, Sequence
 
 import pennylane as qml
 from pennylane import numpy as np
 
 from .engine import (
+    _call_ansatz,
+    apply_optional_noise,
     build_ansatz,
     build_optimizer,
     make_device,
-    make_energy_qnode,
-    make_overlap00_fn,
 )
 from .hamiltonian import build_hamiltonian
 from .io_utils import (
@@ -36,16 +24,124 @@ from .io_utils import (
     save_run_record,
 )
 from .visualize import plot_ssvqe_convergence_multi
+from .ansatz import _build_ucc_data
 
 
-# ================================================================
-# MAIN ENTRYPOINT
-# ================================================================
+def _apply_single_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[int]:
+    """Return determinant bitstring after applying a single excitation [i, a]."""
+    if len(exc) != 2:
+        raise ValueError(f"Single excitation must have length 2, got {exc}")
+    i, a = map(int, exc)
+
+    det = np.array(hf, dtype=int).copy()
+    if det[i] != 1:
+        raise ValueError(f"Invalid single excitation {exc}: orbital {i} not occupied in HF.")
+    if det[a] != 0:
+        raise ValueError(f"Invalid single excitation {exc}: orbital {a} already occupied in HF.")
+
+    det[i] = 0
+    det[a] = 1
+    return det.tolist()
+
+
+def _apply_double_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[int]:
+    """Return determinant bitstring after applying a double excitation [i, j, a, b]."""
+    if len(exc) != 4:
+        raise ValueError(f"Double excitation must have length 4, got {exc}")
+    i, j, a, b = map(int, exc)
+
+    det = np.array(hf, dtype=int).copy()
+    if det[i] != 1 or det[j] != 1:
+        raise ValueError(f"Invalid double excitation {exc}: {i},{j} must be occupied in HF.")
+    if det[a] != 0 or det[b] != 0:
+        raise ValueError(f"Invalid double excitation {exc}: {a},{b} must be unoccupied in HF.")
+    if len({i, j, a, b}) != 4:
+        raise ValueError(f"Invalid double excitation {exc}: indices must be distinct.")
+
+    det[i] = 0
+    det[j] = 0
+    det[a] = 1
+    det[b] = 1
+    return det.tolist()
+
+
+def _ucc_reference_states_from_excitations(
+    hf_state: Sequence[int],
+    singles: Sequence[Sequence[int]],
+    doubles: Sequence[Sequence[int]],
+    *,
+    num_states: int,
+    include_doubles: bool = True,
+) -> list[list[int]]:
+    """
+    Build a chemistry-aware orthogonal reference set:
+        [ HF, HF->single_0, HF->single_1, ..., (optionally) HF->double_0, ... ]
+
+    All are computational-basis determinants, hence orthogonal by construction.
+    """
+    hf = np.array(hf_state, dtype=int)
+    refs: list[list[int]] = [hf.tolist()]
+
+    # Singles first (usually the most relevant low-energy manifold)
+    for exc in singles:
+        if len(refs) >= num_states:
+            return refs
+        try:
+            refs.append(_apply_single_excitation_to_det(hf, exc))
+        except ValueError:
+            # Skip invalid excitations for this HF (shouldn't happen, but safe)
+            continue
+
+    if include_doubles:
+        for exc in doubles:
+            if len(refs) >= num_states:
+                return refs
+            try:
+                refs.append(_apply_double_excitation_to_det(hf, exc))
+            except ValueError:
+                continue
+
+    # If still short, fall back to HF+bitflips to fill
+    if len(refs) < num_states:
+        n = len(hf)
+        # single flips
+        for i in range(n):
+            if len(refs) >= num_states:
+                break
+            s = hf.copy()
+            s[i] = 1 - s[i]
+            cand = s.tolist()
+            if cand not in refs:
+                refs.append(cand)
+
+    return refs[:num_states]
+
+
+def _default_reference_states(num_states: int, num_wires: int) -> List[List[int]]:
+    """
+    Default orthogonal computational-basis reference states:
+        |0...0>, |0...01>, |0...10>, ...
+
+    Note: for chemistry, you will usually want to pass your own states
+    (e.g., HF plus low-rank excitations) rather than rely on this default.
+    """
+    if num_states < 1:
+        raise ValueError("num_states must be >= 1")
+    if num_states > 2**num_wires:
+        raise ValueError(f"num_states={num_states} exceeds Hilbert space size 2**{num_wires}")
+
+    states: List[List[int]] = []
+    for k in range(num_states):
+        bits = [(k >> (num_wires - 1 - i)) & 1 for i in range(num_wires)]
+        states.append(bits)
+    return states
+
+
 def run_ssvqe(
     molecule: str = "H3+",
     *,
     num_states: int = 2,
-    penalty_weight: float = 10.0,
+    weights: Optional[Sequence[float]] = None,
     ansatz_name: str = "UCCSD",
     optimizer_name: str = "Adam",
     steps: int = 100,
@@ -57,43 +153,42 @@ def run_ssvqe(
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
+    reference_states: Optional[Sequence[Sequence[int]]] = None,
     plot: bool = True,
     force: bool = False,
 ):
     """
-    Run a Subspace-Search VQE (SSVQE) optimization to obtain ground and
-    excited states of a molecular Hamiltonian.
+    True Subspace-Search VQE (SSVQE).
 
-    Args:
-        molecule: Molecule label (e.g. "H2", "LiH", "H3+").
-        num_states: Number of eigenstates to target (>= 2).
-        penalty_weight: Weight on the orthogonality penalty term.
-        ansatz_name: Name of the ansatz from `vqe.ansatz`.
-        optimizer_name: Name of optimizer from `vqe.optimizer`.
-        steps: Number of optimization iterations.
-        stepsize: Optimizer step size.
-        seed: Random seed for reproducibility.
-        noisy: If True, use a mixed-state simulator and insert noise.
-        depolarizing_prob: Depolarizing noise probability per wire.
-        amplitude_damping_prob: Amplitude damping probability per wire.
-        symbols, coordinates, basis: Optional explicit molecular data.
-        plot: Whether to plot E0 / E1 convergence (if num_states >= 2).
-        force: If True, ignore cached results and recompute.
+    Classic structure:
+        |psi_k(theta)> = U(theta) |phi_k>
+        minimize sum_k w_k <psi_k(theta)| H |psi_k(theta)>
 
-    Returns:
-        dict with keys:
-            - "energies_per_state": list[list[float]]
-            - "final_params":       list[list[float]]
-            - "config":             dict
+    - A single shared parameter vector `theta` for all target states.
+    - Orthogonality comes from distinct orthogonal inputs |phi_k> (no penalties).
+
+    Parameters
+    ----------
+    num_states
+        Number of eigenstates to target (>= 2 is typical).
+    weights
+        Positive weights w_k. Must be length `num_states`.
+        If None, defaults to strictly increasing weights: w_k = 1 + k.
+        (This biases the optimizer to align lower-energy states first.)
+    reference_states
+        Sequence of computational-basis bitstrings (length num_wires each),
+        one per state. If None, uses a simple default basis set.
+
+        For chemistry + UCC, passing meaningful reference determinants
+        is strongly recommended (HF + excited determinants).
     """
-    assert num_states >= 2, "SSVQE requires at least two target states."
+    if num_states < 2:
+        raise ValueError("SSVQE is typically used with num_states >= 2")
 
     np.random.seed(seed)
     ensure_dirs()
 
-    # ============================================================
-    # 1. Build Hamiltonian and molecular data
-    # ============================================================
+    # 1) Build Hamiltonian + molecular data
     if symbols is None or coordinates is None:
         H, num_wires, symbols, coordinates, basis = build_hamiltonian(molecule)
     else:
@@ -102,10 +197,7 @@ def run_ssvqe(
             symbols, coordinates, charge=charge, basis=basis, unit="angstrom"
         )
 
-    # ============================================================
-    # 2. Ansatz and different initial parameters
-    # ============================================================
-
+    # 2) Shared ansatz parameters
     ansatz_fn, p0 = build_ansatz(
         ansatz_name,
         num_wires,
@@ -114,57 +206,73 @@ def run_ssvqe(
         coordinates=coordinates,
         basis=basis,
     )
+    params = np.array(p0, requires_grad=True)
 
-    param_sets = [np.array(p0, requires_grad=True)]
-    for k in range(1, num_states):
-        _, pk = build_ansatz(
-            ansatz_name,
-            num_wires,
-            seed=seed + k,
+    # 3) Reference states
+    if reference_states is None:
+        if ansatz_name.upper().startswith("UCC"):
+            # Use the exact excitation lists and HF state used by the UCC ansatz
+            singles, doubles, hf_state = _build_ucc_data(symbols,
+                                                         coordinates,
+                                                         basis=basis
+                                                         )
+            reference_states = _ucc_reference_states_from_excitations(
+                hf_state,
+                singles,
+                doubles,
+                num_states=num_states,
+                include_doubles=True,
+            )
+        else:
+            reference_states = _default_reference_states(num_states, num_wires)
+    else:
+        reference_states = [list(s) for s in reference_states]
+
+    # Ensure all reference states are distinct (orthogonal determinants)
+    if len({tuple(s) for s in reference_states}) != len(reference_states):
+        raise ValueError("reference_states contain duplicates; cannot enforce orthogonality.")
+
+    # 4) Weights
+    if weights is None:
+        weights = [1.0 + float(k) for k in range(num_states)]
+    weights = [float(w) for w in weights]
+    if len(weights) != num_states:
+        raise ValueError(f"weights must have length {num_states}, got {len(weights)}")
+    if any(w <= 0 for w in weights):
+        raise ValueError("weights must be strictly positive")
+
+    # 5) Device
+    dev = make_device(num_wires, noisy=noisy)
+
+    diff_method = "finite-diff" if noisy else "parameter-shift"
+
+    # 6) Energy QNode that accepts a reference_state selector
+    @qml.qnode(dev, diff_method=diff_method)
+    def energy(params, reference_state):
+        _call_ansatz(
+            ansatz_fn,
+            params,
+            wires=range(num_wires),
             symbols=symbols,
             coordinates=coordinates,
             basis=basis,
+            reference_state=reference_state,
+            prepare_reference=True,
         )
-        param_sets.append(np.array(pk, requires_grad=True))
+        apply_optional_noise(
+            noisy,
+            depolarizing_prob,
+            amplitude_damping_prob,
+            num_wires,
+        )
+        return qml.expval(H)
 
-    # ============================================================
-    # 3. Device and QNodes
-    # ============================================================
-    dev = make_device(num_wires, noisy=noisy)
-
-    energy_qnode = make_energy_qnode(
-        H,
-        dev,
-        ansatz_fn,
-        num_wires,
-        noisy=noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
-    )
-
-    overlap00 = make_overlap00_fn(
-        dev,
-        ansatz_fn,
-        num_wires,
-        noisy=noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
-    )
-
-    # ============================================================
-    # 4. Config + caching
-    # ============================================================
+    # 7) Config + caching
     cfg = make_run_config_dict(
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
-        ansatz_desc=f"SSVQE({ansatz_name})_{num_states}states",
+        ansatz_desc=f"SSVQE_TRUE({ansatz_name})_{num_states}states",
         optimizer_name=optimizer_name,
         stepsize=stepsize,
         max_iterations=steps,
@@ -175,17 +283,12 @@ def run_ssvqe(
         amplitude_damping_prob=amplitude_damping_prob,
         molecule_label=molecule,
     )
-    cfg["penalty_weight"] = float(penalty_weight)
     cfg["num_states"] = int(num_states)
+    cfg["weights"] = [float(w) for w in weights]
+    cfg["reference_states"] = [list(map(int, s)) for s in reference_states]
 
     sig = run_signature(cfg)
-    prefix = make_filename_prefix(
-        cfg,
-        noisy=noisy,
-        seed=seed,
-        hash_str=sig,
-        ssvqe=True,
-    )
+    prefix = make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, ssvqe=True)
     result_path = RESULTS_DIR / f"{prefix}.json"
 
     if not force and result_path.exists():
@@ -194,89 +297,49 @@ def run_ssvqe(
             record = json.load(f)
         return record["result"]
 
-    # ============================================================
-    # 5. Cost function: total energy + orthogonality penalties
-    # ============================================================
+    # 8) Cost: weighted sum of per-state energies
     opt = build_optimizer(optimizer_name, stepsize=stepsize)
-
-    def _unpack_flat(flat, templates):
-        """Unpack a flat parameter vector into a list of arrays matching templates."""
-        arrays = []
-        idx = 0
-        for tmpl in templates:
-            size = int(np.prod(tmpl.shape))
-            vec = flat[idx : idx + size]
-            arrays.append(np.reshape(vec, tmpl.shape))
-            idx += size
-        return arrays
-
-    def cost(flat_params):
-        # Split into per-state parameter arrays
-        unpacked = _unpack_flat(flat_params, param_sets)
-
-        # Sum of individual energies
-        total = sum(energy_qnode(p) for p in unpacked)
-
-        # Add orthogonality penalties between all distinct pairs
-        for i, j in itertools.combinations(range(len(unpacked)), 2):
-            total = total + penalty_weight * overlap00(unpacked[i], unpacked[j])
-
-        return total
-
-    # Flatten initial parameters for joint optimization
-    flat = np.concatenate([p.ravel() for p in param_sets])
-    flat = np.array(flat, requires_grad=True)
 
     energies_per_state = [[] for _ in range(num_states)]
 
-    # ============================================================
-    # 6. Optimization loop
-    # ============================================================
-    for step in range(steps):
-        try:
-            flat, _ = opt.step_and_cost(cost, flat)
-        except AttributeError:
-            flat = opt.step(cost, flat)
-
-        # Unpack back into per-state parameter arrays
-        unpacked = _unpack_flat(flat, param_sets)
-
-        # Record energies for each state
+    def cost(theta):
+        total = 0.0
         for k in range(num_states):
-            energies_per_state[k].append(float(energy_qnode(unpacked[k])))
+            total = total + weights[k] * energy(theta, reference_states[k])
+        return total
 
-        # Update param_sets for the next iteration (keep grad enabled)
-        param_sets = [np.array(u, requires_grad=True) for u in unpacked]
+    # 9) Optimization loop
+    for _ in range(steps):
+        try:
+            params, _ = opt.step_and_cost(cost, params)
+        except AttributeError:
+            params = opt.step(cost, params)
 
-    # ============================================================
-    # 7. Package and save results
-    # ============================================================
+        # record each state's energy under current shared params
+        for k in range(num_states):
+            energies_per_state[k].append(float(energy(params, reference_states[k])))
+
+    # 10) Save
     result = {
         "energies_per_state": energies_per_state,
-        "final_params": [u.tolist() for u in param_sets],
+        "final_params": params.tolist(),
         "config": cfg,
     }
-
     save_run_record(prefix, {"config": cfg, "result": result})
     print(f"💾 Saved SSVQE run to {result_path}")
 
-    # ============================================================
-    # 8. Optional plotting (E0 / E1 only, if available)
-    # ============================================================
+    # 11) Optional plotting (E0/E1 only)
     if plot and num_states >= 2:
         try:
-            E0 = energies_per_state[0]
-            E1 = energies_per_state[1]
             plot_ssvqe_convergence_multi(
                 molecule=molecule,
                 ansatz=ansatz_name,
                 optimizer_name=optimizer_name,
-                E0_list=E0,
-                E1_list=E1,
+                E0_list=energies_per_state[0],
+                E1_list=energies_per_state[1],
                 show=True,
                 save=True,
             )
-
         except Exception as exc:
             print(f"⚠️ SSVQE plotting failed (non-fatal): {exc}")
 

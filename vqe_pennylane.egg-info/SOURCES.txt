@@ -30,6 +30,7 @@ vqe/io_utils.py
 vqe/optimizer.py
 vqe/ssvqe.py
 vqe/visualize.py
+vqe/vqd.py
 vqe_pennylane.egg-info/PKG-INFO
 vqe_pennylane.egg-info/SOURCES.txt
 vqe_pennylane.egg-info/dependency_links.txt

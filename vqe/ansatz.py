@@ -176,6 +176,8 @@ def _apply_ucc_layers(
     hf_state,
     use_singles: bool,
     use_doubles: bool,
+    reference_state=None,
+    prepare_reference: bool = True,
 ):
     """
     Shared helper to apply HF preparation + selected UCC excitation layers.
@@ -193,8 +195,21 @@ def _apply_ucc_layers(
             f"({num_wires})."
         )
 
-    # Prepare Hartree–Fock reference
-    qml.BasisState(hf_state, wires=wires)
+    # Reference preparation
+    # - If prepare_reference=False: assume caller has already prepared a state.
+    # - Else if reference_state is provided: prepare that basis state.
+    # - Else: prepare Hartree–Fock reference (default / legacy behavior).
+    if prepare_reference:
+        if reference_state is not None:
+            ref = np.array(reference_state, dtype=int)
+            if len(ref) != num_wires:
+                raise ValueError(
+                    f"reference_state length ({len(ref)}) does not match "
+                    f"number of wires ({num_wires})."
+                )
+            qml.BasisState(ref, wires=wires)
+        else:
+            qml.BasisState(hf_state, wires=wires)
 
     # Determine how many parameters we expect
     n_singles = len(singles) if use_singles else 0
@@ -219,7 +234,16 @@ def _apply_ucc_layers(
             qml.DoubleExcitation(params[offset + j], wires=list(exc))
 
 
-def uccsd_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "STO-3G"):
+def uccsd_ansatz(
+    params,
+    wires,
+    *,
+    symbols=None,
+    coordinates=None,
+    basis: str = "STO-3G",
+    reference_state=None,
+    prepare_reference: bool = True,
+):
     """
     Unitary Coupled Cluster Singles and Doubles (UCCSD) ansatz.
 
@@ -252,10 +276,21 @@ def uccsd_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "ST
         hf_state=hf_state,
         use_singles=True,
         use_doubles=True,
+        reference_state=reference_state,
+        prepare_reference=prepare_reference,
     )
 
 
-def uccd_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "STO-3G"):
+def uccd_ansatz(
+    params,
+    wires,
+    *,
+    symbols=None,
+    coordinates=None,
+    basis: str = "STO-3G",
+    reference_state=None,
+    prepare_reference: bool = True,
+):
     """
     UCC-D / UCCD: doubles-only UCC ansatz.
 
@@ -281,10 +316,21 @@ def uccd_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "STO
         hf_state=hf_state,
         use_singles=False,
         use_doubles=True,
+        reference_state=reference_state,
+        prepare_reference=prepare_reference,
     )
 
 
-def uccs_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "STO-3G"):
+def uccs_ansatz(
+    params,
+    wires,
+    *,
+    symbols=None,
+    coordinates=None,
+    basis: str = "STO-3G",
+    reference_state=None,
+    prepare_reference: bool = True,
+):
     """
     UCC-S: singles-only UCC ansatz.
 
@@ -301,6 +347,8 @@ def uccs_ansatz(params, wires, symbols=None, coordinates=None, basis: str = "STO
         hf_state=hf_state,
         use_singles=True,
         use_doubles=False,
+        reference_state=reference_state,
+        prepare_reference=prepare_reference,
     )
 
 

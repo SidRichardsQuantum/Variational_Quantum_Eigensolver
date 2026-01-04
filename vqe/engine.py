@@ -104,6 +104,8 @@ def _call_ansatz(
     wires: Iterable[int],
     symbols=None,
     coordinates=None,
+    reference_state=None,
+    prepare_reference: Optional[bool] = None,
     basis: Optional[str] = None,
 ):
     """
@@ -122,6 +124,10 @@ def _call_ansatz(
         kwargs["coordinates"] = coordinates
     if "basis" in supported and basis is not None:
         kwargs["basis"] = basis
+    if "reference_state" in supported:
+        kwargs["reference_state"] = reference_state
+    if "prepare_reference" in supported and prepare_reference is not None:
+        kwargs["prepare_reference"] = prepare_reference
 
     return ansatz_fn(params, wires=wires, **kwargs)
 

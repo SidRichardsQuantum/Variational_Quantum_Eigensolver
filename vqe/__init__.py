@@ -1,5 +1,5 @@
 """
-vqe
+vqe.__init__.py
 ---
 A modular Variational Quantum Eigensolver (VQE) and SSVQE toolkit built on PennyLane.
 
@@ -79,6 +79,10 @@ from .visualize import (
 # ------------------------------------------------------------------
 from .ssvqe import run_ssvqe
 
+# ------------------------------------------------------------------
+# VQD
+# ------------------------------------------------------------------
+from .vqd import run_vqd
 
 __all__ = [
     # Core VQE API
@@ -103,8 +107,9 @@ __all__ = [
     "run_signature",
     "save_run_record",
     "ensure_dirs",
-    # SSVQE
+    # Excited state methods
     "run_ssvqe",
+    "run_vqd",
     # Visualization
     "plot_convergence",
     "plot_optimizer_comparison",

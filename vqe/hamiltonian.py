@@ -188,3 +188,50 @@ def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
         np.array(coordinates, dtype=float),
         str(basis),
     )
+
+
+def hartree_fock_state(
+    molecule: str,
+    *,
+    mapping: str = "jordan_wigner",
+) -> np.ndarray:
+    """
+    Return the Hartree–Fock occupation bitstring for the molecule.
+
+    This keeps vqe.hamiltonian.build_hamiltonian(...) backwards compatible
+    (it still returns (H, n_qubits, symbols, coordinates, basis)) while enabling
+    chemistry-aware routines (SSVQE/VQD helpers) to obtain HF when needed.
+    """
+    mol = str(molecule).strip()
+    up = mol.upper()
+
+    if "BOND" in up or "ANGLE" in up:
+        if up == "H2O_ANGLE":
+            default_param = 104.5
+        elif up in {"H3+_BOND", "H3PLUS_BOND", "H3_PLUS_BOND"}:
+            default_param = 0.9
+        else:
+            default_param = 0.74
+
+        symbols, coordinates = generate_geometry(mol, default_param)
+        charge = +1 if up.startswith(("H3+", "H3PLUS", "H3_PLUS")) else 0
+        basis = "STO-3G"
+    else:
+        key = _normalise_static_key(mol)
+        cfg = get_molecule_config(key)
+        symbols = list(cfg["symbols"])
+        coordinates = np.array(cfg["coordinates"], dtype=float)
+        charge = int(cfg["charge"])
+        basis = str(cfg["basis"])
+
+    # We call the common builder to get consistent n_qubits and HF state.
+    # (Mapping is best-effort in your layer; HF is defined with respect to n_qubits.)
+    _H, n_qubits, hf = _build_common_hamiltonian(
+        symbols=symbols,
+        coordinates=np.array(coordinates, dtype=float),
+        charge=charge,
+        basis=basis,
+        mapping=None,  # HF state depends on n_qubits; common builder handles it.
+    )
+
+    return np.array(hf, dtype=int)
