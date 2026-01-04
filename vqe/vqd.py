@@ -23,7 +23,7 @@ from .io_utils import (
     run_signature,
     save_run_record,
 )
-from .visualize import plot_ssvqe_convergence_multi
+from .visualize import plot_multi_state_convergence
 
 
 def _state_overlap_metric(state_a, state_b, noisy: bool):
@@ -250,7 +250,9 @@ def run_vqd(
     # 5) Storage
     energies_per_state: List[List[float]] = [[] for _ in range(num_states)]
     final_params: List[np.ndarray] = []
-    reference_states: List[np.ndarray] = []  # stored statevectors / density matrices (detached)
+    reference_states: List[np.ndarray] = (
+        []
+    )  # stored statevectors / density matrices (detached)
 
     # 6) Solve sequentially
     for n in range(num_states):
@@ -330,7 +332,8 @@ def run_vqd(
     # 8) Plot (reuse multi-state plotter)
     if plot:
         try:
-            plot_ssvqe_convergence_multi(
+            plot_multi_state_convergence(
+                ssvqe_or_vqd="VQD",
                 energies_per_state=energies_per_state,
                 molecule=molecule,
                 ansatz=ansatz_name,

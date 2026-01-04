@@ -68,7 +68,7 @@ from .io_utils import (
 # ------------------------------------------------------------------
 from .visualize import (
     plot_convergence,
-    plot_ssvqe_convergence_multi,
+    plot_multi_state_convergence,
     plot_optimizer_comparison,
     plot_ansatz_comparison,
     plot_noise_statistics,
@@ -115,5 +115,5 @@ __all__ = [
     "plot_optimizer_comparison",
     "plot_ansatz_comparison",
     "plot_noise_statistics",
-    "plot_ssvqe_convergence_multi",
+    "plot_multi_state_convergence",
 ]

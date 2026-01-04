@@ -7,6 +7,7 @@ from typing import List, Optional, Sequence
 import pennylane as qml
 from pennylane import numpy as np
 
+from .ansatz import _build_ucc_data
 from .engine import (
     _call_ansatz,
     apply_optional_noise,
@@ -23,8 +24,7 @@ from .io_utils import (
     run_signature,
     save_run_record,
 )
-from .visualize import plot_ssvqe_convergence_multi
-from .ansatz import _build_ucc_data
+from .visualize import plot_multi_state_convergence
 
 
 def _apply_single_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[int]:
@@ -35,9 +35,13 @@ def _apply_single_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[
 
     det = np.array(hf, dtype=int).copy()
     if det[i] != 1:
-        raise ValueError(f"Invalid single excitation {exc}: orbital {i} not occupied in HF.")
+        raise ValueError(
+            f"Invalid single excitation {exc}: orbital {i} not occupied in HF."
+        )
     if det[a] != 0:
-        raise ValueError(f"Invalid single excitation {exc}: orbital {a} already occupied in HF.")
+        raise ValueError(
+            f"Invalid single excitation {exc}: orbital {a} already occupied in HF."
+        )
 
     det[i] = 0
     det[a] = 1
@@ -52,9 +56,13 @@ def _apply_double_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[
 
     det = np.array(hf, dtype=int).copy()
     if det[i] != 1 or det[j] != 1:
-        raise ValueError(f"Invalid double excitation {exc}: {i},{j} must be occupied in HF.")
+        raise ValueError(
+            f"Invalid double excitation {exc}: {i},{j} must be occupied in HF."
+        )
     if det[a] != 0 or det[b] != 0:
-        raise ValueError(f"Invalid double excitation {exc}: {a},{b} must be unoccupied in HF.")
+        raise ValueError(
+            f"Invalid double excitation {exc}: {a},{b} must be unoccupied in HF."
+        )
     if len({i, j, a, b}) != 4:
         raise ValueError(f"Invalid double excitation {exc}: indices must be distinct.")
 
@@ -128,7 +136,9 @@ def _default_reference_states(num_states: int, num_wires: int) -> List[List[int]
     if num_states < 1:
         raise ValueError("num_states must be >= 1")
     if num_states > 2**num_wires:
-        raise ValueError(f"num_states={num_states} exceeds Hilbert space size 2**{num_wires}")
+        raise ValueError(
+            f"num_states={num_states} exceeds Hilbert space size 2**{num_wires}"
+        )
 
     states: List[List[int]] = []
     for k in range(num_states):
@@ -212,10 +222,9 @@ def run_ssvqe(
     if reference_states is None:
         if ansatz_name.upper().startswith("UCC"):
             # Use the exact excitation lists and HF state used by the UCC ansatz
-            singles, doubles, hf_state = _build_ucc_data(symbols,
-                                                         coordinates,
-                                                         basis=basis
-                                                         )
+            singles, doubles, hf_state = _build_ucc_data(
+                symbols, coordinates, basis=basis
+            )
             reference_states = _ucc_reference_states_from_excitations(
                 hf_state,
                 singles,
@@ -230,7 +239,9 @@ def run_ssvqe(
 
     # Ensure all reference states are distinct (orthogonal determinants)
     if len({tuple(s) for s in reference_states}) != len(reference_states):
-        raise ValueError("reference_states contain duplicates; cannot enforce orthogonality.")
+        raise ValueError(
+            "reference_states contain duplicates; cannot enforce orthogonality."
+        )
 
     # 4) Weights
     if weights is None:
@@ -331,7 +342,8 @@ def run_ssvqe(
     # 11) Optional plotting (E0/E1 only)
     if plot and num_states >= 2:
         try:
-            plot_ssvqe_convergence_multi(
+            plot_multi_state_convergence(
+                ssvqe_or_vqd="SSVQE",
                 molecule=molecule,
                 ansatz=ansatz_name,
                 optimizer_name=optimizer_name,

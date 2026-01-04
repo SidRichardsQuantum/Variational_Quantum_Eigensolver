@@ -178,8 +178,9 @@ def plot_noise_statistics(
     save_plot(fname, kind="vqe", molecule=molecule, show=show)
 
 
-def plot_ssvqe_convergence_multi(
+def plot_multi_state_convergence(
     energies_per_state=None,
+    ssvqe_or_vqd: str = "SSVQE",
     *,
     molecule: str = "molecule",
     ansatz: str = "UCCSD",
@@ -212,16 +213,21 @@ def plot_ssvqe_convergence_multi(
     for i, E_list in enumerate(trajectories):
         plt.plot(E_list, label=f"State {i}")
 
+    if ssvqe_or_vqd.upper() == "SSVQE":
+        method_name = "SSVQE"
+    elif ssvqe_or_vqd.upper() == "VQD":
+        method_name = "VQD"
+
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
-    plt.title(f"{molecule} SSVQE ({n_states} states) – {ansatz}, {optimizer}")
+    plt.title(f"{molecule} {method_name} ({n_states} states) – {ansatz}, {optimizer}")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
 
     if save:
         fname = build_filename(
-            topic="ssvqe_conv",
+            topic=f"{method_name.lower()}_conv",
             ansatz=ansatz,
             optimizer=optimizer,
             seed=seed,
