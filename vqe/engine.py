@@ -1,17 +1,35 @@
 """
 vqe.engine
 ----------
-Core plumbing layer for VQE and SSVQE routines.
+Core plumbing layer for VQE / SSVQE / VQD routines.
 
 Responsibilities
 ----------------
-- Device creation and optional noise insertion
+- Device creation and noise insertion
 - Ansatz construction and parameter initialisation
 - Optimizer creation
 - QNode builders for:
     * energy expectation values
     * final states (statevector or density matrix)
     * overlap/fidelity-style quantities
+
+Noise design (updated)
+----------------------
+This module supports two noise interfaces:
+
+1) Legacy convenience parameters (backwards compatible):
+      noisy=True/False
+      depolarizing_prob=...
+      amplitude_damping_prob=...
+
+2) General / extensible noise model:
+      noise_model: Optional[Callable[[list[int]], None]]
+
+   where `noise_model(wires)` applies PennyLane channels to those wires.
+
+If `noise_model` is provided, it is applied in addition to (or instead of)
+legacy dep/amp settings. This enables "any noise type" without modifying
+algorithms like VQD.
 """
 
 from __future__ import annotations
@@ -44,14 +62,31 @@ def make_device(num_wires: int, noisy: bool = False):
     return qml.device(dev_name, wires=num_wires)
 
 
+def _apply_legacy_noise_channels(
+    depolarizing_prob: float,
+    amplitude_damping_prob: float,
+    wires: list[int],
+):
+    """
+    Apply the legacy built-in noise channels, if probabilities are > 0.
+    """
+    for w in wires:
+        if depolarizing_prob and depolarizing_prob > 0.0:
+            qml.DepolarizingChannel(float(depolarizing_prob), wires=w)
+        if amplitude_damping_prob and amplitude_damping_prob > 0.0:
+            qml.AmplitudeDamping(float(amplitude_damping_prob), wires=w)
+
+
 def apply_optional_noise(
     noisy: bool,
     depolarizing_prob: float,
     amplitude_damping_prob: float,
     num_wires: int,
+    *,
+    noise_model: Optional[Callable[[list[int]], None]] = None,
 ):
     """
-    Apply optional noise channels to each qubit after the ansatz.
+    Apply optional noise channels after the ansatz.
 
     Intended to be called from inside a QNode *after* the variational circuit.
 
@@ -60,20 +95,34 @@ def apply_optional_noise(
     noisy
         Whether noise is enabled.
     depolarizing_prob
-        Probability for DepolarizingChannel.
+        Legacy depolarizing probability (applied if > 0).
     amplitude_damping_prob
-        Probability for AmplitudeDamping.
+        Legacy amplitude damping probability (applied if > 0).
     num_wires
         Number of qubits.
+    noise_model
+        Optional callable noise model: noise_model(wires) -> None.
+        If provided, it will be applied when `noisy=True`.
+
+    Notes
+    -----
+    - If `noisy=False`, this function is a no-op, even if noise_model is provided.
+    - If `noisy=True`, this applies both:
+        (a) legacy dep/amp (if nonzero), and
+        (b) noise_model (if provided).
+      This keeps backwards compatibility while enabling extensibility.
     """
     if not noisy:
         return
 
-    for w in range(num_wires):
-        if depolarizing_prob > 0.0:
-            qml.DepolarizingChannel(depolarizing_prob, wires=w)
-        if amplitude_damping_prob > 0.0:
-            qml.AmplitudeDamping(amplitude_damping_prob, wires=w)
+    wires = list(range(int(num_wires)))
+
+    # Legacy built-ins
+    _apply_legacy_noise_channels(depolarizing_prob, amplitude_damping_prob, wires)
+
+    # Extensible user-provided noise model
+    if noise_model is not None:
+        noise_model(wires)
 
 
 # ======================================================================
@@ -113,6 +162,10 @@ def _call_ansatz(
 
     This unifies toy ansatzes (expecting (params, wires)) and chemistry
     ansatzes (which additionally accept symbols / coordinates / basis).
+
+    Extra kwargs supported by chemistry ansatzes:
+      - symbols, coordinates, basis
+      - reference_state, prepare_reference
     """
     wires = list(wires)
     supported = _supported_ansatz_kwargs(ansatz_fn)
@@ -146,27 +199,10 @@ def build_ansatz(
     """
     Construct an ansatz function and matching initial parameter vector.
 
-    This is the main entry point used by higher-level routines.
-
-    Parameters
-    ----------
-    ansatz_name
-        Name of the ansatz in the registry (see vqe.ansatz.ANSATZES).
-    num_wires
-        Number of qubits.
-    seed
-        Random seed used for parameter initialisation.
-    symbols, coordinates, basis
-        Molecular data for chemistry-inspired ansatzes (UCC family).
-    requires_grad
-        Whether the parameters should be differentiable.
-    scale
-        Typical scale for random initialisation in toy ansatzes.
-
     Returns
     -------
     (ansatz_fn, params)
-        ansatz_fn: Callable(params) -> circuit on given wires
+        ansatz_fn: Callable(params, wires=...) -> circuit
         params:    numpy array of initial parameters
     """
     ansatz_fn = get_ansatz(ansatz_name)
@@ -189,13 +225,6 @@ def build_ansatz(
 def build_optimizer(optimizer_name: str, stepsize: float):
     """
     Return a PennyLane optimizer instance by name.
-
-    Parameters
-    ----------
-    optimizer_name
-        Name understood by vqe.optimizer.get_optimizer.
-    stepsize
-        Learning rate for the optimizer.
     """
     return get_optimizer(optimizer_name, stepsize=stepsize)
 
@@ -225,6 +254,7 @@ def make_energy_qnode(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
@@ -233,29 +263,9 @@ def make_energy_qnode(
     """
     Build a QNode that returns the energy expectation value ⟨H⟩.
 
-    Parameters
-    ----------
-    H
-        PennyLane Hamiltonian.
-    dev
-        PennyLane device.
-    ansatz_fn
-        Ansatz function from vqe.ansatz.
-    num_wires
-        Number of qubits.
-    noisy
-        Whether to insert noise channels after the ansatz.
-    depolarizing_prob, amplitude_damping_prob
-        Noise strengths.
-    symbols, coordinates, basis
-        Molecular data passed through to chemistry ansatzes.
-    diff_method
-        Optional override for the QNode differentiation method.
-
     Returns
     -------
     energy(params) -> float
-        QNode that evaluates ⟨H⟩ at given parameters.
     """
     diff_method = _choose_diff_method(noisy, diff_method)
 
@@ -274,6 +284,7 @@ def make_energy_qnode(
             depolarizing_prob,
             amplitude_damping_prob,
             num_wires,
+            noise_model=noise_model,
         )
         return qml.expval(H)
 
@@ -288,6 +299,7 @@ def make_state_qnode(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
@@ -320,6 +332,7 @@ def make_state_qnode(
             depolarizing_prob,
             amplitude_damping_prob,
             num_wires,
+            noise_model=noise_model,
         )
         return qml.state()
 
@@ -334,6 +347,7 @@ def make_overlap00_fn(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
@@ -343,24 +357,9 @@ def make_overlap00_fn(
     Construct a function overlap00(p_i, p_j) ≈ |⟨ψ_i|ψ_j⟩|².
 
     Uses the "adjoint trick":
-        1. Prepare |ψ_i⟩ with ansatz(params=p_i)
-        2. Apply adjoint(ansatz)(params=p_j)
-        3. Measure probabilities; |⟨ψ_i|ψ_j⟩|² = Prob(|00...0⟩)
-
-    Parameters
-    ----------
-    dev
-        PennyLane device.
-    ansatz_fn
-        Ansatz function.
-    num_wires
-        Number of qubits.
-    noisy, depolarizing_prob, amplitude_damping_prob
-        Noise control (applied both forward and adjoint).
-    symbols, coordinates, basis
-        Molecular data for the ansatz.
-    diff_method
-        Optional differentiation method override.
+        1) Prepare |ψ_i⟩ with ansatz(params=p_i)
+        2) Apply adjoint(ansatz)(params=p_j)
+        3) Measure probabilities; |⟨ψ_i|ψ_j⟩|² = Prob(|00...0⟩)
 
     Returns
     -------
@@ -382,6 +381,7 @@ def make_overlap00_fn(
             depolarizing_prob,
             amplitude_damping_prob,
             num_wires,
+            noise_model=noise_model,
         )
 
     @qml.qnode(dev, diff_method=diff_method)

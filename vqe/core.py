@@ -178,7 +178,7 @@ def run_vqe(
         noisy=noisy,
         seed=seed,
         hash_str=sig,
-        ssvqe=False,
+        algo="VQE",
     )
     result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 

@@ -299,7 +299,7 @@ def run_ssvqe(
     cfg["reference_states"] = [list(map(int, s)) for s in reference_states]
 
     sig = run_signature(cfg)
-    prefix = make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, ssvqe=True)
+    prefix = make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, algo="SSVQE")
     result_path = RESULTS_DIR / f"{prefix}.json"
 
     if not force and result_path.exists():

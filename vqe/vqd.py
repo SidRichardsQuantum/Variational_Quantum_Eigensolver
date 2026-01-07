@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -32,13 +32,19 @@ def _state_overlap_metric(state_a, state_b, noisy: bool):
       - noiseless: |<psi_a|psi_b>|^2
       - noisy:     Tr(rho_a rho_b)
 
-    Returns an autograd-compatible scalar (do NOT cast to float here).
+    Notes
+    -----
+    - Returns an autograd-compatible scalar (do NOT cast to float here).
+    - `state_a` is typically a detached reference (np.array(..., requires_grad=False)).
+    - `state_b` should remain differentiable so the penalty can influence optimization.
     """
     if not noisy:
+        # |<a|b>|^2 = |sum_i conj(a_i) b_i|^2
         inner = (np.conj(state_a) * state_b).sum()
         val = np.abs(inner) ** 2
         return np.clip(val, 0.0, 1.0)
 
+    # density matrices: Tr(rho_a rho_b)
     rho_a = np.array(state_a)
     rho_b = np.array(state_b)
 
@@ -122,6 +128,7 @@ def run_vqd(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
@@ -129,7 +136,7 @@ def run_vqd(
     force: bool = False,
 ):
     """
-    Variational Quantum Deflation (VQD) for ground + excited states.
+    Variational Quantum Deflation (VQD) for ground + excited states (k-state).
 
     Sequential algorithm:
       - Solve VQE for state 0
@@ -146,11 +153,18 @@ def run_vqd(
       - beta(t) ramps from beta_start -> beta_end over optimization steps
         (optionally holding at beta_start for an initial fraction).
 
+    Noise (generalized):
+      - If noisy=True, the device is default.mixed and the state QNode returns a density matrix.
+      - You may specify:
+          * depolarizing_prob, amplitude_damping_prob (legacy convenience)
+          * noise_model(wires) applying arbitrary PennyLane noise channels
+        Both are supported and can be combined.
+
     Returns
     -------
     dict with keys:
-      - energies_per_state: list[list[float]]
-      - final_params:       list[list[float]]
+      - energies_per_state: list[list[float]]   (length num_states)
+      - final_params:       list[list[float]]   (length num_states)
       - config:             dict
     """
     if num_states < 2:
@@ -168,7 +182,7 @@ def run_vqd(
     if symbols is None or coordinates is None:
         H, num_wires, symbols, coordinates, basis = build_hamiltonian(molecule)
     else:
-        charge = +1 if molecule.upper() == "H3+" else 0
+        charge = +1 if str(molecule).upper() == "H3+" else 0
         H, num_wires = qml.qchem.molecular_hamiltonian(
             symbols, coordinates, charge=charge, basis=basis, unit="angstrom"
         )
@@ -194,6 +208,7 @@ def run_vqd(
         noisy=noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
+        noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
@@ -207,6 +222,7 @@ def run_vqd(
         noisy=noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
+        noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
@@ -235,10 +251,14 @@ def run_vqd(
     cfg["beta_hold_fraction"] = float(beta_hold_fraction)
     cfg["num_states"] = int(num_states)
 
+    # Noise model is not JSON-serializable; store only a lightweight identifier.
+    if noise_model is not None:
+        cfg["noise_model"] = getattr(noise_model, "__name__", str(noise_model))
+    else:
+        cfg["noise_model"] = None
+
     sig = run_signature(cfg)
-    prefix = make_filename_prefix(
-        cfg, noisy=noisy, seed=seed, hash_str=sig, ssvqe=False
-    )
+    prefix = make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, algo="VQD")
     result_path = RESULTS_DIR / f"{prefix}.json"
 
     if not force and result_path.exists():
@@ -250,15 +270,13 @@ def run_vqd(
     # 5) Storage
     energies_per_state: List[List[float]] = [[] for _ in range(num_states)]
     final_params: List[np.ndarray] = []
-    reference_states: List[np.ndarray] = (
-        []
-    )  # stored statevectors / density matrices (detached)
+    reference_states: List[np.ndarray] = []  # detached references for deflation
 
-    # 6) Solve sequentially
+    # 6) Solve sequentially for n=0..num_states-1
     for n in range(num_states):
         opt = build_optimizer(optimizer_name, stepsize=stepsize)
 
-        # Init params for this state
+        # Init params for this state (offset seed to diversify starts)
         _, p_init = build_ansatz(
             ansatz_name,
             num_wires,
@@ -300,7 +318,7 @@ def run_vqd(
 
             def _cost(th):
                 e = energy_qnode(th)
-                st = state_qnode(th)  # keep differentiable for penalty influence
+                st = state_qnode(th)  # keep differentiable so penalty shapes optimization
                 pen = 0.0
                 for prev in reference_states:
                     pen = pen + _state_overlap_metric(prev, st, noisy=noisy)
@@ -329,7 +347,7 @@ def run_vqd(
     save_run_record(prefix, {"config": cfg, "result": result})
     print(f"💾 Saved VQD run to {result_path}")
 
-    # 8) Plot (reuse multi-state plotter)
+    # 8) Plot
     if plot:
         try:
             plot_multi_state_convergence(
