@@ -318,7 +318,9 @@ def run_vqd(
 
             def _cost(th):
                 e = energy_qnode(th)
-                st = state_qnode(th)  # keep differentiable so penalty shapes optimization
+                st = state_qnode(
+                    th
+                )  # keep differentiable so penalty shapes optimization
                 pen = 0.0
                 for prev in reference_states:
                     pen = pen + _state_overlap_metric(prev, st, noisy=noisy)
