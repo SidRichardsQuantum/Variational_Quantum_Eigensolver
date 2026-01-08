@@ -17,7 +17,7 @@ Therefore:
 
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence
+from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
