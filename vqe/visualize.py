@@ -1,10 +1,23 @@
 """
 vqe.visualize
 -------------
-Plotting utilities for VQE and SSVQE.
+Plotting utilities for VQE, SSVQE, and VQD.
+
+Notes on multi-state plotting
+-----------------------------
+For SSVQE/VQD, trajectories are often indexed by *reference state* (SSVQE) or
+*deflation step* (VQD). These curves can cross, and “state swapping” can occur
+in terms of which curve ends at the lowest final energy.
+
+Therefore:
+- This module does NOT attempt to reorder trajectories automatically.
+- If you want consistent “E0/E1/…” semantics in plots, pass an explicit
+  `state_labels=` (or `order=`) based on your own policy (e.g. final-energy sort).
 """
 
 from __future__ import annotations
+
+from typing import Iterable, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
@@ -191,7 +204,26 @@ def plot_multi_state_convergence(
     seed: int | None = None,
     show: bool = True,
     save: bool = True,
+    # New (backwards compatible) controls:
+    state_labels: Optional[Sequence[str]] = None,
+    order: Optional[Sequence[int]] = None,
 ):
+    """
+    Plot multi-state convergence trajectories.
+
+    Parameters
+    ----------
+    energies_per_state
+        Either a list-of-lists (index semantics defined by the caller) or a dict.
+        If dict, keys are sorted and values plotted in that order.
+    state_labels
+        Optional labels for each plotted curve. If omitted, uses "State i".
+    order
+        Optional permutation to reorder curves BEFORE plotting.
+        Useful if you want to plot in a canonical order (e.g., final-energy-sorted),
+        while keeping the underlying data unchanged.
+        Example: order=[1,0] will plot trajectory[1] as "State 0" (or label 0).
+    """
     if optimizer_name is not None:
         optimizer = optimizer_name
 
@@ -205,18 +237,37 @@ def plot_multi_state_convergence(
             energies_per_state[k] for k in sorted(energies_per_state.keys())
         ]
     else:
-        trajectories = energies_per_state
+        trajectories = list(energies_per_state)
+
+    if order is not None:
+        order = [int(i) for i in order]
+        if sorted(order) != list(range(len(trajectories))):
+            raise ValueError(
+                f"order must be a permutation of 0..{len(trajectories)-1}, got {order}"
+            )
+        trajectories = [trajectories[i] for i in order]
+        if state_labels is not None:
+            state_labels = [state_labels[i] for i in order]
 
     n_states = len(trajectories)
 
+    if state_labels is not None and len(state_labels) != n_states:
+        raise ValueError(
+            f"state_labels must have length {n_states}, got {len(state_labels)}"
+        )
+
     plt.figure(figsize=(7, 4.5))
     for i, E_list in enumerate(trajectories):
-        plt.plot(E_list, label=f"State {i}")
+        lbl = state_labels[i] if state_labels is not None else f"State {i}"
+        plt.plot(E_list, label=lbl)
 
-    if ssvqe_or_vqd.upper() == "SSVQE":
+    tag = str(ssvqe_or_vqd).strip().upper()
+    if tag == "SSVQE":
         method_name = "SSVQE"
-    elif ssvqe_or_vqd.upper() == "VQD":
+    elif tag == "VQD":
         method_name = "VQD"
+    else:
+        method_name = tag
 
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")

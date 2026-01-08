@@ -144,7 +144,8 @@ All QPE notebooks are now pure package clients, importing exclusively from qpe.c
    - `H3plus/Noiseless.ipynb` and `H3plus/Noisy.ipynb`
    - `H2O/Bond_Angle.ipynb`
 4. **Excited states**
-   - `H2/SSVQE.ipynb`
+   - `H2/SSVQE.ipynb` and `H2/VQD.ipynb`
+   - `H2/SSVQE_Comparisons.ipynb` and `H2/VQD_Comparisons.ipynb`
 5. **QPE**
    - `qpe/H2/Noiseless.ipynb`
    - `qpe/H2/Noisy.ipynb`

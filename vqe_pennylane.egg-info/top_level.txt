@@ -1,3 +1,0 @@
-qpe
-vqe
-vqe_qpe_common

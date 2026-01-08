@@ -13,6 +13,8 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
   - [Optimizers](#optimizers)
   - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
   - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+   - [Subspace-Search VQE (SSVQE)](#subspace-search-vqe-ssvqe)
+   - [Variational Quantum Deflation (VQD)](#variational-quantum-deflation-vqd)
 - [Quantum Phase Estimation](#quantum-phase-estimation)
 - [Noise Types](#noise-types)
 - [References](#references)
@@ -274,19 +276,93 @@ Compute 𝓛  → update all θ(i) with Adam
 Result: approximate low-lying spectrum {E₀, E₁, …} from a single joint optimization.
 ```
 
-#### Implementation Details for H₃⁺
+#### Variational Quantum Deflation (VQD)
 
-- **Ansatz**: UCCSD with both single and double excitations.
-- **States**: Two independent parameter sets ($\psi_0$ and $\psi_1$) initialized differently.
-- **Penalty Term**: Proportional to $|⟨\psi_0|\psi_1⟩|^2$ with a tunable multiplier.
-- **Optimizer**: Adam, step size tuned for stability and separation.
-- **Outcome**: Variational estimates of both the ground-state and first excited-state energies, with an accurate excitation gap.
+Variational Quantum Deflation (VQD) is an alternative variational approach for computing
+**excited states sequentially**, rather than simultaneously.
 
-#### Key Points
+Instead of optimizing multiple states in a single joint objective (as in SSVQE),
+VQD proceeds by **iteratively deflating previously found eigenstates**.
 
-- Allows **simultaneous** calculation of ground and excited states.
-- Optimization can become more challenging as the number of states increases.
-- Choice of ansatz and penalty strength critically affects convergence and state separation.
+---
+
+### VQD Principle
+
+1. First, solve a standard VQE problem to obtain the ground state:
+
+$$E_0 = \min_{\theta_0} \langle \psi(\theta_0) | H | \psi(\theta_0) \rangle$$
+
+2. For the $n$-th excited state, minimize the modified cost function:
+
+$$\mathcal{L}_n(\theta_n) = \langle \psi(\theta_n) | H | \psi(\theta_n) \rangle$$
+
+$$\beta \sum_{k < n} \mathcal{O}(\psi_k, \psi_n)$$
+
+where:
+- $\psi_k$ are **previously converged states**
+- $\beta$ is a tunable deflation strength
+- $\mathcal{O}$ is an overlap penalty enforcing orthogonality
+
+---
+
+#### Overlap Penalty
+
+The overlap metric depends on whether the simulation is noiseless or noisy:
+
+**Noiseless case**
+
+$$\mathcal{O}(\psi_k, \psi_n) = |\langle \psi_k | \psi_n \rangle|^2$$
+
+**Noisy case**
+
+$$\mathcal{O}(\rho_k, \rho_n) = \mathrm{Tr}(\rho_k \rho_n)$$
+
+This formulation allows VQD to remain valid when circuits are executed on
+mixed-state simulators or noisy hardware.
+
+---
+
+#### k-State Generalization
+
+VQD naturally generalizes to an arbitrary number of states:
+
+- State 0: standard VQE
+- State 1: deflated against state 0
+- State 2: deflated against states 0 and 1
+- …
+- State $k-1$: deflated against all lower states
+
+Each state is optimized **independently**, with its own parameter vector and
+its own optimization loop.
+
+---
+
+#### Beta Scheduling
+
+To improve stability, the deflation strength $\beta$ is typically **ramped** during optimization:
+
+$$\beta(t) \in [\beta_{\text{start}}, \beta_{\text{end}}]$$
+
+Common schedules include:
+- Linear ramps
+- Cosine ramps with smooth turn-on
+- Optional warm-up periods with $\beta = 0$
+
+This avoids early optimization being dominated by overlap penalties before
+the energy landscape is sufficiently explored.
+
+---
+
+### Comparison with SSVQE
+
+| Method | Optimization | Orthogonality | Noise support | Scaling |
+|------|-------------|---------------|---------------|---------|
+| **SSVQE** | Simultaneous | Explicit pairwise penalties | Supported | Harder with many states |
+| **VQD** | Sequential | Deflation against past states | Supported | Naturally k-state |
+
+In this project:
+- **SSVQE** is used for pedagogical demonstrations and small subspaces
+- **VQD** is preferred for systematic, scalable excited-state studies
 
 ---
 
@@ -294,8 +370,10 @@ Result: approximate low-lying spectrum {E₀, E₁, …} from a single joint opt
 
 The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting eigenvalues of unitary operators.  
 In the context of quantum chemistry, QPE can be used to determine the electronic ground-state energy of a molecule by estimating the eigenenergies of the time-evolution operator.
+
 QPE is implemented for molecules defined in `vqe_qpe_common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
 This guarantees consistent chemistry and reproducible comparisons between VQE and QPE.
+In contrast to VQE-based excited-state methods (SSVQE and VQD), QPE extracts eigenvalues directly via phase estimation, without variational optimization.
 
 ### QPE Background
 
@@ -329,11 +407,14 @@ QPE operates by coupling a register of $n$ qubits, which encodes the phase infor
 
 2. **Create Superposition**:
    - Apply Hadamard gates to the first register to produce:
+
     $$\frac{1}{2^{n/2}} \sum_{k=0}^{2^n-1} |k⟩.$$
 
 3. **Controlled Unitary Operations**:
    - Apply a sequence of controlled time-evolutions $U^{2^k}$, where each qubit in the first register controls a different power of $U$:
+
     $$\prod_{k=0}^{n-1} \text{C-}U^{2^k}.$$
+
    - These operations entangle the phase and molecular information.
 
 4. **Inverse Quantum Fourier Transform (IQFT)**:
@@ -345,6 +426,7 @@ QPE operates by coupling a register of $n$ qubits, which encodes the phase infor
 
 6. **Energy Recovery**:
    - The measured phase is converted to the molecular energy:
+   
     $$E = -\frac{2\pi\theta}{t}.$$
 
 In this implementation, each controlled-unitary block uses **trotterized time evolution**, with the number of Trotter steps configurable from the CLI or Python API.  
@@ -425,6 +507,8 @@ Used in:
    • VQE (after each ansatz layer)
    • QPE (after each controlled evolution step)
 ```
+
+For excited-state methods (SSVQE and VQD), noise is handled consistently by computing overlap penalties using density-matrix inner products rather than statevector overlaps.
 
 ### Depolarizing Noise
 

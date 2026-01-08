@@ -1,91 +1,79 @@
 """
 vqe.__init__.py
----
-A modular Variational Quantum Eigensolver (VQE) and SSVQE toolkit built on PennyLane.
+---------------
+Public API surface for the VQE subpackage.
 
-Public API:
-    - run_vqe
-    - run_ssvqe
-    - run_vqe_noise_sweep
-    - run_vqe_optimizer_comparison
-    - run_vqe_ansatz_comparison
-    - run_vqe_multi_seed_noise
-    - run_vqe_geometry_scan
-    - run_vqe_mapping_comparison
+This package provides:
+- Ground-state VQE workflows (run, sweeps, comparisons, scans)
+- Excited-state solvers:
+    * SSVQE (joint, shared-parameter subspace method)
+    * VQD   (sequential deflation method)
+- Shared plotting helpers used across notebooks and CLI
 
-    - get_ansatz, init_params, ANSATZES
-    - get_optimizer
-    - build_hamiltonian, generate_geometry
-    - make_run_config_dict, run_signature, save_run_record, ensure_dirs
-
-    - Plotting helpers (visualize.*)
+Design notes
+------------
+- Keep imports lightweight and stable for downstream users.
+- Prefer re-exporting the primary entrypoints rather than internal helpers.
 """
 
-from importlib.metadata import version as _pkg_version
+from __future__ import annotations
 
-__version__ = _pkg_version("vqe-pennylane")
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
-# ------------------------------------------------------------------
-# Core VQE APIs
-# ------------------------------------------------------------------
-from .core import (
+# Version ----------------------------------------------------------------------
+try:
+    __version__ = _pkg_version("vqe-pennylane")
+except PackageNotFoundError:  # pragma: no cover
+    # Allows editable installs / local runs without installed dist metadata.
+    __version__ = "0.0.0"
+
+
+# Core VQE APIs ----------------------------------------------------------------
+from .core import (  # noqa: E402
     run_vqe,
-    run_vqe_noise_sweep,
-    run_vqe_optimizer_comparison,
     run_vqe_ansatz_comparison,
-    run_vqe_multi_seed_noise,
     run_vqe_geometry_scan,
     run_vqe_mapping_comparison,
+    run_vqe_multi_seed_noise,
+    run_vqe_noise_sweep,
+    run_vqe_optimizer_comparison,
 )
 
-# ------------------------------------------------------------------
-# Ansatz registry & utilities
-# ------------------------------------------------------------------
-from .ansatz import get_ansatz, init_params, ANSATZES
+# Ansatz registry & utilities ---------------------------------------------------
+from .ansatz import ANSATZES, get_ansatz, init_params  # noqa: E402
 
-# ------------------------------------------------------------------
-# Optimizers
-# ------------------------------------------------------------------
-from .optimizer import get_optimizer
+# Optimizers -------------------------------------------------------------------
+from .optimizer import get_optimizer  # noqa: E402
 
-# ------------------------------------------------------------------
-# Hamiltonian & geometry
-# ------------------------------------------------------------------
-from .hamiltonian import build_hamiltonian, generate_geometry
+# Hamiltonian & geometry --------------------------------------------------------
+from .hamiltonian import build_hamiltonian, generate_geometry  # noqa: E402
 
-# ------------------------------------------------------------------
-# I/O utilities (config, hashing, results)
-# ------------------------------------------------------------------
+# I/O utilities (config, hashing, results) -------------------------------------
 from .io_utils import (
+    ensure_dirs,
     make_run_config_dict,
     run_signature,
     save_run_record,
-    ensure_dirs,
-)
+)  # noqa: E402
 
-# ------------------------------------------------------------------
-# Visualization utilities
-# ------------------------------------------------------------------
-from .visualize import (
+# Visualization utilities -------------------------------------------------------
+from .visualize import (  # noqa: E402
+    plot_ansatz_comparison,
     plot_convergence,
     plot_multi_state_convergence,
-    plot_optimizer_comparison,
-    plot_ansatz_comparison,
     plot_noise_statistics,
+    plot_optimizer_comparison,
 )
 
-# ------------------------------------------------------------------
-# SSVQE
-# ------------------------------------------------------------------
-from .ssvqe import run_ssvqe
+# Excited-state methods ---------------------------------------------------------
+from .ssvqe import run_ssvqe  # noqa: E402
+from .vqd import run_vqd  # noqa: E402
 
-# ------------------------------------------------------------------
-# VQD
-# ------------------------------------------------------------------
-from .vqd import run_vqd
 
 __all__ = [
-    # Core VQE API
+    # Package metadata
+    "__version__",
+    # Core VQE workflows
     "run_vqe",
     "run_vqe_noise_sweep",
     "run_vqe_optimizer_comparison",
@@ -93,24 +81,23 @@ __all__ = [
     "run_vqe_multi_seed_noise",
     "run_vqe_geometry_scan",
     "run_vqe_mapping_comparison",
-    # Ansatz tools
+    # Excited-state methods
+    "run_ssvqe",
+    "run_vqd",
+    # Ansatz / optimizer registries
+    "ANSATZES",
     "get_ansatz",
     "init_params",
-    "ANSATZES",
-    # Optimizers
     "get_optimizer",
-    # Hamiltonian
+    # Hamiltonian / geometry
     "build_hamiltonian",
     "generate_geometry",
-    # I/O
+    # I/O helpers
     "make_run_config_dict",
     "run_signature",
     "save_run_record",
     "ensure_dirs",
-    # Excited state methods
-    "run_ssvqe",
-    "run_vqd",
-    # Visualization
+    # Plotting
     "plot_convergence",
     "plot_optimizer_comparison",
     "plot_ansatz_comparison",

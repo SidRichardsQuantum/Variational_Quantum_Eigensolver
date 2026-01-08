@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.2.5] – 2026-01-XX
+
+### Added
+- **Variational Quantum Deflation (VQD)** implementation for excited-state calculations:
+  - Sequential k-state VQD workflow with deflation against previously converged states.
+  - Noise-aware overlap penalties using density-matrix inner products.
+  - Configurable deflation strength with support for ramped beta schedules.
+  - Dedicated convergence plotting for multi-state VQD runs.
+- Fully refactored **Subspace-Search VQE (SSVQE)** workflow:
+  - Unified API consistent with the core VQE engine.
+  - Explicit handling of k-state objectives with reproducible ordering of energies.
+  - Improved noise support and plotting via shared visualization utilities.
+- New VQE excited-state example notebooks:
+  - `SSVQE.ipynb` and `SSVQE_Comparisons.ipynb`
+  - `VQD.ipynb` and `VQD_Comparisons.ipynb`
+- Public API exposure of excited-state solvers:
+  - `run_ssvqe` and `run_vqd` available directly via `vqe` package imports.
+
+### Changed
+- Updated CLI (`python -m vqe`) to support:
+  - Explicit SSVQE execution mode.
+  - Clear separation between ground-state, SSVQE, and VQD workflows.
+- Documentation updates across `README.md`, `USAGE.md`, and `THEORY.md`:
+  - Excited-state methods promoted to first-class features.
+  - Formal theoretical treatment of both SSVQE and VQD, including noise-aware formulations.
+- Version bumped from **0.2.4 → 0.2.5**.
+
+### Internal
+- Refactored excited-state logic to reuse the shared VQE engine (devices, ansatz, noise, caching).
+- Ensured deterministic ordering of excited-state energies independent of weight choices.
+- Maintained full backwards compatibility with existing VQE and QPE APIs.
+
+---
+
 ## [0.2.3] – 2025-12-22
 
 ### Added

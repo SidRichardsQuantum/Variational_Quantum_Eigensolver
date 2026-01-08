@@ -15,19 +15,22 @@ It supports:
     - Geometry scans (bond length, bond angle)
     - Fermion-to-qubit mapping comparison
     - SSVQE for excited states
+    - VQD for excited states
 
-All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe.
+All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe / vqe.vqd.run_vqd.
 """
 
 from __future__ import annotations
 
 import argparse
+from typing import List, Optional
 
 import numpy as np
 
 from vqe import (
     plot_convergence,
     run_ssvqe,
+    run_vqd,
     run_vqe,
     run_vqe_ansatz_comparison,
     run_vqe_geometry_scan,
@@ -38,36 +41,102 @@ from vqe import (
 )
 
 
+def _parse_weights(
+    raw: Optional[List[float]], *, num_states: int
+) -> Optional[List[float]]:
+    if raw is None:
+        return None
+    ws = [float(x) for x in raw]
+    if len(ws) != int(num_states):
+        raise ValueError(
+            f"--weights must provide exactly num_states={num_states} values; got {len(ws)}"
+        )
+    if any(w <= 0 for w in ws):
+        raise ValueError("--weights values must be strictly positive.")
+    return ws
+
+
 # ================================================================
 # SPECIAL MODES DISPATCHER
 # ================================================================
-def handle_special_modes(args):
+def handle_special_modes(args) -> bool:
     """
     Dispatch CLI options for all extended experiment modes.
     Returns True if a special mode handled the execution.
     """
 
     # ---------------------------
-    #  SSVQE
+    #  SSVQE (excited states)
     # ---------------------------
     if args.ssvqe:
         print("🔹 Running SSVQE (excited states)...")
+        if args.noisy and args.mapping != "jordan_wigner":
+            print(
+                "ℹ️  Note: SSVQE currently uses the package default mapping (jordan_wigner)."
+            )
+
+        weights = _parse_weights(args.weights, num_states=args.num_states)
+
         res = run_ssvqe(
             molecule=args.molecule,
+            num_states=int(args.num_states),
+            weights=weights,
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
-            steps=args.steps,
-            stepsize=args.stepsize,
-            penalty_weight=args.penalty_weight,
-            seed=args.seed,
-            noisy=args.noisy,
-            depolarizing_prob=args.depolarizing_prob,
-            amplitude_damping_prob=args.amplitude_damping_prob,
-            force=args.force,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            noisy=bool(args.noisy),
+            depolarizing_prob=float(args.depolarizing_prob),
+            amplitude_damping_prob=float(args.amplitude_damping_prob),
+            noise_model=None,
+            reference_states=None,
+            plot=bool(args.plot),
+            force=bool(args.force),
         )
-        print("Final energies per state:")
-        for i, Es in enumerate(res["energies_per_state"]):
-            print(f"  E{i}: {Es[-1]:.8f} Ha")
+
+        finals = [float(traj[-1]) for traj in res["energies_per_state"]]
+        print("Final energies per state (reported as E0, E1, ...):")
+        for i, e in enumerate(finals):
+            print(f"  E{i}: {e:+.10f} Ha")
+        return True
+
+    # ---------------------------
+    #  VQD (excited states)
+    # ---------------------------
+    if args.vqd:
+        print("🔹 Running VQD (excited states via deflation)...")
+        if args.mapping != "jordan_wigner":
+            print(
+                "ℹ️  Note: VQD currently uses the package default mapping (jordan_wigner)."
+            )
+
+        res = run_vqd(
+            molecule=args.molecule,
+            num_states=int(args.num_states),
+            beta=float(args.beta),
+            beta_start=(
+                args.beta_start if args.beta_start is None else float(args.beta_start)
+            ),
+            beta_ramp=str(args.beta_ramp),
+            beta_hold_fraction=float(args.beta_hold_fraction),
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            noisy=bool(args.noisy),
+            depolarizing_prob=float(args.depolarizing_prob),
+            amplitude_damping_prob=float(args.amplitude_damping_prob),
+            noise_model=None,
+            plot=bool(args.plot),
+            force=bool(args.force),
+        )
+
+        finals = [float(traj[-1]) for traj in res["energies_per_state"]]
+        print("Final energies per state (reported as E0, E1, ...):")
+        for i, e in enumerate(finals):
+            print(f"  E{i}: {e:+.10f} Ha")
         return True
 
     # ---------------------------
@@ -105,8 +174,10 @@ def handle_special_modes(args):
     # Geometry scan
     # ---------------------------
     if args.scan_geometry:
+        if args.range is None:
+            raise ValueError("--scan-geometry requires --range START END NUM")
         start, end, num = args.range
-        values = np.linspace(start, end, int(num))
+        values = np.linspace(float(start), float(end), int(num))
         run_vqe_geometry_scan(
             molecule=args.scan_geometry,
             param_name=args.param_name,
@@ -210,10 +281,10 @@ def handle_special_modes(args):
 # ================================================================
 # MAIN ENTRYPOINT
 # ================================================================
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         prog="vqe",
-        description="VQE/SSVQE Simulation Toolkit",
+        description="VQE / SSVQE / VQD Simulation Toolkit",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -222,7 +293,11 @@ def main():
     # ------------------------------------------------------------------
     core = parser.add_argument_group("Core")
     core.add_argument(
-        "-m", "--molecule", type=str, default="H2", help="Molecule (H2, LiH, H2O, H3+)"
+        "-m",
+        "--molecule",
+        type=str,
+        default="H2",
+        help="Molecule (H2, LiH, H2O, H3+)",
     )
     core.add_argument("-a", "--ansatz", type=str, default="UCCSD", help="Ansatz name")
     core.add_argument(
@@ -234,13 +309,21 @@ def main():
         type=str,
         default="jordan_wigner",
         choices=["jordan_wigner", "bravyi_kitaev", "parity"],
-        help="Fermion-to-qubit mapping",
+        help="Fermion-to-qubit mapping (applies to VQE workflows; excited-state solvers currently default to jordan_wigner).",
     )
     core.add_argument(
-        "-s", "--steps", type=int, default=50, help="Number of optimization iterations"
+        "-s",
+        "--steps",
+        type=int,
+        default=50,
+        help="Number of optimization iterations",
     )
     core.add_argument(
-        "-lr", "--stepsize", type=float, default=0.2, help="Optimizer step size"
+        "-lr",
+        "--stepsize",
+        type=float,
+        default=0.2,
+        help="Optimizer step size",
     )
 
     # ------------------------------------------------------------------
@@ -266,28 +349,72 @@ def main():
         choices=["depolarizing", "amplitude", "combined"],
         default="depolarizing",
     )
-
     exp.add_argument("--mapping-comparison", action="store_true")
 
     # ------------------------------------------------------------------
-    # Geometry & SSVQE
+    # Geometry & excited-state solvers
     # ------------------------------------------------------------------
-    geom = parser.add_argument_group("Geometry / SSVQE")
-    geom.add_argument(
+    special = parser.add_argument_group("Geometry / Excited States")
+    special.add_argument(
         "--scan-geometry",
         type=str,
         help="Parametric geometry: H2_BOND, LiH_BOND, H2O_ANGLE",
     )
-    geom.add_argument(
+    special.add_argument(
         "--range",
         nargs=3,
         type=float,
         metavar=("START", "END", "NUM"),
-        help="Geometry scan range",
+        help="Geometry scan range (required with --scan-geometry)",
     )
-    geom.add_argument("--param-name", type=str, default="param")
-    geom.add_argument("--ssvqe", action="store_true")
-    geom.add_argument("--penalty-weight", type=float, default=10.0)
+    special.add_argument("--param-name", type=str, default="param")
+
+    # Excited-state flags (mutually exclusive)
+    excited = special.add_mutually_exclusive_group()
+    excited.add_argument(
+        "--ssvqe", action="store_true", help="Run SSVQE (excited states)"
+    )
+    excited.add_argument("--vqd", action="store_true", help="Run VQD (excited states)")
+
+    special.add_argument(
+        "--num-states",
+        type=int,
+        default=2,
+        help="Number of states for SSVQE/VQD (k-state)",
+    )
+
+    # SSVQE-specific knobs
+    special.add_argument(
+        "--weights",
+        nargs="+",
+        type=float,
+        default=None,
+        help="SSVQE weights w0 w1 ... (must provide exactly --num-states values). Default: [1,2,3,...].",
+    )
+
+    # VQD-specific knobs
+    special.add_argument(
+        "--beta", type=float, default=10.0, help="VQD deflation strength (beta_end)"
+    )
+    special.add_argument(
+        "--beta-start",
+        type=float,
+        default=None,
+        help="VQD beta_start (default: 0.0 if omitted)",
+    )
+    special.add_argument(
+        "--beta-ramp",
+        type=str,
+        choices=["linear", "cosine"],
+        default="linear",
+        help="VQD beta ramp schedule",
+    )
+    special.add_argument(
+        "--beta-hold-fraction",
+        type=float,
+        default=0.0,
+        help="VQD hold fraction in [0,1) before ramping beta",
+    )
 
     # ------------------------------------------------------------------
     # Misc
@@ -310,6 +437,10 @@ def main():
     print(f"• Steps:      {args.steps}  | Stepsize: {args.stepsize}")
     print(f"• Noise:      {'ON' if args.noisy else 'OFF'}")
     print(f"• Seed:       {args.seed}")
+    if args.ssvqe:
+        print(f"• Mode:       SSVQE (num_states={args.num_states})")
+    elif args.vqd:
+        print(f"• Mode:       VQD   (num_states={args.num_states}, beta={args.beta})")
     print()
 
     # Try special modes first

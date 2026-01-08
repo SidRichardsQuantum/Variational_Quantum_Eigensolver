@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence, Tuple
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -54,7 +54,9 @@ def _apply_double_excitation_to_det(hf: np.ndarray, exc: Sequence[int]) -> list[
     if det[i] != 1 or det[j] != 1:
         raise ValueError(f"Invalid double excitation {exc}: {i},{j} must be occupied.")
     if det[a] != 0 or det[b] != 0:
-        raise ValueError(f"Invalid double excitation {exc}: {a},{b} must be unoccupied.")
+        raise ValueError(
+            f"Invalid double excitation {exc}: {a},{b} must be unoccupied."
+        )
     if len({i, j, a, b}) != 4:
         raise ValueError(f"Invalid double excitation {exc}: indices must be distinct.")
 
@@ -159,9 +161,69 @@ def _validate_reference_states(
             )
 
     if len({tuple(s) for s in refs}) != len(refs):
-        raise ValueError("reference_states contain duplicates; cannot enforce orthogonality.")
+        raise ValueError(
+            "reference_states contain duplicates; cannot enforce orthogonality."
+        )
 
     return refs
+
+
+def _compute_sorted_finals(
+    energies_per_state: Sequence[Sequence[float]],
+) -> Tuple[list[float], list[int], list[float]]:
+    """
+    Compute canonical energy-ranked finals without reordering trajectories.
+
+    Returns
+    -------
+    final_energies_by_ref : list[float]
+        Final energies in reference-index order (k corresponds to reference_states[k]).
+    final_order : list[int]
+        Permutation mapping: sorted index -> reference index.
+        Example: final_order=[1,0] means the lowest energy came from reference 1.
+    final_energies_sorted : list[float]
+        Final energies sorted ascending (E0 <= E1 <= ...).
+    """
+    if not energies_per_state:
+        return [], [], []
+
+    finals_by_ref: list[float] = []
+    for k, traj in enumerate(energies_per_state):
+        if traj is None or len(traj) == 0:
+            raise ValueError(f"energies_per_state[{k}] is empty; cannot sort finals.")
+        finals_by_ref.append(float(traj[-1]))
+
+    order = list(np.argsort(np.asarray(finals_by_ref, dtype=float)))
+    finals_sorted = [finals_by_ref[i] for i in order]
+    return finals_by_ref, order, finals_sorted
+
+
+def _ensure_sorted_fields_in_result(result: dict) -> dict:
+    """
+    Ensure sorted-final fields exist in a result dict (for cache back-compat).
+
+    This does NOT reorder trajectories; it only adds:
+      - final_energies_by_ref
+      - final_order
+      - final_energies_sorted
+    """
+    if "energies_per_state" not in result:
+        return result
+
+    if (
+        "final_energies_by_ref" in result
+        and "final_order" in result
+        and "final_energies_sorted" in result
+    ):
+        return result
+
+    finals_by_ref, order, finals_sorted = _compute_sorted_finals(
+        result["energies_per_state"]
+    )
+    result["final_energies_by_ref"] = finals_by_ref
+    result["final_order"] = order
+    result["final_energies_sorted"] = finals_sorted
+    return result
 
 
 def run_ssvqe(
@@ -205,6 +267,15 @@ def run_ssvqe(
     -----
     - Supports legacy depolarizing/amplitude knobs AND an arbitrary `noise_model(wires)` callable.
     - If `noisy=False`, no noise is applied even if noise_model is provided.
+
+    Output ordering contract (important)
+    ------------------------------------
+    - energies_per_state[k] is ALWAYS tied to reference_states[k] (reference-index semantics).
+    - To avoid “state swapping” in downstream comparisons, the result includes:
+        * final_energies_by_ref   (reference-index finals)
+        * final_order            (sorted index -> reference index)
+        * final_energies_sorted  (ascending finals, canonical E0/E1/...)
+      Trajectories are NOT reordered (energy curves can cross).
     """
     if num_states < 2:
         raise ValueError("SSVQE is typically used with num_states >= 2")
@@ -238,7 +309,9 @@ def run_ssvqe(
     # 3) Reference states (orthogonal computational basis)
     if reference_states is None:
         if str(ansatz_name).strip().upper().startswith("UCC"):
-            singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
+            singles, doubles, hf_state = _build_ucc_data(
+                symbols, coordinates, basis=basis
+            )
             refs = _ucc_reference_states_from_excitations(
                 hf_state,
                 singles,
@@ -256,7 +329,9 @@ def run_ssvqe(
                         refs.append(s)
             reference_states = refs[: int(num_states)]
         else:
-            reference_states = _default_reference_states(int(num_states), int(num_wires))
+            reference_states = _default_reference_states(
+                int(num_states), int(num_wires)
+            )
 
     reference_states = _validate_reference_states(
         reference_states,
@@ -281,7 +356,9 @@ def run_ssvqe(
     @qml.qnode(dev, diff_method=diff_method)
     def energy(theta, reference_state):
         # Always prepare the reference determinant explicitly (ansatz-agnostic)
-        qml.BasisState(np.array(reference_state, dtype=int), wires=range(int(num_wires)))
+        qml.BasisState(
+            np.array(reference_state, dtype=int), wires=range(int(num_wires))
+        )
 
         # Apply the ansatz as “U(theta)” only.
         # For chemistry ansatzes that support it, disable internal reference preparation.
@@ -325,18 +402,23 @@ def run_ssvqe(
     cfg["weights"] = [float(w) for w in weights]
     cfg["reference_states"] = [list(map(int, s)) for s in reference_states]
     cfg["noise_model"] = (
-        getattr(noise_model, "__name__", str(noise_model)) if noise_model is not None else None
+        getattr(noise_model, "__name__", str(noise_model))
+        if noise_model is not None
+        else None
     )
 
     sig = run_signature(cfg)
-    prefix = make_filename_prefix(cfg, noisy=bool(noisy), seed=int(seed), hash_str=sig, algo="SSVQE")
+    prefix = make_filename_prefix(
+        cfg, noisy=bool(noisy), seed=int(seed), hash_str=sig, algo="SSVQE"
+    )
     result_path = RESULTS_DIR / f"{prefix}.json"
 
     if not force and result_path.exists():
         print(f"📂 Using cached SSVQE result: {result_path}")
         with result_path.open("r", encoding="utf-8") as f:
             record = json.load(f)
-        return record["result"]
+        cached = record.get("result", {})
+        return _ensure_sorted_fields_in_result(cached)
 
     # 8) Cost
     opt = build_optimizer(optimizer_name, stepsize=float(stepsize))
@@ -355,20 +437,30 @@ def run_ssvqe(
         except AttributeError:
             params = opt.step(cost, params)
 
-        # record each state's energy under current shared params
+        # record each state's energy under current shared params (reference-index semantics)
         for k in range(int(num_states)):
             energies_per_state[k].append(float(energy(params, reference_states[k])))
 
-    # 10) Save
+    # 10) Final canonical (sorted) view
+    finals_by_ref, final_order, finals_sorted = _compute_sorted_finals(
+        energies_per_state
+    )
+
+    # 11) Save
     result = {
+        # Reference-index trajectories (do NOT reorder)
         "energies_per_state": energies_per_state,
         "final_params": params.tolist(),
         "config": cfg,
+        # Canonical finals (stable E0/E1/.. for comparisons)
+        "final_energies_by_ref": finals_by_ref,
+        "final_order": final_order,
+        "final_energies_sorted": finals_sorted,
     }
     save_run_record(prefix, {"config": cfg, "result": result})
     print(f"💾 Saved SSVQE run to {result_path}")
 
-    # 11) Optional plotting (E0/E1 only)
+    # 12) Optional plotting (E0/E1 only; plots reference-index trajectories)
     if plot and int(num_states) >= 2:
         try:
             plot_multi_state_convergence(

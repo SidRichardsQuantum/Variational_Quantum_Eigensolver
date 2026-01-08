@@ -1,3 +1,0 @@
-[console_scripts]
-qpe = qpe.__main__:main
-vqe = vqe.__main__:main

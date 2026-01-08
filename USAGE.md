@@ -1,17 +1,23 @@
 # ⚛️ VQE–QPE Quantum Simulation Suite — Usage Guide
 
-This guide explains how to run the VQE and QPE command-line tools, what the flags do, and where outputs are stored.  
-It complements `README.md` (project overview) and `THEORY.md` (background concepts).
+This guide explains how to run the **VQE** and **QPE** command-line interfaces, what each mode does, and where outputs are stored.
+
+It complements:
+
+* **`README.md`** — project overview and structure
+* **`THEORY.md`** — algorithmic and physical background
 
 ---
 
 ## ⚙️ Installation
 
+### Install from PyPI
+
 ```bash
 pip install vqe-pennylane
 ```
 
-### Install from source
+### Install from source (development mode)
 
 ```bash
 git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
@@ -19,13 +25,13 @@ cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-This installs three packages:
+This installs three Python packages:
 
-- `vqe/` — Variational Quantum Eigensolver  
-- `qpe/` — Quantum Phase Estimation  
-- `vqe_qpe_common/` — Shared Hamiltonian, geometry, and plotting logic  
+* `vqe/` — Variational Quantum Eigensolver (VQE, SSVQE, VQD)
+* `qpe/` — Quantum Phase Estimation
+* `vqe_qpe_common/` — Shared Hamiltonians, molecules, geometry, plotting
 
-Quick check:
+Quick sanity check:
 
 ```bash
 python -c "import vqe, qpe; print('VQE + QPE OK')"
@@ -33,120 +39,226 @@ python -c "import vqe, qpe; print('VQE + QPE OK')"
 
 ---
 
-## 📁 Directory Overview
+## 📁 Output & Directory Layout
+
+All executions automatically cache results and plots.
 
 ```
-├── vqe/                # VQE CLI, engine, ansatz, optimizers, plotting, caching
-├── qpe/                # QPE CLI, engine, noise, trotter, plotting, caching
-├── vqe_qpe_common/     # Shared molecule registry, Hamiltonians, utilities
+├── results/
+│   ├── vqe/            # JSON records (VQE, SSVQE, VQD)
+│   └── qpe/            # JSON records (QPE)
 │
-├── images/             # Saved figures (auto-generated)
-│   ├── vqe/            # VQE plots
-│   └── qpe/            # QPE plots
-│
-├── results/            # Cached JSON run records
-│   ├── vqe/            # VQE results
-│   └── qpe/            # QPE results
-│
-└── notebooks/          # Example VQE / QPE workflows
+├── images/
+│   ├── vqe/            # Convergence, scans, noise plots
+│   └── qpe/            # Phase distributions, sweeps
 ```
 
-All runs save:
+Each run is keyed by a **hash of the full configuration** (molecule, ansatz, optimizer, noise, seed, etc.), ensuring:
 
-| Output | Location |
-|--------|----------|
-| JSON results | `data/vqe/results/`, `data/qpe/results/` |
-| Plots | `data/vqe/images/`, `data/qpe/images/` |
-| Cached signatures | Included in hashed filenames |
+* deterministic reproducibility
+* safe caching
+* no accidental overwrites
+
+Use `--force` to ignore cached results.
 
 ---
 
 # 🔷 Running VQE
 
-Supported molecules (`vqe.__main__` presets):
+Supported molecules (CLI presets):
 
 ```
 H2, LiH, H2O, H3+
 ```
 
-VQE supports:  
-ground-state VQE, geometry scans, optimizer comparisons, mapping comparisons, noise sweeps, SSVQE excited states.
+VQE supports:
+
+* Ground-state VQE
+* Geometry scans (bond length / bond angle)
+* Optimizer comparisons
+* Ansatz comparisons
+* Fermion-to-qubit mapping comparisons
+* Noise sweeps (single- and multi-seed)
+* Excited states via **SSVQE** and **VQD**
 
 ---
 
-## ▶ Basic VQE run
+## ▶ Basic ground-state VQE
 
 ```bash
 python -m vqe --molecule H2
 ```
 
+This performs a standard VQE run using defaults:
+
+* Ansatz: `UCCSD`
+* Optimizer: `Adam`
+* Steps: `50`
+* Mapping: `jordan_wigner`
+
 Outputs:
 
-- convergence plot  
-- JSON experiment record  
+* convergence plot (`images/vqe/`)
+* JSON run record (`results/vqe/`)
 
 ---
 
-## ▶ Choose ansatz & optimizer
+## ▶ Choosing ansatz and optimizer
 
 ```bash
-python -m vqe --molecule H2 -a UCCSD -o Adam
-python -m vqe --molecule H2 -a RY-CZ  -o GradientDescent
-python -m vqe --molecule H2 -a TwoQubit-RY-CNOT -o Momentum
+python -m vqe -m H2 -a UCCSD -o Adam
+python -m vqe -m H2 -a RY-CZ -o GradientDescent
+python -m vqe -m H2 -a StronglyEntanglingLayers -o Momentum
 ```
 
 ---
 
 ## ▶ Geometry scans
 
-H₂ bond-length scan:
+### H₂ bond-length scan
 
 ```bash
-python -m vqe --scan-geometry H2_BOND               --range 0.5 1.5 7               --param-name bond               -a UCCSD
+python -m vqe \
+  --scan-geometry H2_BOND \
+  --range 0.5 1.5 7 \
+  --param-name bond \
+  -a UCCSD
 ```
 
-LiH bond-length scan:
+### LiH bond-length scan
 
 ```bash
-python -m vqe --scan-geometry LiH_BOND --range 1.2 2.5 7
+python -m vqe \
+  --scan-geometry LiH_BOND \
+  --range 1.2 2.5 7
 ```
 
-Water bond-angle scan:
+### H₂O bond-angle scan
 
 ```bash
-python -m vqe --scan-geometry H2O_ANGLE --range 100 115 7
+python -m vqe \
+  --scan-geometry H2O_ANGLE \
+  --range 100 115 7
+```
+
+Each scan averages over seeds (if provided) and plots energy vs geometry.
+
+---
+
+## ▶ Optimizer comparison
+
+```bash
+python -m vqe \
+  -m H2 \
+  --compare-optimizers Adam GradientDescent Momentum
+```
+
+Produces convergence overlays and summary statistics.
+
+---
+
+## ▶ Ansatz comparison
+
+```bash
+python -m vqe \
+  -m H2 \
+  --compare-ansatzes UCCSD RY-CZ StronglyEntanglingLayers
 ```
 
 ---
 
-## ▶ Excited states (SSVQE)
+## ▶ Fermion-to-qubit mapping comparison
 
 ```bash
-python -m vqe --molecule H3+ --ssvqe --penalty-weight 10.0
+python -m vqe \
+  -m H2 \
+  --mapping-comparison
 ```
+
+Compares Jordan–Wigner, Bravyi–Kitaev, and parity mappings.
 
 ---
 
-## ▶ Noise sweeps (multi-seed)
+## ▶ Noise sweeps (single-seed)
 
 ```bash
-python -m vqe --molecule H2 --noise-sweep --p-dep 0.02
+python -m vqe \
+  -m H2 \
+  --noise-sweep
 ```
 
-Note: Noise sweeps are intended for statistical analysis across multiple random seeds rather than single-shot demonstrations.
+Computes ΔE and fidelity relative to a noiseless reference.
+
+---
+
+## ▶ Noise studies (multi-seed statistics)
+
+```bash
+python -m vqe \
+  -m H2 \
+  --multi-seed-noise \
+  --noise-type depolarizing
+```
+
+This mode is intended for **statistical robustness analysis**, not demonstrations.
+
+---
+
+# 🔷 Excited-State Methods
+
+## ▶ Subspace-Search VQE (SSVQE)
+
+SSVQE optimizes multiple states **simultaneously**.
+
+```bash
+python -m vqe \
+  -m H3+ \
+  --ssvqe \
+  --penalty-weight 10.0
+```
+
+Produces energy trajectories for each state and a multi-state convergence plot.
+
+---
+
+## ▶ Variational Quantum Deflation (VQD)
+
+VQD finds excited states **sequentially** using deflation penalties.
+
+VQD is currently exposed via the **Python API** and example notebooks:
+
+```python
+from vqe.vqd import run_vqd
+
+res = run_vqd(
+    molecule="H3+",
+    num_states=3,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    noisy=True,
+    depolarizing_prob=0.02,
+)
+```
+
+CLI support for VQD is intentionally deferred to keep the interface explicit and controlled.
 
 ---
 
 # 🔷 Running QPE
 
-Supported molecules (`qpe.__main__` presets):
+Supported molecules:
 
 ```
 H2, LiH, H2O, H3+
 ```
 
-QPE supports:  
-noiseless/noisy execution, ancilla register size, first-order Trotterization, evolution time `t`, and probability histograms.
+QPE supports:
+
+* Noiseless and noisy execution
+* Configurable ancilla register
+* Trotterized time evolution
+* Histogram and sweep plots
+* Result caching
 
 ---
 
@@ -158,16 +270,14 @@ python -m qpe --molecule H2 --ancillas 4
 
 ---
 
-## ▶ Plotting
+## ▶ Plot phase distribution
 
 ```bash
-python -m qpe --molecule H2 --ancillas 3 --shots 2000 --plot
-```
-
-Save and show plot:
-
-```bash
-python -m qpe --molecule H2 --plot --save-plot
+python -m qpe \
+  --molecule H2 \
+  --ancillas 4 \
+  --shots 2000 \
+  --plot
 ```
 
 ---
@@ -175,57 +285,69 @@ python -m qpe --molecule H2 --plot --save-plot
 ## ▶ Noisy QPE
 
 ```bash
-python -m qpe --molecule H2 --noisy --p-dep 0.05 --p-amp 0.02
+python -m qpe \
+  --molecule H2 \
+  --noisy \
+  --p-dep 0.05 \
+  --p-amp 0.02
 ```
 
 ---
 
-## ▶ Evolution & Trotter parameters
+## ▶ Evolution time & Trotter steps
 
 ```bash
-python -m qpe --molecule H2               --t 2.0               --trotter-steps 4               --ancillas 8               --shots 3000
+python -m qpe \
+  --molecule H2 \
+  --t 2.0 \
+  --trotter-steps 4 \
+  --ancillas 8 \
+  --shots 3000
 ```
 
 ---
 
 # 🔁 Caching & Reproducibility
 
-Every run creates a signature-keyed JSON file.  
-Force recompute:
+All runs are cached by a **full configuration hash**.
+
+Force recomputation:
 
 ```bash
 python -m vqe --molecule H2 --force
 python -m qpe --molecule H2 --force
 ```
 
+Seeds are always recorded in JSON outputs.
+
 ---
 
 # 🧪 Testing
 
 ```bash
-pytest -q
+pytest -v
 ```
 
 Covers:
 
-- VQE & QPE engine smoke tests  
-- molecule registry  
-- shared Hamiltonian builder  
-- CLI entry points  
-- QPE sampling & normalization  
+* VQE & QPE engines
+* Excited-state workflows
+* Molecule registry
+* Hamiltonian construction
+* CLI entrypoints
+* Noise handling
 
 ---
 
 # Citation
 
-If you use this software:
+If you use this software, please cite:
 
-> Sid Richards (2025). *Variational Quantum Eigensolver and Quantum Phase Estimation Comparisons using PennyLane.*
+> Sid Richards (2025). *Variational Quantum Eigensolver and Quantum Phase Estimation using PennyLane.*
 
 ---
 
-📘 Author: Sid Richards (SidRichardsQuantum)
+📘 **Author:** Sid Richards (SidRichardsQuantum)
+LinkedIn: [https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
 
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg" width="20" /> LinkedIn: https://www.linkedin.com/in/sid-richards-21374b30b/
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
