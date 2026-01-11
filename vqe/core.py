@@ -1161,7 +1161,7 @@ def run_vqe_mapping_comparison(
     amplitude_damping_prob=0.0,
     force=False,
     show=True,
-    mapping_kwargs=None,
+    seed=0,
 ):
     """
     Compare different fermion-to-qubit mappings by:
@@ -1191,6 +1191,8 @@ def run_vqe_mapping_comparison(
     import matplotlib.pyplot as plt
 
     from vqe_qpe_common.plotting import build_filename, save_plot
+
+    np.random.seed(seed)
 
     mappings = mappings or ["jordan_wigner", "bravyi_kitaev", "parity"]
     results = {}
@@ -1227,6 +1229,7 @@ def run_vqe_mapping_comparison(
             mapping=mapping,
             force=force,
             plot=False,
+            seed=seed,
         )
 
         results[mapping] = {

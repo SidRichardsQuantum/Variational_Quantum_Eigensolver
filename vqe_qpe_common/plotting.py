@@ -114,7 +114,7 @@ def build_filename(
     )
 
     if ancilla is not None:
-        parts.append(f"ancilla{int(ancilla)}")
+        parts.append(f"{int(ancilla)}ancilla")
 
     if t is not None:
         parts.append(f"t{format_token(float(t))}")
