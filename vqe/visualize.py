@@ -243,7 +243,7 @@ def plot_multi_state_convergence(
         order = [int(i) for i in order]
         if sorted(order) != list(range(len(trajectories))):
             raise ValueError(
-                f"order must be a permutation of 0..{len(trajectories)-1}, got {order}"
+                f"order must be a permutation of 0..{len(trajectories) - 1}, got {order}"
             )
         trajectories = [trajectories[i] for i in order]
         if state_labels is not None:

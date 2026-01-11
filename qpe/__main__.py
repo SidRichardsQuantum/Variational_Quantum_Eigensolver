@@ -24,7 +24,6 @@ from qpe.io_utils import (
     ensure_dirs,
     load_qpe_result,
     save_qpe_result,
-    signature_hash,
 )
 from qpe.visualize import plot_qpe_distribution
 from vqe_qpe_common.molecules import MOLECULES
@@ -37,6 +36,13 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Quantum Phase Estimation (QPE) simulator",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="RNG seed for reproducible caching and simulation",
     )
 
     parser.add_argument(
@@ -123,16 +129,19 @@ def main():
     # ------------------------------------------------------------
     # Caching (hash only depends on run-relevant QPE parameters)
     # ------------------------------------------------------------
-    sig = signature_hash(
-        molecule=args.molecule,
-        n_ancilla=args.ancillas,
-        t=args.t,
-        trotter_steps=args.trotter_steps,
-        noise=noise_params,
-        shots=args.shots,
+    cached = (
+        None
+        if args.force
+        else load_qpe_result(
+            molecule=args.molecule,
+            n_ancilla=int(args.ancillas),
+            t=float(args.t),
+            seed=int(args.seed),
+            shots=int(args.shots) if args.shots is not None else None,
+            noise=noise_params,
+            trotter_steps=int(args.trotter_steps),
+        )
     )
-
-    cached = None if args.force else load_qpe_result(args.molecule, sig)
     if cached is not None:
         print("\n📂 Loaded cached result.")
         result = cached
@@ -160,6 +169,7 @@ def main():
         )
 
         result["system_qubits"] = int(n_qubits)
+        result["seed"] = int(args.seed)
 
         save_qpe_result(result)
         elapsed = time.time() - start_time

@@ -46,5 +46,5 @@ def get_optimizer(name: str = "Adam", stepsize: float = 0.2):
             return cls(stepsize)
 
     raise ValueError(
-        f"Unknown optimizer '{name}'. " f"Available: {', '.join(_OPTIMIZERS.keys())}"
+        f"Unknown optimizer '{name}'. Available: {', '.join(_OPTIMIZERS.keys())}"
     )

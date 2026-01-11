@@ -45,7 +45,7 @@ def two_qubit_ry_cnot(params, wires):
     """
     if len(params) != len(wires) - 1:
         raise ValueError(
-            f"TwoQubit-RY-CNOT expects {len(wires)-1} parameters for {len(wires)} wires, "
+            f"TwoQubit-RY-CNOT expects {len(wires) - 1} parameters for {len(wires)} wires, "
             f"got {len(params)}."
         )
 
@@ -71,8 +71,7 @@ def ry_cz(params, wires):
     """
     if len(params) != len(wires):
         raise ValueError(
-            f"RY-CZ expects one parameter per wire "
-            f"(got {len(params)} vs {len(wires)})"
+            f"RY-CZ expects one parameter per wire (got {len(params)} vs {len(wires)})"
         )
 
     # Local rotations

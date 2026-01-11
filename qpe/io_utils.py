@@ -33,10 +33,10 @@ def signature_hash(
     molecule: str,
     n_ancilla: int,
     t: float,
-    seed: int,
-    shots: Optional[int],
-    noise: Optional[Dict[str, float]],
-    trotter_steps: int,
+    seed: int = 0,
+    shots: Optional[int] = None,
+    noise: Optional[Dict[str, float]] = None,
+    trotter_steps: int = 1,
 ) -> str:
     key = json.dumps(
         {
@@ -69,7 +69,16 @@ def cache_path(
     p_dep = float((noise or {}).get("p_dep", 0.0))
     p_amp = float((noise or {}).get("p_amp", 0.0))
 
-    toks = [mol, f"{int(n_ancilla)}ancilla", f"t{int(float(t))}" if float(t).is_integer() else f"t{str(float(t)).replace('.','p')}", f"s{int(seed)}"]
+    toks = [
+        mol,
+        f"{int(n_ancilla)}ancilla",
+        (
+            f"t{int(float(t))}"
+            if float(t).is_integer()
+            else f"t{str(float(t)).replace('.', 'p')}"
+        ),
+        f"s{int(seed)}",
+    ]
     if p_dep > 0:
         toks.append(f"dep{int(round(p_dep * 100)):02d}")
     if p_amp > 0:

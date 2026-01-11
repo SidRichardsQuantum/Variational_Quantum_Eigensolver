@@ -18,11 +18,11 @@ from .hamiltonian import build_hamiltonian
 from .io_utils import (
     RESULTS_DIR,
     ensure_dirs,
+    is_effectively_noisy,
     make_filename_prefix,
     make_run_config_dict,
     run_signature,
     save_run_record,
-    is_effectively_noisy,
 )
 from .visualize import plot_multi_state_convergence
 
@@ -333,7 +333,9 @@ def run_vqd(
                 )  # keep differentiable so penalty shapes optimization
                 pen = 0.0
                 for prev in reference_states:
-                    pen = pen + _state_overlap_metric(prev, st, noisy=bool(effective_noisy))
+                    pen = pen + _state_overlap_metric(
+                        prev, st, noisy=bool(effective_noisy)
+                    )
                 return e + b * pen
 
             return _cost
