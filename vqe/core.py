@@ -38,6 +38,7 @@ from .io_utils import (
     make_run_config_dict,
     run_signature,
     save_run_record,
+    is_effectively_noisy,
 )
 from .visualize import (
     plot_convergence,
@@ -155,6 +156,14 @@ def run_vqe(
         # Normalise basis string consistently
         basis = basis.lower()
 
+    # Decide effective noisiness (canonical: affects device, diff, filenames, caching)
+    effective_noisy = is_effectively_noisy(
+        noisy,
+        depolarizing_prob,
+        amplitude_damping_prob,
+        noise_model=None,
+    )
+
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
         symbols=symbols,
@@ -166,7 +175,7 @@ def run_vqe(
         max_iterations=steps,
         seed=seed,
         mapping=mapping,
-        noisy=noisy,
+        noisy=effective_noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
         molecule_label=molecule,
@@ -175,10 +184,10 @@ def run_vqe(
     sig = run_signature(cfg)
     prefix = make_filename_prefix(
         cfg,
-        noisy=noisy,
-        seed=seed,
+        noisy=bool(effective_noisy),
+        seed=int(seed),
         hash_str=sig,
-        algo="VQE",
+        algo="vqe",
     )
     result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
@@ -189,7 +198,7 @@ def run_vqe(
         return record["result"]
 
     # --- Device, ansatz, optim, QNodes ---
-    dev = make_device(qubits, noisy=noisy)
+    dev = make_device(qubits, noisy=effective_noisy)
     ansatz_fn, params = engine_build_ansatz(
         ansatz_name,
         qubits,
@@ -203,7 +212,7 @@ def run_vqe(
         dev,
         ansatz_fn,
         qubits,
-        noisy=noisy,
+        noisy=effective_noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
         symbols=symbols,
@@ -214,7 +223,7 @@ def run_vqe(
         dev,
         ansatz_fn,
         qubits,
-        noisy=noisy,
+        noisy=effective_noisy,
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
         symbols=symbols,
@@ -267,117 +276,6 @@ def run_vqe(
     print(f"\n💾 Saved run record to {result_path}\n")
 
     return result
-
-
-# ================================================================
-# NOISE SWEEP (SINGLE-SEED)
-# ================================================================
-def run_vqe_noise_sweep(
-    molecule="H2",
-    ansatz_name="RY-CZ",
-    optimizer_name="Adam",
-    steps=30,
-    depolarizing_probs=None,
-    amplitude_damping_probs=None,
-    force=False,
-    mapping: str = "jordan_wigner",
-    show: bool = True,
-):
-    """
-    Simple single-seed noise sweep:
-    - Compute a noiseless reference
-    - Sweep over noise probabilities and record ΔE and fidelity
-
-    Parameters
-    ----------
-    show : bool
-        Whether to display the generated plot (via matplotlib).
-    """
-    depolarizing_probs = (
-        np.arange(0.0, 0.11, 0.02)
-        if depolarizing_probs is None
-        else np.asarray(depolarizing_probs)
-    )
-    amplitude_damping_probs = (
-        np.zeros_like(depolarizing_probs)
-        if amplitude_damping_probs is None
-        else np.asarray(amplitude_damping_probs)
-    )
-
-    # --- Reference run (noiseless) ---
-    ref = run_vqe(
-        molecule=molecule,
-        steps=steps,
-        stepsize=0.2,
-        plot=False,
-        ansatz_name=ansatz_name,
-        optimizer_name=optimizer_name,
-        noisy=False,
-        mapping=mapping,
-        force=force,
-    )
-    reference_energy = ref["energy"]
-    pure_state = np.array(ref["final_state_real"]) + 1j * np.array(
-        ref["final_state_imag"]
-    )
-
-    energy_means, energy_stds = [], []
-    fidelity_means, fidelity_stds = [], []
-
-    # --- Sweep noise ---
-    for p_dep, p_amp in zip(depolarizing_probs, amplitude_damping_probs):
-        res = run_vqe(
-            molecule=molecule,
-            steps=steps,
-            stepsize=0.2,
-            plot=False,
-            ansatz_name=ansatz_name,
-            optimizer_name=optimizer_name,
-            noisy=True,
-            depolarizing_prob=float(p_dep),
-            amplitude_damping_prob=float(p_amp),
-            mapping=mapping,
-            force=force,
-        )
-
-        energy = res["energy"]
-        state = np.array(res["final_state_real"]) + 1j * np.array(
-            res["final_state_imag"]
-        )
-
-        dE = energy - reference_energy
-        F = compute_fidelity(pure_state, state)
-
-        energy_means.append(dE)
-        energy_stds.append(0.0)  # single-seed: no stddev
-        fidelity_means.append(F)
-        fidelity_stds.append(0.0)
-
-    # Decide noise label for plots
-    if np.allclose(amplitude_damping_probs, 0.0):
-        noise_type = "Depolarizing"
-        noise_levels = depolarizing_probs
-    elif np.allclose(depolarizing_probs, 0.0):
-        noise_type = "Amplitude"
-        noise_levels = amplitude_damping_probs
-    else:
-        noise_type = "Combined"
-        noise_levels = depolarizing_probs
-
-    plot_noise_statistics(
-        molecule,
-        noise_levels,
-        energy_means,
-        energy_stds,
-        fidelity_means,
-        fidelity_stds,
-        optimizer_name=optimizer_name,
-        ansatz_name=ansatz_name,
-        noise_type=noise_type,
-        show=show,
-    )
-
-    print(f"\n✅ Noise sweep complete for {molecule} ({ansatz_name}, {optimizer_name})")
 
 
 # ================================================================

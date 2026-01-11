@@ -177,6 +177,7 @@ def run_qpe(
     *,
     hamiltonian: qml.Hamiltonian,
     hf_state: np.ndarray,
+    seed: int = 0,
     n_ancilla: int = 4,
     t: float = 1.0,
     trotter_steps: int = 1,
@@ -230,6 +231,7 @@ def run_qpe(
         }
     """
     num_qubits = len(hf_state)
+    np.random.seed(int(seed))
 
     ancilla_wires = list(range(n_ancilla))
     system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
@@ -311,6 +313,7 @@ def run_qpe(
         "n_ancilla": int(n_ancilla),
         "trotter_steps": int(trotter_steps),
         "t": float(t),
+        "seed": int(seed),
         "noise": dict(noise_params or {}),
         "shots": int(shots),
     }

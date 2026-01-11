@@ -36,7 +36,6 @@ from vqe import (
     run_vqe_geometry_scan,
     run_vqe_mapping_comparison,
     run_vqe_multi_seed_noise,
-    run_vqe_noise_sweep,
     run_vqe_optimizer_comparison,
 )
 
@@ -225,21 +224,6 @@ def handle_special_modes(args) -> bool:
         return True
 
     # ---------------------------
-    # Noise sweep
-    # ---------------------------
-    if args.noise_sweep:
-        run_vqe_noise_sweep(
-            molecule=args.molecule,
-            ansatz_name=args.ansatz,
-            optimizer_name=args.optimizer,
-            steps=args.steps,
-            stepsize=args.stepsize,
-            force=args.force,
-            mapping=args.mapping,
-        )
-        return True
-
-    # ---------------------------
     # Compare noisy vs noiseless
     # ---------------------------
     if args.compare_noise:
@@ -339,7 +323,6 @@ def main() -> None:
     # ------------------------------------------------------------------
     exp = parser.add_argument_group("Modes")
     exp.add_argument("--compare-noise", action="store_true")
-    exp.add_argument("--noise-sweep", action="store_true")
     exp.add_argument("--compare-optimizers", nargs="+")
     exp.add_argument("--compare-ansatzes", nargs="+")
     exp.add_argument("--multi-seed-noise", action="store_true")

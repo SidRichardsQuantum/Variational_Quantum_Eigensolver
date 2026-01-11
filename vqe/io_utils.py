@@ -144,6 +144,21 @@ def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     return str(path)
 
 
+def is_effectively_noisy(
+    noisy: bool,
+    depolarizing_prob: float,
+    amplitude_damping_prob: float,
+    noise_model=None,
+) -> bool:
+    if not bool(noisy):
+        return False
+    return (
+        float(depolarizing_prob) != 0.0
+        or float(amplitude_damping_prob) != 0.0
+        or (noise_model is not None)
+    )
+
+
 def make_filename_prefix(
     cfg: dict,
     *,
@@ -151,39 +166,73 @@ def make_filename_prefix(
     seed: int,
     hash_str: str,
     algo: Optional[str] = None,
-    ssvqe: Optional[bool] = None,
 ) -> str:
-    """
-    Build a human-readable filename prefix.
-
-    Preferred usage (new):
-        make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, algo="VQD")
-
-    Backwards compatible usage (legacy):
-        make_filename_prefix(..., ssvqe=True/False)
-
-    Parameters
-    ----------
-    algo
-        One of {"VQE","SSVQE","VQD"} (case-insensitive). If provided, it wins.
-    ssvqe
-        Legacy flag: True -> "SSVQE", False -> "VQE". Ignored if algo is provided.
-    """
-    mol = cfg.get("molecule", "MOL")
-    ans = cfg.get("ansatz", "ANSATZ")
+    mol = str(cfg.get("molecule", "MOL")).strip()
+    ans = str(cfg.get("ansatz", "ANSATZ")).strip()
 
     opt = "OPT"
     if isinstance(cfg.get("optimizer"), dict) and "name" in cfg["optimizer"]:
-        opt = cfg["optimizer"]["name"]
+        opt = str(cfg["optimizer"]["name"]).strip()
 
-    noise_tag = "noisy" if noisy else "noiseless"
+    def _slug_general(x: str) -> str:
+        s = str(x).strip().lower()
+        s = s.replace("+", "plus")
+        s = s.replace(" ", "_")
+        s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
+        while "__" in s:
+            s = s.replace("__", "_")
+        return s.strip("_") or "x"
 
+    def _slug_molecule_label(mol: str) -> str:
+        s = str(mol).strip()
+        s = s.replace("+", "plus")
+        s = s.replace(" ", "_")
+        s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
+        while "__" in s:
+            s = s.replace("__", "_")
+        return s.strip("_") or "MOL"
+
+    def _noise_tokens(dep: float, amp: float) -> list[str]:
+        toks: list[str] = []
+        dep_f = float(dep or 0.0)
+        amp_f = float(amp or 0.0)
+
+        def _pct(p: float) -> str:
+            return f"{int(round(p * 100)):02d}"
+
+        if dep_f > 0.0:
+            toks.append(f"dep{_pct(dep_f)}")
+        if amp_f > 0.0:
+            toks.append(f"amp{_pct(amp_f)}")
+        return toks
+
+    algo_tok: Optional[str] = None
     if algo is not None:
-        algo_tag = str(algo).strip().upper()
-        if algo_tag not in {"VQE", "SSVQE", "VQD"}:
-            raise ValueError("algo must be one of: 'VQE', 'SSVQE', 'VQD'")
-    else:
-        # legacy behavior
-        algo_tag = "SSVQE" if bool(ssvqe) else "VQE"
+        a = str(algo).strip().lower()
+        if a not in {"vqe", "ssvqe", "vqd"}:
+            raise ValueError("algo must be one of: 'vqe', 'ssvqe', 'vqd'")
+        if a in {"ssvqe", "vqd"}:
+            algo_tok = a
 
-    return f"{mol}__{ans}__{opt}__{algo_tag}__{noise_tag}__s{int(seed)}__{hash_str}"
+    parts: list[str] = [
+        _slug_molecule_label(mol),
+        _slug_general(ans),
+        _slug_general(opt),
+    ]
+
+    if algo_tok is not None:
+        parts.append(algo_tok)
+
+    parts.append("noisy" if bool(noisy) else "noiseless")
+
+    parts.extend(
+        _noise_tokens(
+            float(cfg.get("depolarizing_prob", 0.0)),
+            float(cfg.get("amplitude_damping_prob", 0.0)),
+        )
+    )
+
+    parts.append(f"s{int(seed)}")
+    parts.append(str(hash_str).strip())
+
+    return "_".join(parts)

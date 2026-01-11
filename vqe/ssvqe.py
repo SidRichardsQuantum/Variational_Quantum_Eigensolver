@@ -23,6 +23,7 @@ from .io_utils import (
     make_run_config_dict,
     run_signature,
     save_run_record,
+    is_effectively_noisy,
 )
 from .visualize import plot_multi_state_convergence
 
@@ -198,34 +199,6 @@ def _compute_sorted_finals(
     return finals_by_ref, order, finals_sorted
 
 
-def _ensure_sorted_fields_in_result(result: dict) -> dict:
-    """
-    Ensure sorted-final fields exist in a result dict (for cache back-compat).
-
-    This does NOT reorder trajectories; it only adds:
-      - final_energies_by_ref
-      - final_order
-      - final_energies_sorted
-    """
-    if "energies_per_state" not in result:
-        return result
-
-    if (
-        "final_energies_by_ref" in result
-        and "final_order" in result
-        and "final_energies_sorted" in result
-    ):
-        return result
-
-    finals_by_ref, order, finals_sorted = _compute_sorted_finals(
-        result["energies_per_state"]
-    )
-    result["final_energies_by_ref"] = finals_by_ref
-    result["final_order"] = order
-    result["final_energies_sorted"] = finals_sorted
-    return result
-
-
 def run_ssvqe(
     molecule: str = "H3+",
     *,
@@ -265,8 +238,8 @@ def run_ssvqe(
 
     Noise
     -----
-    - Supports legacy depolarizing/amplitude knobs AND an arbitrary `noise_model(wires)` callable.
-    - If `noisy=False`, no noise is applied even if noise_model is provided.
+    - Supports depolarizing/amplitude probabilities and an arbitrary `noise_model(wires)` callable.
+    - If `noisy=False`, no noise is applied.
 
     Output ordering contract (important)
     ------------------------------------
@@ -349,8 +322,14 @@ def run_ssvqe(
         raise ValueError("weights must be strictly positive")
 
     # 5) Device + diff method
-    dev = make_device(int(num_wires), noisy=bool(noisy))
-    diff_method = "finite-diff" if noisy else "parameter-shift"
+    effective_noisy = is_effectively_noisy(
+        noisy=bool(noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        noise_model=noise_model,
+    )
+    dev = make_device(int(num_wires), noisy=bool(effective_noisy))
+    diff_method = "finite-diff" if effective_noisy else "parameter-shift"
 
     # 6) Energy QNode: prepares |phi_k> explicitly, then applies U(theta)
     @qml.qnode(dev, diff_method=diff_method)
@@ -374,7 +353,7 @@ def run_ssvqe(
         )
 
         apply_optional_noise(
-            bool(noisy),
+            bool(effective_noisy),
             float(depolarizing_prob),
             float(amplitude_damping_prob),
             int(num_wires),
@@ -387,13 +366,13 @@ def run_ssvqe(
         symbols=symbols,
         coordinates=coordinates,
         basis=str(basis),
-        ansatz_desc=f"SSVQE({ansatz_name})_{int(num_states)}states",
+        ansatz_desc=f"{ansatz_name}_{int(num_states)}states",
         optimizer_name=optimizer_name,
         stepsize=float(stepsize),
         max_iterations=int(steps),
         seed=int(seed),
         mapping="jordan_wigner",
-        noisy=bool(noisy),
+        noisy=bool(effective_noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
         molecule_label=molecule,
@@ -409,7 +388,11 @@ def run_ssvqe(
 
     sig = run_signature(cfg)
     prefix = make_filename_prefix(
-        cfg, noisy=bool(noisy), seed=int(seed), hash_str=sig, algo="SSVQE"
+        cfg,
+        noisy=bool(effective_noisy),
+        seed=int(seed),
+        hash_str=sig,
+        algo="ssvqe",
     )
     result_path = RESULTS_DIR / f"{prefix}.json"
 
@@ -417,8 +400,7 @@ def run_ssvqe(
         print(f"📂 Using cached SSVQE result: {result_path}")
         with result_path.open("r", encoding="utf-8") as f:
             record = json.load(f)
-        cached = record.get("result", {})
-        return _ensure_sorted_fields_in_result(cached)
+        return record["result"]
 
     # 8) Cost
     opt = build_optimizer(optimizer_name, stepsize=float(stepsize))

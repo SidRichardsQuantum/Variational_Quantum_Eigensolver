@@ -28,16 +28,12 @@ def ensure_dirs() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# Backwards-compatible alias (optional, but harmless)
-def ensure_qpe_dirs() -> None:
-    ensure_dirs()
-
-
 def signature_hash(
     *,
     molecule: str,
     n_ancilla: int,
     t: float,
+    seed: int,
     shots: Optional[int],
     noise: Optional[Dict[str, float]],
     trotter_steps: int,
@@ -47,6 +43,7 @@ def signature_hash(
             "molecule": format_molecule_name(molecule),
             "n_ancilla": int(n_ancilla),
             "t": round(float(t), 10),
+            "seed": int(seed),
             "trotter_steps": int(trotter_steps),
             "shots": shots,
             "noise": noise or {},
@@ -57,25 +54,56 @@ def signature_hash(
     return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
 
 
-def cache_path(molecule: str, key: str) -> Path:
+def cache_path(
+    *,
+    molecule: str,
+    n_ancilla: int,
+    t: float,
+    seed: int,
+    noise: Optional[Dict[str, float]],
+    key: str,
+) -> Path:
     ensure_dirs()
     mol = format_molecule_name(molecule)
-    return RESULTS_DIR / f"{mol}__QPE__{key}.json"
+
+    p_dep = float((noise or {}).get("p_dep", 0.0))
+    p_amp = float((noise or {}).get("p_amp", 0.0))
+
+    toks = [mol, f"{int(n_ancilla)}ancilla", f"t{int(float(t))}" if float(t).is_integer() else f"t{str(float(t)).replace('.','p')}", f"s{int(seed)}"]
+    if p_dep > 0:
+        toks.append(f"dep{int(round(p_dep * 100)):02d}")
+    if p_amp > 0:
+        toks.append(f"amp{int(round(p_amp * 100)):02d}")
+
+    toks.append(key)
+    return RESULTS_DIR / ("_".join(toks) + ".json")
 
 
 def save_qpe_result(result: Dict[str, Any]) -> str:
     ensure_dirs()
 
+    noise = result.get("noise", {}) or {}
+    seed = int(result.get("seed", 0))
+
     key = signature_hash(
         molecule=result["molecule"],
-        n_ancilla=int(result.get("n_ancilla", result.get("n_ancilla", 0))),
+        n_ancilla=int(result.get("n_ancilla", 0)),
         t=float(result["t"]),
+        seed=seed,
         trotter_steps=int(result.get("trotter_steps", 1)),
         shots=result.get("shots", None),
-        noise=result.get("noise", {}) or {},
+        noise=noise,
     )
 
-    path = cache_path(result["molecule"], key)
+    path = cache_path(
+        molecule=result["molecule"],
+        n_ancilla=int(result.get("n_ancilla", 0)),
+        t=float(result["t"]),
+        seed=seed,
+        noise=noise,
+        key=key,
+    )
+
     with path.open("w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
 
@@ -83,10 +111,38 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
     return str(path)
 
 
-def load_qpe_result(molecule: str, key: str) -> Optional[Dict[str, Any]]:
-    path = cache_path(molecule, key)
+def load_qpe_result(
+    *,
+    molecule: str,
+    n_ancilla: int,
+    t: float,
+    seed: int,
+    shots: Optional[int],
+    noise: Optional[Dict[str, float]],
+    trotter_steps: int,
+) -> Optional[Dict[str, Any]]:
+    key = signature_hash(
+        molecule=molecule,
+        n_ancilla=int(n_ancilla),
+        t=float(t),
+        seed=int(seed),
+        trotter_steps=int(trotter_steps),
+        shots=shots,
+        noise=noise or {},
+    )
+
+    path = cache_path(
+        molecule=molecule,
+        n_ancilla=int(n_ancilla),
+        t=float(t),
+        seed=int(seed),
+        noise=noise or {},
+        key=key,
+    )
+
     if not path.exists():
         return None
+
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 

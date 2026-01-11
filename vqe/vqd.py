@@ -22,6 +22,7 @@ from .io_utils import (
     make_run_config_dict,
     run_signature,
     save_run_record,
+    is_effectively_noisy,
 )
 from .visualize import plot_multi_state_convergence
 
@@ -153,12 +154,9 @@ def run_vqd(
       - beta(t) ramps from beta_start -> beta_end over optimization steps
         (optionally holding at beta_start for an initial fraction).
 
-    Noise (generalized):
-      - If noisy=True, the device is default.mixed and the state QNode returns a density matrix.
-      - You may specify:
-          * depolarizing_prob, amplitude_damping_prob (legacy convenience)
-          * noise_model(wires) applying arbitrary PennyLane noise channels
-        Both are supported and can be combined.
+    Noise:
+    - If noisy=True, the device is default.mixed and the state QNode returns a density matrix.
+    - You may specify depolarizing_prob, amplitude_damping_prob, and/or noise_model(wires).
 
     Returns
     -------
@@ -198,30 +196,36 @@ def run_vqd(
     )
 
     # 3) Device + QNodes
-    dev = make_device(num_wires, noisy=noisy)
+    effective_noisy = is_effectively_noisy(
+        noisy=bool(noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        noise_model=noise_model,
+    )
+
+    dev = make_device(num_wires, noisy=bool(effective_noisy))
 
     energy_qnode = make_energy_qnode(
         H,
         dev,
         ansatz_fn,
         num_wires,
-        noisy=noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
+        noisy=bool(effective_noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
         noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
     )
 
-    # Important: state-returning QNodes cannot use parameter-shift
     state_qnode = make_state_qnode(
         dev,
         ansatz_fn,
         num_wires,
-        noisy=noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
+        noisy=bool(effective_noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
         noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
@@ -240,7 +244,7 @@ def run_vqd(
         max_iterations=steps,
         seed=seed,
         mapping="jordan_wigner",
-        noisy=noisy,
+        noisy=bool(effective_noisy),
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
         molecule_label=molecule,
@@ -258,7 +262,13 @@ def run_vqd(
         cfg["noise_model"] = None
 
     sig = run_signature(cfg)
-    prefix = make_filename_prefix(cfg, noisy=noisy, seed=seed, hash_str=sig, algo="VQD")
+    prefix = make_filename_prefix(
+        cfg,
+        noisy=bool(effective_noisy),
+        seed=int(seed),
+        hash_str=sig,
+        algo="vqd",
+    )
     result_path = RESULTS_DIR / f"{prefix}.json"
 
     if not force and result_path.exists():
@@ -323,7 +333,7 @@ def run_vqd(
                 )  # keep differentiable so penalty shapes optimization
                 pen = 0.0
                 for prev in reference_states:
-                    pen = pen + _state_overlap_metric(prev, st, noisy=noisy)
+                    pen = pen + _state_overlap_metric(prev, st, noisy=bool(effective_noisy))
                 return e + b * pen
 
             return _cost
