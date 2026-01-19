@@ -46,7 +46,6 @@ from .plotting import (
     format_token,
 )  # noqa: F401
 
-
 __all__ = [
     # Molecules
     "MOLECULES",

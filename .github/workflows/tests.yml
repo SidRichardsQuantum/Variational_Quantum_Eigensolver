@@ -30,12 +30,18 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
 
-      - name: Install package + dev deps
+      - name: Install package + test deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
           python -m pip install pyscf
 
+      - name: Debug environment
+        run: |
+          python --version
+          python -m pip --version
+          python -m pip freeze | sed -n '1,200p'
+
       - name: Run tests
         run: |
-          pytest -v
+          pytest -q

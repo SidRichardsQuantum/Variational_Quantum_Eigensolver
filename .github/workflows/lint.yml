@@ -13,6 +13,11 @@ jobs:
     env:
       PYTHONUTF8: "1"
 
+      # Pin formatter versions to eliminate local/CI drift.
+      # Update these intentionally when you want to adopt a new formatter release.
+      BLACK_VERSION: "24.10.0"
+      RUFF_VERSION: "0.8.4"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,20 +30,28 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
 
-      - name: Install package + dev deps
+      - name: Install package + pinned tooling
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -e .
+          python -m pip install "black==${BLACK_VERSION}" "ruff==${RUFF_VERSION}"
+
+      - name: Debug tool versions
+        run: |
+          python --version
+          black --version
+          ruff --version
 
       - name: Black (format check)
         run: |
-          black --check --diff .
+          python -m black --check --diff .
 
       - name: Ruff (lint)
         run: |
-          ruff check .
+          python -m ruff check .
 
       # Enable once mypy config is in place (recommended to phase in)
       # - name: Mypy (type check)
       #   run: |
+      #     python -m pip install mypy
       #     mypy .

@@ -41,8 +41,8 @@ Documentation = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigen
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
-  "black",
-  "ruff",
+  "black==26.1.0",
+  "ruff==0.14.11",
   "mypy",
 ]
 docs = [
