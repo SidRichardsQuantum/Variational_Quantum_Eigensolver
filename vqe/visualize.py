@@ -21,7 +21,7 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import build_filename, save_plot
+from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_title
 
 
 def _safe_title(*parts):
@@ -39,6 +39,7 @@ def plot_convergence(
     seed: int | None = None,
     show: bool = True,
 ):
+    molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     steps = range(len(energies_noiseless))
     plt.plot(steps, energies_noiseless, label="Noiseless", lw=2)
@@ -55,12 +56,12 @@ def plot_convergence(
 
     if noisy:
         title = _safe_title(
-            f"{molecule}",
+            f"{molecule_title}",
             f"VQE Convergence ({optimizer}, {ansatz})",
             f"Noise: dep={dep_prob}, amp={amp_prob}",
         )
     else:
-        title = _safe_title(f"{molecule}", f"VQE Convergence ({optimizer}, {ansatz})")
+        title = _safe_title(f"{molecule_title}", f"VQE Convergence ({optimizer}, {ansatz})")
 
     plt.title(title)
     plt.xlabel("Iteration")
@@ -89,13 +90,14 @@ def plot_optimizer_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     min_len = min(len(v) for v in results.values())
 
     for opt, energies in results.items():
         plt.plot(range(min_len), energies[:min_len], label=opt)
 
-    plt.title(_safe_title(molecule, f"VQE Optimizer Comparison ({ansatz})"))
+    plt.title(_safe_title(molecule_title, f"VQE Optimizer Comparison ({ansatz})"))
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
     plt.legend()
@@ -118,13 +120,14 @@ def plot_ansatz_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     min_len = min(len(v) for v in results.values())
 
     for ans, energies in results.items():
         plt.plot(range(min_len), energies[:min_len], label=ans)
 
-    plt.title(_safe_title(molecule, f"VQE Ansatz Comparison ({optimizer})"))
+    plt.title(_safe_title(molecule_title, f"VQE Ansatz Comparison ({optimizer})"))
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
     plt.legend()
@@ -152,13 +155,14 @@ def plot_noise_statistics(
     noise_type: str = "Depolarizing",
     show: bool = True,
 ):
+    molecule_title = format_molecule_title(molecule)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
     ax1.errorbar(noise_levels, energy_means, yerr=energy_stds, fmt="o-", capsize=4)
     ax1.set_ylabel("ΔE (Ha)")
     ax1.set_title(
         _safe_title(
-            molecule,
+            molecule_title,
             f"VQE Noise Impact — {noise_type}",
             f"{optimizer_name}, {ansatz_name}",
         )
@@ -224,6 +228,8 @@ def plot_multi_state_convergence(
         while keeping the underlying data unchanged.
         Example: order=[1,0] will plot trajectory[1] as "State 0" (or label 0).
     """
+    molecule_title = format_molecule_title(molecule)
+
     if optimizer_name is not None:
         optimizer = optimizer_name
 
@@ -271,7 +277,7 @@ def plot_multi_state_convergence(
 
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
-    plt.title(f"{molecule} {method_name} ({n_states} states) – {ansatz}, {optimizer}")
+    plt.title(f"{molecule_title} {method_name} ({n_states} states) – {ansatz}, {optimizer}")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()

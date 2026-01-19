@@ -10,7 +10,36 @@ from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import build_filename, format_molecule_name, save_plot
+from vqe_qpe_common.plotting import build_filename, format_molecule_name, format_molecule_title, save_plot
+
+
+def _ket(bits: str) -> str:
+    return f"|{bits}⟩"
+
+
+def _bitstring_key(bits: str) -> int:
+    """Numeric key for sorting bitstrings like '0011' in ascending binary order."""
+    return int(bits, 2)
+
+
+def _sort_items(
+    items: list[tuple[str, float]],
+    *,
+    order: str = "prob_desc",
+) -> list[tuple[str, float]]:
+    """
+    order:
+      - 'prob_desc'  : descending probability (current behavior)
+      - 'binary_asc' : ascending binary value (000.. -> 111..)
+      - 'binary_desc': descending binary value
+    """
+    if order == "prob_desc":
+        return sorted(items, key=lambda kv: -kv[1])
+    if order == "binary_asc":
+        return sorted(items, key=lambda kv: _bitstring_key(kv[0]))
+    if order == "binary_desc":
+        return sorted(items, key=lambda kv: -_bitstring_key(kv[0]))
+    raise ValueError(f"Unknown order={order!r}")
 
 
 def _infer_noise_type(p_dep: float, p_amp: float) -> Optional[str]:
@@ -36,6 +65,7 @@ def _extract_t(result: Dict[str, Any]) -> Optional[float]:
 def plot_qpe_distribution(
     result: Dict[str, Any],
     *,
+    order: str = "binary_asc",
     show: bool = True,
     save: bool = True,
 ) -> None:
@@ -45,6 +75,7 @@ def plot_qpe_distribution(
         return
 
     molecule = format_molecule_name(result.get("molecule", "QPE"))
+    molecule_title = format_molecule_title(result.get("molecule", "QPE"))
     n_anc = int(result.get("n_ancilla", 0))
     t_val = _extract_t(result)
 
@@ -52,8 +83,8 @@ def plot_qpe_distribution(
     p_dep = float(noise.get("p_dep", 0.0))
     p_amp = float(noise.get("p_amp", 0.0))
 
-    items = sorted(probs.items(), key=lambda kv: -kv[1])
-    xs = [f"|{b}⟩" for b, _ in items]
+    items = _sort_items(list(probs.items()), order=order)
+    xs = [_ket(b) for b, _ in items]
     ys = [float(p) for _, p in items]
 
     plt.figure(figsize=(8, 4))
@@ -70,7 +101,7 @@ def plot_qpe_distribution(
         t_suffix = f" • t={t_val}"
 
     plt.title(
-        f"{molecule} QPE Distribution ({n_anc} ancilla){t_suffix}{noise_suffix}",
+        f"{molecule_title} QPE Distribution ({n_anc} ancilla){t_suffix}{noise_suffix}",
         fontsize=12,
     )
     plt.xticks(rotation=45, ha="right")
@@ -111,8 +142,14 @@ def plot_qpe_sweep(
     noise_params: Optional[Dict[str, float]] = None,
     show: bool = True,
     save: bool = True,
+    seed: int = 0,
 ) -> None:
+    
+    import numpy as np
+    np.random.seed(int(seed))
+
     molecule = format_molecule_name(molecule)
+    molecule_title = format_molecule_title(molecule)
     noise_params = noise_params or {}
     p_dep = float(noise_params.get("p_dep", 0.0))
     p_amp = float(noise_params.get("p_amp", 0.0))
@@ -136,7 +173,7 @@ def plot_qpe_sweep(
 
     plt.xlabel(sweep_label)
     plt.ylabel(ylabel)
-    plt.title(f"{molecule} – {title}")
+    plt.title(f"{molecule_title} – {title}")
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend()
     plt.tight_layout()

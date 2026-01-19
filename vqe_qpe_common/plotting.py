@@ -12,12 +12,34 @@ All PNG outputs are routed to:
 from __future__ import annotations
 
 import os
+import re
 from typing import Optional
 
 import matplotlib.pyplot as plt
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 IMG_ROOT = os.path.join(BASE_DIR, "images")
+
+_SUB_RE = re.compile(r"([A-Za-z])(\d+)")
+
+
+def format_molecule_title(mol: str) -> str:
+    """
+    Title-safe molecule label:
+    - digits immediately following an element symbol become subscripts (H2 -> H$_2$)
+    - leaves filenames alone (this is NOT used for paths)
+    - returns a string Matplotlib can render in titles
+    """
+    s = str(mol).strip()
+
+    # Optional: keep charge readable in titles
+    # e.g., "Na+" -> "Na$^{+}$"
+    s = s.replace("+", r"$^{+}$").replace("-", r"$^{-}$")
+
+    # Element + digits -> subscript
+    s = _SUB_RE.sub(r"\1$_\2$", s)
+
+    return s
 
 
 def format_token(val: object) -> str:
@@ -34,6 +56,7 @@ def format_molecule_name(mol: str) -> str:
     mol = str(mol).strip()
     mol = mol.replace("+", "plus")
     mol = mol.replace(" ", "_")
+
     return mol
 
 
