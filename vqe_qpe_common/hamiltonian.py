@@ -212,20 +212,16 @@ def build_hamiltonian(
     charge,
     basis,
     mapping: Optional[str] = None,
+    unit: str = "angstrom",
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray]:
-    """
-    Legacy-style builder used by existing QPE code:
 
-        build_hamiltonian(symbols, coordinates, charge, basis) -> (H, n_qubits, hf_state)
-
-    Now implemented on top of the new shared APIs.
-    """
     H, n_qubits = build_molecular_hamiltonian(
         symbols=list(symbols),
         coordinates=np.array(coordinates, dtype=float),
         charge=int(charge),
         basis=str(basis),
         mapping=mapping,
+        unit=unit,
     )
     hf_state = hartree_fock_state_from_molecule(
         symbols=list(symbols),

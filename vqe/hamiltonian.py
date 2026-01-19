@@ -127,7 +127,7 @@ def _apply_mapping_if_possible(
         return H
 
 
-def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
+def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner", unit: str = "angstrom"):
     """
     Construct the qubit Hamiltonian for a given molecule.
 
@@ -145,7 +145,7 @@ def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
 
     Returns
     -------
-    (H, num_qubits, symbols, coordinates, basis)
+    (H, num_qubits, symbols, coordinates, basis, unit)
     """
     mol = str(molecule).strip()
     up = mol.upper()
@@ -176,6 +176,7 @@ def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner"):
         coordinates=np.array(coordinates, dtype=float),
         charge=charge,
         basis=basis,
+        unit=unit,
     )
 
     # Best-effort mapping application
@@ -194,12 +195,13 @@ def hartree_fock_state(
     molecule: str,
     *,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
 ) -> np.ndarray:
     """
     Return the Hartree–Fock occupation bitstring for the molecule.
 
     This keeps vqe.hamiltonian.build_hamiltonian(...) backwards compatible
-    (it still returns (H, n_qubits, symbols, coordinates, basis)) while enabling
+    (it still returns (H, n_qubits, symbols, coordinates, basis, unit)) while enabling
     chemistry-aware routines (SSVQE/VQD helpers) to obtain HF when needed.
     """
     mol = str(molecule).strip()
@@ -231,6 +233,7 @@ def hartree_fock_state(
         coordinates=np.array(coordinates, dtype=float),
         charge=charge,
         basis=basis,
+        unit=unit,
         mapping=None,  # HF state depends on n_qubits; common builder handles it.
     )
 
