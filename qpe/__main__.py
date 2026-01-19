@@ -34,6 +34,7 @@ from vqe_qpe_common.molecules import MOLECULES
 # ---------------------------------------------------------------------
 def parse_args():
     parser = argparse.ArgumentParser(
+        prog="qpe",
         description="Quantum Phase Estimation (QPE) simulator",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )

@@ -1,5 +1,5 @@
 """
-qpe
+qpe.__init__.py
 ===
 Quantum Phase Estimation (QPE) module of the VQE/QPE PennyLane simulation suite.
 
