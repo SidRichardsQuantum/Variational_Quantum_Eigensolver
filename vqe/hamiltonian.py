@@ -127,7 +127,9 @@ def _apply_mapping_if_possible(
         return H
 
 
-def build_hamiltonian(molecule: str, mapping: str = "jordan_wigner", unit: str = "angstrom"):
+def build_hamiltonian(
+    molecule: str, mapping: str = "jordan_wigner", unit: str = "angstrom"
+):
     """
     Construct the qubit Hamiltonian for a given molecule.
 

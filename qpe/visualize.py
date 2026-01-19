@@ -10,7 +10,12 @@ from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import build_filename, format_molecule_name, format_molecule_title, save_plot
+from vqe_qpe_common.plotting import (
+    build_filename,
+    format_molecule_name,
+    format_molecule_title,
+    save_plot,
+)
 
 
 def _ket(bits: str) -> str:
@@ -144,8 +149,9 @@ def plot_qpe_sweep(
     save: bool = True,
     seed: int = 0,
 ) -> None:
-    
+
     import numpy as np
+
     np.random.seed(int(seed))
 
     molecule = format_molecule_name(molecule)

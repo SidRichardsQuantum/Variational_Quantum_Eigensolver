@@ -6,10 +6,11 @@ Core Quantum Phase Estimation (QPE) implementation.
 This module is deliberately focused on:
     • Circuit construction (QPE, with optional noise)
     • Classical post-processing (bitstrings → phases → energies)
+    • A thin caching layer for "run" entrypoints, so notebooks/CLI stay clean
 
 It does **not**:
-    • Build Hamiltonians (see common.hamiltonian)
-    • Deal with filenames or JSON I/O (see qpe.io_utils)
+    • Build Hamiltonians (see qpe.hamiltonian)
+    • Plot (see qpe.visualize)
 """
 
 from __future__ import annotations
@@ -171,7 +172,7 @@ def phase_to_energy_unwrapped(
 
 
 # ---------------------------------------------------------------------
-# QPE main runner
+# QPE main runner (cached)
 # ---------------------------------------------------------------------
 def run_qpe(
     *,
@@ -184,60 +185,70 @@ def run_qpe(
     noise_params: Optional[Dict[str, float]] = None,
     shots: int = 5000,
     molecule_name: str = "molecule",
+    system_qubits: Optional[int] = None,
+    force: bool = False,
 ) -> Dict[str, Any]:
     """
-    Run a (noisy or noiseless) Quantum Phase Estimation simulation.
+    Run a (noisy or noiseless) Quantum Phase Estimation simulation with caching.
 
-    This function is intentionally "pure":
-        • It returns a result dict
-        • It does not know about filenames or JSON paths
-        • Caching is handled by qpe.io_utils and the CLI / notebooks
-
-    Args
-    ----
-    hamiltonian:
-        Molecular Hamiltonian acting on a system register of size N.
-        Its wires are assumed to be [0, 1, ..., N-1].
-    hf_state:
-        Hartree–Fock state as a 0/1 array of length N.
-    n_ancilla:
-        Number of ancilla qubits used for phase estimation.
-    t:
-        Evolution time in exp(-i H t).
-    trotter_steps:
-        Number of ApproxTimeEvolution Trotter steps.
-    noise_params:
-        Optional dict {"p_dep": float, "p_amp": float}. If None, run noiselessly.
-    shots:
-        Number of measurement samples.
-    molecule_name:
-        Label used in the result dictionary for downstream I/O.
-
-    Returns
+    Caching
     -------
-    dict
-        {
-            "molecule": str,
-            "counts": dict[str, int],
-            "probs": dict[str, float],
-            "best_bitstring": str,
-            "phase": float,
-            "energy": float,
-            "hf_energy": float,
-            "n_ancilla": int,
-            "t": float,
-            "noise": dict,
-            "shots": int,
-        }
+    - force=False (default): return cached result if available; otherwise run and save.
+    - force=True: ignore cache, run and overwrite/save.
+
+    Notes
+    -----
+    Cache keys and filenames are managed by qpe.io_utils. In particular, qpe.io_utils
+    uses `noise or {}` in its signature hash, so we normalise "no noise" to {}.
     """
+    # Local import to keep qpe.core usable without I/O side effects at import time
+    from qpe.io_utils import ensure_dirs, load_qpe_result, save_qpe_result
+
+    ensure_dirs()
+
+    # -------------------------
+    # Normalise inputs for stable caching
+    # -------------------------
+    # 1) Shots are part of the cache key; keep stable typing
+    shots_i = int(shots)
+
+    # 2) Noise: collapse None, {}, and {"p_dep":0,"p_amp":0} to "no noise"
+    norm_noise: Dict[str, float] = {}
+    if noise_params:
+        p_dep = float(noise_params.get("p_dep", 0.0))
+        p_amp = float(noise_params.get("p_amp", 0.0))
+        if (p_dep != 0.0) or (p_amp != 0.0):
+            norm_noise = {"p_dep": p_dep, "p_amp": p_amp}
+
+    # -------------------------
+    # Cache lookup
+    # -------------------------
+    if not force:
+        cached = load_qpe_result(
+            molecule=molecule_name,
+            n_ancilla=int(n_ancilla),
+            t=float(t),
+            seed=int(seed),
+            shots=shots_i,
+            noise=(norm_noise or None),  # io_utils will treat None as {}
+            trotter_steps=int(trotter_steps),
+        )
+        if cached is not None:
+            return cached
+
+    # -------------------------
+    # Compute (your current implementation)
+    # -------------------------
     num_qubits = len(hf_state)
     np.random.seed(int(seed))
 
     ancilla_wires = list(range(n_ancilla))
     system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
 
-    dev_name = "default.mixed" if noise_params else "default.qubit"
-    dev = qml.device(dev_name, wires=n_ancilla + num_qubits, shots=shots)
+    dev_name = (
+        "default.mixed" if (norm_noise and len(norm_noise) > 0) else "default.qubit"
+    )
+    dev = qml.device(dev_name, wires=n_ancilla + num_qubits, shots=shots_i)
 
     # Remap Hamiltonian wires to system register indices
     wire_map = {i: system_wires[i] for i in range(num_qubits)}
@@ -245,14 +256,11 @@ def run_qpe(
 
     @qml.qnode(dev)
     def circuit():
-        # Prepare HF state on system register
         qml.BasisState(np.array(hf_state, dtype=int), wires=system_wires)
 
-        # Hadamards on ancilla register
         for a in ancilla_wires:
             qml.Hadamard(wires=a)
 
-        # Controlled-U ladder: U^(2^{n-1}), U^(2^{n-2}), ..., U
         for k, a in enumerate(ancilla_wires):
             power = n_ancilla - 1 - k
             controlled_powered_evolution(
@@ -262,26 +270,21 @@ def run_qpe(
                 t=t,
                 power=power,
                 trotter_steps=trotter_steps,
-                noise_params=noise_params,
+                noise_params=(norm_noise or None),
             )
 
-        # Inverse QFT on ancillas
         inverse_qft(ancilla_wires)
-
         return qml.sample(wires=ancilla_wires)
 
-    # Run circuit
     samples = np.array(circuit(), dtype=int)
     samples = np.atleast_2d(samples)
 
     bitstrings = ["".join(str(int(b)) for b in s) for s in samples]
     counts = dict(Counter(bitstrings))
-    probs = {b: c / shots for b, c in counts.items()}
+    probs = {b: c / shots_i for b, c in counts.items()}
 
-    # HF reference energy
     E_hf = hartree_fock_energy(hamiltonian, hf_state)
 
-    # Decode phases + candidate energies
     rows = []
     for b, c in counts.items():
         ph_m = bitstring_to_phase(b, msb_first=True)
@@ -293,11 +296,9 @@ def run_qpe(
     if not rows:
         raise RuntimeError("QPE returned no measurement outcomes.")
 
-    # Most likely observation
     best_row = max(rows, key=lambda r: r[1])
     best_b = best_row[0]
 
-    # Choose energy estimate closest to HF reference
     candidate_Es = (best_row[4], best_row[5])
     best_energy = min(candidate_Es, key=lambda x: abs(x - E_hf))
     best_phase = best_row[2] if best_energy == best_row[4] else best_row[3]
@@ -314,8 +315,13 @@ def run_qpe(
         "trotter_steps": int(trotter_steps),
         "t": float(t),
         "seed": int(seed),
-        "noise": dict(noise_params or {}),
-        "shots": int(shots),
+        # IMPORTANT: save noiseless as {} to match io_utils signature_hash(noise or {})
+        "noise": dict(norm_noise),
+        "shots": shots_i,
     }
 
+    if system_qubits is not None:
+        result["system_qubits"] = int(system_qubits)
+
+    save_qpe_result(result)
     return result

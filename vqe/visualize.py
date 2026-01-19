@@ -21,7 +21,7 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import build_filename, save_plot, format_molecule_title
+from vqe_qpe_common.plotting import build_filename, format_molecule_title, save_plot
 
 
 def _safe_title(*parts):
@@ -61,7 +61,9 @@ def plot_convergence(
             f"Noise: dep={dep_prob}, amp={amp_prob}",
         )
     else:
-        title = _safe_title(f"{molecule_title}", f"VQE Convergence ({optimizer}, {ansatz})")
+        title = _safe_title(
+            f"{molecule_title}", f"VQE Convergence ({optimizer}, {ansatz})"
+        )
 
     plt.title(title)
     plt.xlabel("Iteration")
@@ -277,7 +279,9 @@ def plot_multi_state_convergence(
 
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
-    plt.title(f"{molecule_title} {method_name} ({n_states} states) – {ansatz}, {optimizer}")
+    plt.title(
+        f"{molecule_title} {method_name} ({n_states} states) – {ansatz}, {optimizer}"
+    )
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()
