@@ -80,19 +80,14 @@ Variational_Quantum_Eigensolver/
 │   ├── molecule_viz.py      # Draw molecules
 │   └── plotting.py          # Shared plotting + filename builders
 │
-├── images/                  # Saved png files
-│   ├── vqe/
-│   └── qpe/
-│
-├── results/                 # JSON outputs
-│   ├── vqe/
-│   └── qpe/
+├── images/                  # Saved png files. In .gitignore
+├── results/                 # JSON outputs.    In .gitignore
 │
 └── notebooks/
-├── README_notebooks.md  # Notebook index
-├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
-├── vqe/                 # Package-client notebooks for VQE/SSVQE/VQD
-└── qpe/                 # Package-client notebooks for QPE
+    ├── README_notebooks.md  # Notebook index
+    ├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
+    ├── vqe/                 # Package-client notebooks for VQE/SSVQE/VQD
+    └── qpe/                 # Package-client notebooks for QPE
 
 ````
 
