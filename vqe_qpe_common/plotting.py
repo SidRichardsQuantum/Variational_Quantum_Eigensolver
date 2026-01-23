@@ -154,8 +154,8 @@ def build_filename(
 
 def _kind_dir(kind: str) -> str:
     k = str(kind).strip().lower()
-    if k not in {"vqe", "qpe"}:
-        raise ValueError(f"kind must be 'vqe' or 'qpe' (got {kind!r})")
+    if k not in {"vqe", "qpe", "qite"}:
+        raise ValueError(f"kind must be 'vqe', 'qpe', or 'qite' (got {kind!r})")
     return os.path.join(IMG_ROOT, k)
 
 

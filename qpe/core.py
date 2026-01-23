@@ -237,7 +237,7 @@ def run_qpe(
             return cached
 
     # -------------------------
-    # Compute (your current implementation)
+    # Compute
     # -------------------------
     num_qubits = len(hf_state)
     np.random.seed(int(seed))
@@ -315,7 +315,6 @@ def run_qpe(
         "trotter_steps": int(trotter_steps),
         "t": float(t),
         "seed": int(seed),
-        # IMPORTANT: save noiseless as {} to match io_utils signature_hash(noise or {})
         "noise": dict(norm_noise),
         "shots": shots_i,
     }

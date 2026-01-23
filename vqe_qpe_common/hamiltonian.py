@@ -10,17 +10,6 @@ Design goals
 2) Optional support for fermion-to-qubit mappings (JW/BK/Parity) when available.
 3) OpenFermion fallback when the default backend fails.
 4) Hartree–Fock state utilities separated from Hamiltonian construction.
-
-Backwards compatibility
------------------------
-We keep a legacy-style:
-    build_hamiltonian(symbols, coordinates, charge, basis, mapping=None)
-that returns (H, n_qubits, hf_state)
-
-New recommended API:
-    build_molecular_hamiltonian(...)
-    hartree_fock_state_from_molecule(...)
-    build_from_molecule_name(...)
 """
 
 from __future__ import annotations

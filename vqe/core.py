@@ -91,9 +91,6 @@ def run_vqe(
     """
     Run a Variational Quantum Eigensolver (VQE) workflow end-to-end.
 
-    The behaviour is designed to match the legacy notebooks, while using the new
-    engine/ansatz modules internally.
-
     Parameters
     ----------
     molecule : str

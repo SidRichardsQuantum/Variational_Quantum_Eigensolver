@@ -172,7 +172,7 @@ def build_hamiltonian(
         charge = int(cfg["charge"])
         basis = str(cfg["basis"])
 
-    # Common build: returns (H, n_qubits, hf_state)
+    # Common build: returns (H, n_qubits, hf_state, basis)
     H, num_qubits, _hf_state = _build_common_hamiltonian(
         symbols=symbols,
         coordinates=np.array(coordinates, dtype=float),

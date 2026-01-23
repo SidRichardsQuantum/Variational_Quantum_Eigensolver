@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "vqe-pennylane"
 version = "0.2.6"
-description = "Lightweight Quantum Simulation Suite with VQE and QPE modules (PennyLane-based)"
+description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = "README.md"
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = "MIT"
@@ -21,7 +21,7 @@ dependencies = [
   "openfermionpyscf",
 ]
 
-keywords = ["quantum", "VQE", "QPE", "simulation", "pennylane", "quantum-chemistry"]
+keywords = ["quantum", "VQE", "QPE", "QITE", "simulation", "pennylane", "quantum-chemistry"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
@@ -53,9 +53,10 @@ docs = [
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"
+qite = "qite.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["vqe*", "qpe*", "vqe_qpe_common*"]
+include = ["vqe*", "qpe*", "qite*", "vqe_qpe_common*"]
 
 [tool.black]
 line-length = 88
@@ -93,7 +94,7 @@ select = ["E", "F", "I"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["vqe", "qpe", "vqe_qpe_common"]
+known-first-party = ["vqe", "qpe", "qite", "vqe_qpe_common"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401", "I001"]
