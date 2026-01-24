@@ -114,8 +114,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
     )
 
-    ev_p.add_argument("--dep", type=float, default=0.0, help="Depolarizing probability.")
-    ev_p.add_argument("--amp", type=float, default=0.0, help="Amplitude damping probability.")
+    ev_p.add_argument(
+        "--dep", type=float, default=0.0, help="Depolarizing probability."
+    )
+    ev_p.add_argument(
+        "--amp", type=float, default=0.0, help="Amplitude damping probability."
+    )
 
     ev_p.add_argument(
         "--sweep-dep",
@@ -138,8 +142,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Output format: default to pretty, allow explicit JSON
     out_g = ev_p.add_mutually_exclusive_group(required=False)
-    out_g.add_argument("--pretty", action="store_true", help="Print a human-readable summary.")
-    out_g.add_argument("--json", action="store_true", help="Print machine-readable JSON output.")
+    out_g.add_argument(
+        "--pretty", action="store_true", help="Print a human-readable summary."
+    )
+    out_g.add_argument(
+        "--json", action="store_true", help="Print machine-readable JSON output."
+    )
 
     # VarQITE numerics (must match cache keys)
     ev_p.add_argument("--fd-eps", type=float, default=1e-3)
@@ -264,7 +272,9 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
     """
     out = build_hamiltonian(str(molecule), mapping=str(mapping), unit=str(unit))
     if not isinstance(out, (tuple, list)) or len(out) < 3:
-        raise TypeError("build_hamiltonian(...) must return at least (H, n_qubits, hf_state).")
+        raise TypeError(
+            "build_hamiltonian(...) must return at least (H, n_qubits, hf_state)."
+        )
 
     if len(out) == 3:
         raise TypeError(
@@ -286,10 +296,12 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
 
 def _eval_noise(args) -> dict:
     # Single source of truth for Hamiltonian + HF + molecule metadata
-    H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = _unpack_hamiltonian_metadata(
-        molecule=str(args.molecule),
-        mapping=str(args.mapping),
-        unit=str(args.unit),
+    H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
+        _unpack_hamiltonian_metadata(
+            molecule=str(args.molecule),
+            mapping=str(args.mapping),
+            unit=str(args.unit),
+        )
     )
 
     mapping_out = str(args.mapping).strip().lower()
@@ -427,7 +439,9 @@ def _print_pretty_eval(out: dict) -> None:
 
     if mode == "single":
         print(f"• Seed:     {out.get('seed')}")
-        print(f"• Noiseless VarQITE energy: {out.get('varqite_energy_noiseless'):+.10f} Ha")
+        print(
+            f"• Noiseless VarQITE energy: {out.get('varqite_energy_noiseless'):+.10f} Ha"
+        )
         print(f"• Noisy energy Tr[ρH]:      {out.get('noisy_energy'):+.10f} Ha")
         print(f"• Noise: dep={out.get('dep')}, amp={out.get('amp')}")
         return

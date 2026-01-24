@@ -183,7 +183,11 @@ def build_ansatz(
 # QNODES
 # =============================================================================
 def make_energy_qnode(
-    H, dev, ansatz_fn, num_wires, *,
+    H,
+    dev,
+    ansatz_fn,
+    num_wires,
+    *,
     noisy=False,
     depolarizing_prob=0.0,
     amplitude_damping_prob=0.0,
@@ -213,7 +217,10 @@ def make_energy_qnode(
 
 
 def make_state_qnode(
-    dev, ansatz_fn, num_wires, *,
+    dev,
+    ansatz_fn,
+    num_wires,
+    *,
     noisy=False,
     depolarizing_prob=0.0,
     amplitude_damping_prob=0.0,
