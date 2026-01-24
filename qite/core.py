@@ -45,6 +45,7 @@ from qite.io_utils import (
 )
 from qite.visualize import plot_convergence
 from vqe.hamiltonian import build_hamiltonian as build_vqe_hamiltonian
+from vqe.hamiltonian import hartree_fock_state
 
 
 # ================================================================
@@ -173,10 +174,21 @@ def run_qite(
         print(f"\n📂 Found cached result: {result_path}")
         with open(result_path, "r", encoding="utf-8") as f:
             record = json.load(f)
-        return record["result"]
+        res = record["result"]
+        if "final_params" not in res or "final_params_shape" not in res:
+            raise KeyError(
+                "Cached VarQITE record is missing final parameters. "
+                "Re-run with force=True to refresh the cache."
+            )
+        return res
 
     # --- Device, ansatz, QNodes ---
     dev = make_device(qubits, noisy=False)
+
+    hf_state = hartree_fock_state(
+        molecule,
+        mapping=mapping,
+    )
 
     ansatz_fn, params = engine_build_ansatz(
         ansatz_name,
@@ -186,6 +198,7 @@ def run_qite(
         coordinates=coordinates,
         basis=basis,
         requires_grad=True,
+        hf_state=hf_state,
     )
 
     energy_qnode = make_energy_qnode(
@@ -219,6 +232,8 @@ def run_qite(
     params = np.array(params, requires_grad=True)
     energies = [float(energy_qnode(params))]
 
+    engine_cache: dict[str, Any] = {}
+
     print("\n⚙️ Using VarQITE (McLachlan) update rule")
 
     for k in range(int(steps)):
@@ -233,10 +248,7 @@ def run_qite(
             reg=float(reg),
             solver=str(solver),
             pinv_rcond=float(pinv_rcond),
-            # Metadata (kept for future variants)
-            symbols=symbols,
-            coordinates=coordinates,
-            basis=basis,
+            cache=engine_cache,
         )
 
         e = float(energy_qnode(params))
@@ -262,6 +274,7 @@ def run_qite(
         )
 
     # --- Save ---
+    params_arr = np.array(params)
     result = {
         "energy": final_energy,
         "energies": [float(e) for e in energies],
@@ -270,6 +283,8 @@ def run_qite(
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
         "num_qubits": int(qubits),
+        "final_params": params_arr.astype(float).ravel().tolist(),
+        "final_params_shape": list(params_arr.shape),
         "varqite": {
             "fd_eps": float(fd_eps),
             "reg": float(reg),

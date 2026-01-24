@@ -19,7 +19,8 @@ McLachlan's variational principle:
 
 with
     A_ij = Re( <∂_i ψ(θ) | ∂_j ψ(θ)> )
-    C_i  = Re( <∂_i ψ(θ) | H | ψ(θ)> )
+    C_i  = Re( <∂_i ψ(θ) | (H - E(θ)) | ψ(θ)> )
+with tangent-space (Fubini–Study) projection applied to ∂_i ψ.
 
 and update:
     θ <- θ + dtau * θ_dot
@@ -112,10 +113,10 @@ def _fallback_hardware_efficient_ansatz(
       - per-layer: RY then RZ on each wire
       - entangling: CNOT chain
     """
-    for l in range(int(layers)):
+    for layer in range(int(layers)):
         for w in range(int(num_wires)):
-            qml.RY(params[l, w, 0], wires=w)
-            qml.RZ(params[l, w, 1], wires=w)
+            qml.RY(params[layer, w, 0], wires=w)
+            qml.RZ(params[layer, w, 1], wires=w)
 
         for w in range(int(num_wires) - 1):
             qml.CNOT(wires=[w, w + 1])
@@ -130,17 +131,12 @@ def build_ansatz(
     coordinates=None,
     basis: Optional[str] = None,
     requires_grad: bool = True,
+    hf_state: Optional[np.ndarray] = None,
 ) -> Tuple[Callable[[np.ndarray], None], np.ndarray]:
-    """
-    Build an ansatz callable and initial parameters.
-
-    Returns
-    -------
-    (ansatz_fn, init_params)
-        ansatz_fn(params) applies gates in the current QNode context.
-    """
     name = str(ansatz_name).strip()
     np.random.seed(int(seed))
+
+    hf = None if hf_state is None else np.array(hf_state, dtype=int)
 
     try:
         import vqe.ansatz as _vqe_ansatz_mod  # type: ignore
@@ -148,7 +144,7 @@ def build_ansatz(
         if hasattr(_vqe_ansatz_mod, "build_ansatz") and callable(
             _vqe_ansatz_mod.build_ansatz
         ):
-            ans_fn, init = _vqe_ansatz_mod.build_ansatz(
+            inner_ans_fn, init = _vqe_ansatz_mod.build_ansatz(
                 name,
                 int(num_wires),
                 seed=int(seed),
@@ -157,7 +153,14 @@ def build_ansatz(
                 basis=basis,
                 requires_grad=bool(requires_grad),
             )
-            return ans_fn, np.array(init, requires_grad=bool(requires_grad))
+            init_params = np.array(init, requires_grad=bool(requires_grad))
+
+            def ansatz_fn(params):
+                if hf is not None:
+                    qml.BasisState(hf, wires=list(range(int(num_wires))))
+                inner_ans_fn(params)
+
+            return ansatz_fn, init_params
     except Exception:
         pass
 
@@ -166,6 +169,8 @@ def build_ansatz(
     init_params = np.array(init_params, requires_grad=bool(requires_grad))
 
     def ansatz_fn(params):
+        if hf is not None:
+            qml.BasisState(hf, wires=list(range(int(num_wires))))
         _fallback_hardware_efficient_ansatz(
             params, num_wires=int(num_wires), layers=int(layers)
         )
@@ -222,12 +227,6 @@ def make_state_qnode(
     coordinates=None,
     basis: Optional[str] = None,
 ):
-    """
-    Construct a QNode that returns the final state object:
-
-    - noiseless: qml.state() (statevector)
-    - noisy:     qml.density_matrix(wires=...) (density matrix)
-    """
     if bool(noisy):
 
         @qml.qnode(dev)
@@ -281,30 +280,34 @@ def _ensure_statevector(state) -> np.ndarray:
     return s / nrm
 
 
-def _hamiltonian_action(op, psi, *, num_wires: int, _cache: Optional[dict] = None):
-    """
-    Compute (H |psi>) for a general PennyLane operator `op`.
-
-    Important:
-    - `op` may be qml.Hamiltonian OR an op_math composite like Sum/Prod/etc.
-    - We therefore use qml.matrix(op, wire_order=...) as the canonical fallback.
-    - We cache the resulting matrix because VarQITE calls this every iteration.
-    """
-    cache = _cache if _cache is not None else {}
+def _hamiltonian_action(
+    op,
+    psi,
+    *,
+    num_wires: int,
+    cache: Optional[dict] = None,
+):
+    cache = cache if cache is not None else {}
 
     psi = np.asarray(psi)
     if psi.ndim != 1:
-        raise ValueError("VarQITE currently expects a statevector (1D).")
+        raise ValueError("Expected a statevector (1D).")
 
-    key = ("H_matrix", int(num_wires))
+    key = "H_matrix"
     Hmat = cache.get(key, None)
     if Hmat is None:
-        # qml.matrix works for qml.Hamiltonian and op_math composites (Sum, etc.)
         Hmat = qml.matrix(op, wire_order=list(range(int(num_wires))))
         Hmat = np.asarray(Hmat, dtype=complex)
         cache[key] = Hmat
 
     return Hmat @ psi
+
+
+def _project_tangent(psi: np.ndarray, dpsi: np.ndarray) -> np.ndarray:
+    psi = np.asarray(psi)
+    dpsi = np.asarray(dpsi)
+    overlaps = np.vdot(psi, dpsi)  # <psi|dpsi>
+    return dpsi - overlaps * psi
 
 
 def _finite_difference_state_derivatives(
@@ -362,44 +365,11 @@ def qite_step(
     reg: float = 1e-6,
     solver: str = "solve",
     pinv_rcond: float = 1e-10,
+    cache: Optional[dict] = None,
 ) -> np.ndarray:
-    """
-    Perform a single VarQITE (McLachlan) parameter update.
-
-    Parameters
-    ----------
-    params
-        Current variational parameters θ (any shape).
-    energy_qnode, state_qnode
-        QNodes constructed by make_energy_qnode / make_state_qnode.
-        VarQITE uses state_qnode to obtain |ψ(θ)⟩ and its parameter derivatives.
-    dtau
-        Imaginary-time step size.
-    num_wires
-        Number of circuit wires.
-    hamiltonian
-        If provided, used for H|ψ⟩ in the force vector.
-    fd_eps
-        Finite-difference step for |∂_i ψ⟩.
-    reg
-        Tikhonov regularization added to A: A <- A + reg I.
-    solver
-        "solve" (default) uses np.linalg.solve; falls back to lstsq/pinv as needed.
-    pinv_rcond
-        rcond for pseudoinverse fallback.
-
-    Returns
-    -------
-    np.ndarray
-        Updated parameters with the same shape as params.
-    """
     if hamiltonian is None:
-        raise ValueError(
-            "qite_step requires `hamiltonian` to compute the McLachlan force vector. "
-            "Pass the Hamiltonian from qite.core (recommended)."
-        )
+        raise ValueError("qite_step requires `hamiltonian`.")
 
-    # --- Derivatives of the state ---
     psi, dpsi = _finite_difference_state_derivatives(
         state_qnode, params, eps=float(fd_eps)
     )
@@ -408,32 +378,27 @@ def qite_step(
     if P == 0:
         return np.array(params, requires_grad=True)
 
-    # --- Build metric A and force C ---
-    # A_ij = Re(<dpsi_i | dpsi_j>)
-    # C_i  = Re(<dpsi_i | H | psi>)
-    cache: dict[str, np.ndarray] = {}
-    Hpsi = _hamiltonian_action(hamiltonian, psi, num_wires=int(num_wires), _cache=cache)
+    E = float(energy_qnode(params))
+    Hpsi = _hamiltonian_action(hamiltonian, psi, num_wires=int(num_wires), cache=cache)
+
+    dpsi_t = np.stack([_project_tangent(psi, dpsi[i]) for i in range(P)], axis=0)
 
     A = np.zeros((P, P), dtype=float)
     C = np.zeros((P,), dtype=float)
 
     for i in range(P):
-        dpi = dpsi[i]
-        C[i] = float(np.real(np.vdot(dpi, Hpsi)))
-        # Fill row i
+        dpi = dpsi_t[i]
+        C[i] = float(np.real(np.vdot(dpi, Hpsi) - E * np.vdot(dpi, psi)))
         for j in range(i, P):
-            val = float(np.real(np.vdot(dpi, dpsi[j])))
+            val = float(np.real(np.vdot(dpi, dpsi_t[j])))
             A[i, j] = val
             A[j, i] = val
 
-    # Regularize A (important in practice)
     A = A + float(reg) * np.eye(P, dtype=float)
 
-    # --- Solve A v = -C for v = theta_dot ---
     b = -C
-    v = None
-
     solver_l = str(solver).strip().lower()
+
     try:
         if solver_l == "solve":
             v = np.linalg.solve(A, b)
@@ -444,7 +409,6 @@ def qite_step(
         else:
             raise ValueError("solver must be one of: 'solve', 'lstsq', 'pinv'.")
     except Exception:
-        # Robust fallback path
         try:
             v, *_ = np.linalg.lstsq(A, b, rcond=None)
         except Exception:
@@ -452,12 +416,8 @@ def qite_step(
 
     v = np.array(v, dtype=float)
 
-    # --- Update parameters ---
     flat, shape = _flatten_params(params)
     new_flat = np.array(flat, dtype=float) + float(dtau) * v
     new_params = _unflatten_params(new_flat, shape, requires_grad=True)
-
-    # Keep energy_qnode "used" so lints don't complain; also helpful for debugging.
-    _ = energy_qnode(params)
 
     return new_params
