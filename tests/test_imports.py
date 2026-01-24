@@ -1,7 +1,7 @@
 def test_package_imports():
     import vqe
     import qpe
-    import vqe_qpe_common
+    import common
 
     # Submodules
     import vqe.core
@@ -14,9 +14,9 @@ def test_package_imports():
     import qpe.hamiltonian
     import qpe.noise
 
-    import vqe_qpe_common.geometry
-    import vqe_qpe_common.hamiltonian
-    import vqe_qpe_common.molecules
-    import vqe_qpe_common.plotting
+    import common.geometry
+    import common.hamiltonian
+    import common.molecules
+    import common.plotting
 
     assert True  # If imports succeed, test passes

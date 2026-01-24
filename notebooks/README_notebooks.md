@@ -4,7 +4,7 @@ This directory contains curated Jupyter notebooks demonstrating **VQE** and **QP
 
 - `vqe/`
 - `qpe/`
-- `vqe_qpe_common/`
+- `common/`
 
 Most notebooks are written as **pure package clients** (i.e., they call `vqe.core` / `qpe.core` and do not define their own engines, devices, QNodes, caching, or plotting logic).
 

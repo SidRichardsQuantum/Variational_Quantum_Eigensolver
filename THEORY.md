@@ -30,10 +30,10 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 | **H₂O**   | Bond-angle scans (VQE)                          | STO-3G     | 14 |
 | **H₃⁺**   | Mapping comparisons, SSVQE excited states       | STO-3G     | 6 |
 
-All molecular geometries now come from the **shared registry** in `vqe_qpe_common/molecules.py`.
+All molecular geometries now come from the **shared registry** in `common/molecules.py`.
 All simulations use the **STO-3G** basis set for consistency.
 
-Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified vqe_qpe_common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
+Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
 
 ---
 
@@ -371,7 +371,7 @@ In this project:
 The **Quantum Phase Estimation (QPE)** algorithm is a cornerstone of quantum computation for extracting eigenvalues of unitary operators.  
 In the context of quantum chemistry, QPE can be used to determine the electronic ground-state energy of a molecule by estimating the eigenenergies of the time-evolution operator.
 
-QPE is implemented for molecules defined in `vqe_qpe_common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
+QPE is implemented for molecules defined in `common/molecules.py`, using the **same Hamiltonian pipeline as VQE**.  
 This guarantees consistent chemistry and reproducible comparisons between VQE and QPE.
 In contrast to VQE-based excited-state methods (SSVQE and VQD), QPE extracts eigenvalues directly via phase estimation, without variational optimization.
 

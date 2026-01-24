@@ -1,20 +1,19 @@
 """
 qite.core
 =========
-High-level orchestration for imaginary-time / QITE-style workflows.
+High-level orchestration for VarQITE (McLachlan variational imaginary-time evolution).
 
 This module mirrors the ergonomics of vqe.core and qpe.core:
 
-- A cached main entrypoint:        run_qite(...)
+- Cached main entrypoint:          run_qite(...)
 - Optional plotting + saving:      qite.visualize
 - Reproducible I/O + hashing:      qite.io_utils
 - Circuit plumbing / QNodes:       qite.engine
 
 Important
 ---------
-This module now runs a "true" VarQITE step via qite.engine.qite_step(...)
-(McLachlan variational imaginary-time evolution). This requires a pure
-statevector, so noisy/mixed-state runs are intentionally not supported.
+VarQITE requires a pure statevector, so noisy/mixed-state runs are not supported.
+Noise is supported only in the CLI's post-evaluation mode (see qite.__main__).
 """
 
 from __future__ import annotations
@@ -34,6 +33,7 @@ from qite.engine import (
     make_state_qnode,
     qite_step,
 )
+from qite.hamiltonian import build_hamiltonian
 from qite.io_utils import (
     RESULTS_DIR,
     ensure_dirs,
@@ -44,13 +44,8 @@ from qite.io_utils import (
     save_run_record,
 )
 from qite.visualize import plot_convergence
-from vqe.hamiltonian import build_hamiltonian as build_vqe_hamiltonian
-from vqe.hamiltonian import hartree_fock_state
 
 
-# ================================================================
-# SHARED HELPERS
-# ================================================================
 def compute_fidelity(pure_state, state_or_rho) -> float:
     """
     Fidelity between a pure state |ψ⟩ and either:
@@ -71,9 +66,6 @@ def compute_fidelity(pure_state, state_or_rho) -> float:
     raise ValueError("Invalid state shape for fidelity computation")
 
 
-# ================================================================
-# MAIN QITE EXECUTION (CACHED)
-# ================================================================
 def run_qite(
     molecule: str = "H2",
     *,
@@ -82,26 +74,26 @@ def run_qite(
     dtau: float = 0.2,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
-    noisy: bool = False,
-    depolarizing_prob: float = 0.0,
-    amplitude_damping_prob: float = 0.0,
-    noise_model=None,
     force: bool = False,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     show: bool = True,
     # VarQITE numerics
     fd_eps: float = 1e-3,
     reg: float = 1e-6,
     solver: str = "solve",
     pinv_rcond: float = 1e-10,
+    # Explicitly not supported, kept only to make intent unambiguous at callsites
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
+    noise_model=None,
 ) -> Dict[str, Any]:
     """
     Run VarQITE end-to-end with caching.
 
-    Notes
-    -----
     VarQITE uses a McLachlan linear-system update requiring a pure statevector.
-    Therefore noisy/mixed-state runs are intentionally not supported.
+    Noisy/mixed-state runs are intentionally not supported here.
 
     Returns
     -------
@@ -111,62 +103,77 @@ def run_qite(
             "energies": [float, ...],
             "steps": int,
             "dtau": float,
+            "num_qubits": int,
             "final_state_real": [...],
             "final_state_imag": [...],
-            "num_qubits": int,
+            "final_params": [...],
+            "final_params_shape": [...],
+            "varqite": {...},
         }
     """
     ensure_dirs()
     np.random.seed(int(seed))
 
-    # --- Hamiltonian & molecular data ---
-    H, qubits, symbols, coordinates, basis = build_vqe_hamiltonian(
-        molecule, mapping=mapping
-    )
-    basis = str(basis).lower()
-
-    # Decide effective noisiness (canonical: affects device, filenames, caching)
+    # Decide effective noisiness (canonical: affects device/filenames/caching)
     effective_noisy = is_effectively_noisy(
-        noisy,
-        depolarizing_prob,
-        amplitude_damping_prob,
+        bool(noisy),
+        float(depolarizing_prob),
+        float(amplitude_damping_prob),
         noise_model=noise_model,
     )
-
-    if bool(effective_noisy):
+    if effective_noisy:
         raise ValueError(
-            "VarQITE (McLachlan) requires a pure statevector and is not currently "
-            "supported with noisy/mixed-state simulation. Run with noisy=False."
+            "VarQITE requires a pure statevector and is not supported with "
+            "noisy/mixed-state simulation. Use the CLI's eval-noise mode for "
+            "post-evaluation under noise."
         )
+
+    # --- Hamiltonian pipeline (single source of truth) ---
+    (
+        H,
+        qubits,
+        hf_state,
+        symbols,
+        coordinates,
+        basis,
+        charge,
+        mapping_out,
+        unit_out,
+    ) = build_hamiltonian(
+        str(molecule),
+        mapping=str(mapping),
+        unit=str(unit),
+    )
+    basis = str(basis).lower()
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
         symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
-        ansatz_desc=ansatz_name,
+        coordinates=np.array(coordinates, dtype=float),
+        basis=str(basis),
         seed=int(seed),
-        mapping=mapping,
+        mapping=str(mapping_out),
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
         dtau=float(dtau),
         steps=int(steps),
-        molecule_label=molecule,
+        molecule_label=str(molecule),
+        ansatz_desc=str(ansatz_name),
         noise_model_name=None,
         # VarQITE numerics (must be part of cache key)
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
+        # These are stable metadata but not used by VarQITE math; keep explicit
+        unit=str(unit_out),
+        charge=int(charge),
     )
 
     sig = run_signature(cfg)
     prefix = make_filename_prefix(
-        cfg,
-        noisy=False,
-        seed=int(seed),
-        hash_str=sig,
+        cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqite"
     )
     result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
@@ -183,49 +190,38 @@ def run_qite(
         return res
 
     # --- Device, ansatz, QNodes ---
-    dev = make_device(qubits, noisy=False)
-
-    hf_state = hartree_fock_state(
-        molecule,
-        mapping=mapping,
-    )
+    dev = make_device(int(qubits), noisy=False)
 
     ansatz_fn, params = engine_build_ansatz(
-        ansatz_name,
-        qubits,
+        str(ansatz_name),
+        int(qubits),
         seed=int(seed),
         symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
+        coordinates=np.array(coordinates, dtype=float),
+        basis=str(basis),
         requires_grad=True,
-        hf_state=hf_state,
+        hf_state=np.array(hf_state, dtype=int),
     )
 
     energy_qnode = make_energy_qnode(
         H,
         dev,
         ansatz_fn,
-        qubits,
+        int(qubits),
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
         noise_model=None,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
     )
 
     state_qnode = make_state_qnode(
         dev,
         ansatz_fn,
-        qubits,
+        int(qubits),
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
         noise_model=None,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
     )
 
     # --- Iteration loop (VarQITE) ---
@@ -233,7 +229,6 @@ def run_qite(
     energies = [float(energy_qnode(params))]
 
     engine_cache: dict[str, Any] = {}
-
     print("\n⚙️ Using VarQITE (McLachlan) update rule")
 
     for k in range(int(steps)):
@@ -262,9 +257,9 @@ def run_qite(
     if plot:
         plot_convergence(
             energies,
-            molecule=molecule,
+            molecule=str(molecule),
             method="VarQITE",
-            ansatz=ansatz_name,
+            ansatz=str(ansatz_name),
             seed=int(seed),
             dep_prob=0.0,
             amp_prob=0.0,
@@ -276,13 +271,19 @@ def run_qite(
     # --- Save ---
     params_arr = np.array(params)
     result = {
-        "energy": final_energy,
+        "molecule": str(molecule),
+        "mapping": str(mapping_out),
+        "unit": str(unit_out),
+        "charge": int(charge),
+        "basis": str(basis),
+        "ansatz": str(ansatz_name),
+        "energy": float(final_energy),
         "energies": [float(e) for e in energies],
         "steps": int(steps),
         "dtau": float(dtau),
+        "num_qubits": int(qubits),
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
-        "num_qubits": int(qubits),
         "final_params": params_arr.astype(float).ravel().tolist(),
         "final_params_shape": list(params_arr.shape),
         "varqite": {
@@ -298,32 +299,3 @@ def run_qite(
     print(f"\n💾 Saved run record to {result_path}\n")
 
     return result
-
-
-# ================================================================
-# MULTI-SEED NOISE STUDIES (QITE)
-# ================================================================
-def run_qite_multi_seed_noise(
-    *,
-    molecule: str = "H2",
-    ansatz_name: str = "UCCSD",
-    steps: int = 30,
-    dtau: float = 0.2,
-    seeds=None,
-    noise_type: str = "depolarizing",
-    noise_levels=None,
-    mapping: str = "jordan_wigner",
-    force: bool = False,
-    show: bool = True,
-):
-    """
-    Multi-seed noise statistics for QITE.
-
-    VarQITE currently requires a pure statevector and therefore does not support
-    noisy/mixed-state simulation. This entrypoint is intentionally disabled
-    until we decide on a principled "noisy VarQITE" design.
-    """
-    raise NotImplementedError(
-        "run_qite_multi_seed_noise is disabled for VarQITE because VarQITE currently "
-        "requires a pure statevector (no noisy/mixed-state simulation)."
-    )

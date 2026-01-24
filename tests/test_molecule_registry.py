@@ -1,5 +1,5 @@
 def test_molecule_registry_integrity():
-    from vqe_qpe_common.molecules import MOLECULES
+    from common.molecules import MOLECULES
     import numpy as np
 
     for name, cfg in MOLECULES.items():

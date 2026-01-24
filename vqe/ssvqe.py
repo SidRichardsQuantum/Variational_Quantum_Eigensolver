@@ -1,4 +1,7 @@
-# vqe/ssvqe.py
+"""
+vqe/ssvqe.py
+"""
+
 from __future__ import annotations
 
 import json
@@ -258,7 +261,9 @@ def run_ssvqe(
 
     # 1) Hamiltonian + molecular data
     if symbols is None or coordinates is None:
-        H, num_wires, symbols, coordinates, basis_out = build_hamiltonian(molecule)
+        H, num_wires, hf_state, symbols, coordinates, basis_out, charge, unit_out = (
+            build_hamiltonian(molecule)
+        )
         basis = str(basis_out)
     else:
         # Best-effort: preserve old override behaviour

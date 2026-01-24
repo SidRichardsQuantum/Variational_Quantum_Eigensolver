@@ -1,4 +1,7 @@
-# vqe/vqd.py
+"""
+vqe.vqd
+"""
+
 from __future__ import annotations
 
 import json
@@ -178,7 +181,9 @@ def run_vqd(
 
     # 1) Hamiltonian + molecular data
     if symbols is None or coordinates is None:
-        H, num_wires, symbols, coordinates, basis = build_hamiltonian(molecule)
+        H, num_wires, hf_state, symbols, coordinates, basis, charge, unit_out = (
+            build_hamiltonian(molecule)
+        )
     else:
         charge = +1 if str(molecule).upper() == "H3+" else 0
         H, num_wires = qml.qchem.molecular_hamiltonian(

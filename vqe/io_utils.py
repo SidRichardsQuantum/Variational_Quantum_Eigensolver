@@ -7,7 +7,7 @@ Reproducible VQE/SSVQE/VQD run I/O:
 - JSON-safe serialization
 - File/directory management for results
 
-Plots are handled by vqe_qpe_common.plotting.save_plot(..., molecule=...).
+Plots are handled by common.plotting.save_plot(..., molecule=...).
 """
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ def make_run_config_dict(
     cfg: Dict[str, Any] = {
         "symbols": list(symbols),
         "geometry": _round_floats(coordinates, 8),
-        "basis": str(basis),
+        "basis": str(basis).lower(),
         "ansatz": str(ansatz_desc),
         "optimizer": {
             "name": str(optimizer_name),

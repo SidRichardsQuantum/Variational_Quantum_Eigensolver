@@ -1,5 +1,5 @@
 """
-vqe_qpe_common.molecule_viz
+common.molecule_viz
 ===========================
 
 Minimal molecule diagram utilities (matplotlib-only):

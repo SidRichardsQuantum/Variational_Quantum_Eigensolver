@@ -1,14 +1,14 @@
 """
-vqe_qpe_common
+common
 ======
 
 Shared utilities used across VQE, QPE, and future solvers.
 
 This subpackage contains:
-    • vqe_qpe_common.molecules   — canonical molecule registry
-    • vqe_qpe_common.geometry    — unified geometry generators (bond/angle scans)
-    • vqe_qpe_common.hamiltonian — single source of truth for Hamiltonian construction
-    • vqe_qpe_common.plotting    — global plotting + filename/dir management
+    • common.molecules   — canonical molecule registry
+    • common.geometry    — unified geometry generators (bond/angle scans)
+    • common.hamiltonian — single source of truth for Hamiltonian construction
+    • common.plotting    — global plotting + filename/dir management
 
 All high-level solvers (VQE, QPE, QSVT, etc.) should import molecule
 definitions, geometry logic, Hamiltonians, and plotting helpers from here

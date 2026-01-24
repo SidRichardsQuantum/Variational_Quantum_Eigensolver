@@ -7,7 +7,7 @@ This CLI mirrors the VQE CLI philosophy:
     • clean argument parsing
     • cached result loading
     • no circuit logic mixed with plotting
-    • single Hamiltonian pipeline via qpe.hamiltonian (which delegates to vqe_qpe_common)
+    • single Hamiltonian pipeline via qpe.hamiltonian (which delegates to common)
 
 Example:
     python -m qpe --molecule H2 --ancillas 4 --t 1.0 --shots 2000
@@ -20,13 +20,8 @@ import time
 
 from qpe.core import run_qpe
 from qpe.hamiltonian import build_hamiltonian
-from qpe.io_utils import (
-    ensure_dirs,
-    load_qpe_result,
-    save_qpe_result,
-)
+from qpe.io_utils import ensure_dirs
 from qpe.visualize import plot_qpe_distribution
-from vqe_qpe_common.molecules import MOLECULES
 
 
 # ---------------------------------------------------------------------
@@ -50,8 +45,21 @@ def parse_args():
         "-m",
         "--molecule",
         required=True,
-        choices=sorted(MOLECULES.keys()),
-        help="Molecule to simulate (from vqe_qpe_common.molecules.MOLECULES)",
+        help="Molecule identifier (static registry key or parametric tag, e.g. H2, LiH, H2O_ANGLE, H2_BOND)",
+    )
+
+    parser.add_argument(
+        "--mapping",
+        type=str,
+        default="jordan_wigner",
+        help="Fermion-to-qubit mapping (best-effort). Examples: jordan_wigner, bravyi_kitaev, parity",
+    )
+
+    parser.add_argument(
+        "--unit",
+        type=str,
+        default="angstrom",
+        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
     )
 
     parser.add_argument(
@@ -115,65 +123,61 @@ def main():
 
     print("\n🧮  QPE Simulation")
     print(f"• Molecule:   {args.molecule}")
+    print(f"• Mapping:    {args.mapping}")
+    print(f"• Unit:       {args.unit}")
     print(f"• Ancillas:   {args.ancillas}")
     print(f"• Shots:      {args.shots}")
     print(f"• t:          {args.t}")
     print(f"• Trotter:    {args.trotter_steps}")
+    print(f"• Seed:       {args.seed}")
 
     noise_params = None
     if args.noisy:
-        noise_params = {"p_dep": args.p_dep, "p_amp": args.p_amp}
+        noise_params = {"p_dep": float(args.p_dep), "p_amp": float(args.p_amp)}
         print(f"• Noise:      dep={args.p_dep}, amp={args.p_amp}")
     else:
         print("• Noise:      OFF")
 
     # ------------------------------------------------------------
-    # Caching (hash only depends on run-relevant QPE parameters)
+    # Caching (hash depends on run-relevant QPE parameters)
     # ------------------------------------------------------------
-    cached = (
-        None
-        if args.force
-        else load_qpe_result(
-            molecule=args.molecule,
-            n_ancilla=int(args.ancillas),
-            t=float(args.t),
-            seed=int(args.seed),
-            shots=int(args.shots) if args.shots is not None else None,
-            noise=noise_params,
-            trotter_steps=int(args.trotter_steps),
-        )
+    print("\n▶️ Running QPE (will use cache unless --force)...")
+    start_time = time.time()
+
+    # Build Hamiltonian + HF state via the unified pipeline
+    (
+        H,
+        n_qubits,
+        hf_state,
+        _symbols,
+        _coordinates,
+        _basis,
+        _charge,
+        _unit_out,
+    ) = build_hamiltonian(
+        str(args.molecule),
+        mapping=str(args.mapping),
+        unit=str(args.unit),
     )
-    if cached is not None:
-        print("\n📂 Loaded cached result.")
-        result = cached
 
-        n_qubits = int(cached.get("system_qubits", -1))
-        elapsed = 0.0
-    else:
-        print("\n▶️ Running new QPE simulation...")
-        start_time = time.time()
+    # Let qpe.core handle caching + saving (single responsibility)
+    result = run_qpe(
+        hamiltonian=H,
+        hf_state=hf_state,
+        seed=int(args.seed),
+        n_ancilla=int(args.ancillas),
+        t=float(args.t),
+        trotter_steps=int(args.trotter_steps),
+        noise_params=noise_params,
+        shots=int(args.shots),
+        molecule_name=str(args.molecule),
+        system_qubits=int(n_qubits),
+        mapping=str(args.mapping),
+        unit=str(args.unit),
+        force=bool(args.force),
+    )
 
-        # Build Hamiltonian + HF state via the unified pipeline
-        H, n_qubits, hf_state, symbols, coordinates, basis, charge = build_hamiltonian(
-            args.molecule
-        )
-
-        result = run_qpe(
-            hamiltonian=H,
-            hf_state=hf_state,
-            n_ancilla=args.ancillas,
-            t=args.t,
-            trotter_steps=args.trotter_steps,
-            noise_params=noise_params,
-            shots=args.shots,
-            molecule_name=args.molecule,
-        )
-
-        result["system_qubits"] = int(n_qubits)
-        result["seed"] = int(args.seed)
-
-        save_qpe_result(result)
-        elapsed = time.time() - start_time
+    elapsed = time.time() - start_time
 
     # ------------------------------------------------------------
     # Summary
@@ -186,7 +190,6 @@ def main():
     if elapsed:
         print(f"⏱  Elapsed          : {elapsed:.2f}s")
 
-    # Prefer the stored system_qubits field if present
     sys_n = int(result.get("system_qubits", -1))
     if sys_n >= 0:
         print(f"Total qubits        : system={sys_n}, ancillas={args.ancillas}")

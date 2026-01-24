@@ -29,7 +29,7 @@ This installs three Python packages:
 
 * `vqe/` — Variational Quantum Eigensolver (VQE, SSVQE, VQD)
 * `qpe/` — Quantum Phase Estimation
-* `vqe_qpe_common/` — Shared Hamiltonians, molecules, geometry, plotting
+* `common/` — Shared Hamiltonians, molecules, geometry, plotting
 
 Quick sanity check:
 

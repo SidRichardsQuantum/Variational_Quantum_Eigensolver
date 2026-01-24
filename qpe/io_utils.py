@@ -8,7 +8,7 @@ JSON outputs:
 
 PNG outputs:
     images/qpe/<MOLECULE>/
-    (handled via vqe_qpe_common.plotting.save_plot)
+    (handled via common.plotting.save_plot)
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from vqe_qpe_common.plotting import format_molecule_name, save_plot
+from common.plotting import format_molecule_name, save_plot
 
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
 RESULTS_DIR: Path = BASE_DIR / "results" / "qpe"
@@ -34,6 +34,8 @@ def signature_hash(
     n_ancilla: int,
     t: float,
     seed: int = 0,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     shots: Optional[int] = None,
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
@@ -47,6 +49,8 @@ def signature_hash(
             "trotter_steps": int(trotter_steps),
             "shots": shots,
             "noise": noise or {},
+            "mapping": str(mapping),
+            "unit": str(unit),
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -62,6 +66,8 @@ def cache_path(
     seed: int,
     noise: Optional[Dict[str, float]],
     key: str,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
 ) -> Path:
     ensure_dirs()
     mol = format_molecule_name(molecule)
@@ -102,6 +108,8 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         trotter_steps=int(result.get("trotter_steps", 1)),
         shots=result.get("shots", None),
         noise=noise,
+        mapping=result.get("mapping", "jordan_wigner"),
+        unit=result.get("unit", "angstrom"),
     )
 
     path = cache_path(
@@ -111,6 +119,8 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         seed=seed,
         noise=noise,
         key=key,
+        mapping=result.get("mapping", "jordan_wigner"),
+        unit=result.get("unit", "angstrom"),
     )
 
     with path.open("w", encoding="utf-8") as f:
@@ -129,6 +139,8 @@ def load_qpe_result(
     shots: Optional[int],
     noise: Optional[Dict[str, float]],
     trotter_steps: int,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
 ) -> Optional[Dict[str, Any]]:
     key = signature_hash(
         molecule=molecule,
@@ -138,6 +150,8 @@ def load_qpe_result(
         trotter_steps=int(trotter_steps),
         shots=shots,
         noise=noise or {},
+        mapping=mapping,
+        unit=unit,
     )
 
     path = cache_path(
@@ -147,6 +161,8 @@ def load_qpe_result(
         seed=int(seed),
         noise=noise or {},
         key=key,
+        mapping=mapping,
+        unit=unit,
     )
 
     if not path.exists():

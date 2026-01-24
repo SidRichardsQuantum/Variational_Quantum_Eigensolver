@@ -1,5 +1,5 @@
 """
-vqe_qpe_common.plotting
+common.plotting
 =======================
 
 Centralised plotting utilities for the entire VQE/QPE package.

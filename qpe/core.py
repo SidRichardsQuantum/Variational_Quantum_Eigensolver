@@ -186,6 +186,8 @@ def run_qpe(
     shots: int = 5000,
     molecule_name: str = "molecule",
     system_qubits: Optional[int] = None,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     force: bool = False,
 ) -> Dict[str, Any]:
     """
@@ -232,6 +234,8 @@ def run_qpe(
             shots=shots_i,
             noise=(norm_noise or None),  # io_utils will treat None as {}
             trotter_steps=int(trotter_steps),
+            mapping=str(mapping),
+            unit=str(unit),
         )
         if cached is not None:
             return cached
@@ -317,6 +321,8 @@ def run_qpe(
         "seed": int(seed),
         "noise": dict(norm_noise),
         "shots": shots_i,
+        "mapping": str(mapping),
+        "unit": str(unit),
     }
 
     if system_qubits is not None:

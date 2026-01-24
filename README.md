@@ -29,7 +29,7 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 - **Unified molecule registry, geometry generators, and plotting tools**
 - **Consistent caching and reproducibility across all solvers**
 
-This project refactors all previous notebooks into a clean Python package with a shared `vqe_qpe_common/` layer for Hamiltonians, molecules, geometry, and plotting.
+This project refactors all previous notebooks into a clean Python package with a shared `common/` layer for Hamiltonians, molecules, geometry, and plotting.
 
 ## How to get started
 
@@ -59,7 +59,7 @@ Variational_Quantum_Eigensolver/
 │   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
 │   ├── ansatz.py            # UCCSD, RY-CZ, HEA, minimal ansätze
 │   ├── optimizer.py         # Adam, GD, Momentum, SPSA, etc.
-│   ├── hamiltonian.py       # VQE wrapper → uses vqe_qpe_common.hamiltonian
+│   ├── hamiltonian.py       # VQE wrapper → uses common.hamiltonian
 │   ├── io_utils.py          # JSON caching, run signatures
 │   ├── visualize.py         # Convergence, scans, noise plots
 │   ├── vqd.py               # VQD (excited states)
@@ -68,12 +68,12 @@ Variational_Quantum_Eigensolver/
 ├── qpe/                     # QPE package
 │   ├── __main__.py          # CLI: python -m qpe
 │   ├── core.py              # Controlled-U, trotterized dynamics, iQFT
-│   ├── hamiltonian.py       # QPE wrapper → uses vqe_qpe_common.hamiltonian
+│   ├── hamiltonian.py       # QPE wrapper → uses common.hamiltonian
 │   ├── io_utils.py          # JSON caching, run signatures
 │   ├── noise.py             # Depolarizing + amplitude damping channels
 │   └── visualize.py         # Phase histograms + sweep plots
 │
-├── vqe_qpe_common/          # Shared logic for VQE + QPE
+├── common/          # Shared logic for VQE + QPE
 │   ├── geometry.py          # Bond/angle geometry generators
 │   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
 │   ├── molecules.py         # Unified molecule registry
@@ -93,9 +93,9 @@ Variational_Quantum_Eigensolver/
 
 This structure ensures:
 
-- **VQE and QPE share the same chemistry** (`vqe_qpe_common/`)
+- **VQE and QPE share the same chemistry** (`common/`)
 - **All results are cached consistently** (`results/`)
-- **All plots use one naming system** (`vqe_qpe_common/plotting.py`)
+- **All plots use one naming system** (`common/plotting.py`)
 - **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
 
 ---
@@ -130,10 +130,10 @@ The following modules ensure full consistency between solvers:
 
 | Module                          | Purpose                                         |
 | ------------------------------- | ----------------------------------------------- |
-| `vqe_qpe_common/molecules.py`   | Canonical molecule definitions                  |
-| `vqe_qpe_common/geometry.py`    | Bond/angle/coordinate generators                |
-| `vqe_qpe_common/hamiltonian.py` | Hamiltonian construction + OpenFermion fallback |
-| `vqe_qpe_common/plotting.py`    | Unified filename builder + PNG export           |
+| `common/molecules.py`   | Canonical molecule definitions                  |
+| `common/geometry.py`    | Bond/angle/coordinate generators                |
+| `common/hamiltonian.py` | Hamiltonian construction + OpenFermion fallback |
+| `common/plotting.py`    | Unified filename builder + PNG export           |
 
 ---
 
@@ -200,7 +200,7 @@ VQD computes excited states sequentially:
 ### Example
 
 ```python
-from vqe_qpe_common.hamiltonian import build_hamiltonian
+from common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
 symbols = ["H", "H"]

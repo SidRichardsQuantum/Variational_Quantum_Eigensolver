@@ -16,7 +16,6 @@ from __future__ import annotations
 import json
 import os
 
-import pennylane as qml
 from pennylane import numpy as np
 
 from .engine import (
@@ -138,20 +137,25 @@ def run_vqe(
     np.random.seed(seed)
 
     # --- Hamiltonian & molecular data ---
+    from common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
+
     if symbols is not None and coordinates is not None:
-        # Direct molecular override (used in geometry scans, etc.)
-        # Normalise basis for qchem
-        basis = basis.lower()
-        H, qubits = qml.qchem.molecular_hamiltonian(
-            symbols, coordinates, charge=0, basis=basis, unit="angstrom"
+        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
+            _common_build_hamiltonian(
+                symbols=list(symbols),
+                coordinates=np.array(coordinates, dtype=float),
+                charge=0,
+                basis=str(basis),
+                mapping=str(mapping).strip().lower(),
+                unit="angstrom",
+                return_metadata=True,
+            )
         )
     else:
-        # Use shared build_hamiltonian (which already embeds mapping logic)
-        H, qubits, symbols, coordinates, basis = build_hamiltonian(
-            molecule, mapping=mapping
+        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
+            build_hamiltonian(molecule, mapping=mapping)
         )
-        # Normalise basis string consistently
-        basis = basis.lower()
+    basis = str(basis).lower()
 
     # Decide effective noisiness (canonical: affects device, diff, filenames, caching)
     effective_noisy = is_effectively_noisy(
@@ -328,7 +332,7 @@ def run_vqe_optimizer_comparison(
     """
     import matplotlib.pyplot as plt
 
-    from vqe_qpe_common.plotting import build_filename, save_plot
+    from common.plotting import build_filename, save_plot
 
     optimizers = optimizers or ["Adam", "GradientDescent", "Momentum"]
 
@@ -651,7 +655,7 @@ def run_vqe_ansatz_comparison(
     """
     import matplotlib.pyplot as plt
 
-    from vqe_qpe_common.plotting import build_filename, save_plot
+    from common.plotting import build_filename, save_plot
 
     ansatzes = ansatzes or [
         "UCCSD",
@@ -1075,7 +1079,7 @@ def run_vqe_geometry_scan(
     """
     import matplotlib.pyplot as plt
 
-    from vqe_qpe_common.plotting import (
+    from common.plotting import (
         build_filename,
         save_plot,
     )
@@ -1187,7 +1191,7 @@ def run_vqe_mapping_comparison(
     """
     import matplotlib.pyplot as plt
 
-    from vqe_qpe_common.plotting import build_filename, save_plot
+    from common.plotting import build_filename, save_plot
 
     np.random.seed(seed)
 
@@ -1200,8 +1204,8 @@ def run_vqe_mapping_comparison(
         print(f"\n⚙️ Running mapping: {mapping}")
 
         # Build Hamiltonian once to inspect complexity
-        H, qubits, symbols, coordinates, basis = build_hamiltonian(
-            molecule, mapping=mapping
+        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
+            build_hamiltonian(molecule, mapping=mapping)
         )
         basis = basis.lower()
 

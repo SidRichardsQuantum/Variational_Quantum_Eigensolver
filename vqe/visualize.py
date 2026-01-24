@@ -21,7 +21,7 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import build_filename, format_molecule_title, save_plot
+from common.plotting import build_filename, format_molecule_title, save_plot
 
 
 def _safe_title(*parts):

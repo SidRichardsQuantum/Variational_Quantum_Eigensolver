@@ -1,4 +1,4 @@
-from vqe_qpe_common.hamiltonian import build_hamiltonian
+from common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 import numpy as np
 

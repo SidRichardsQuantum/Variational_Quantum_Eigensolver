@@ -1,6 +1,6 @@
 def test_qubit_hamiltonian_builds_for_new_molecules():
-    from vqe_qpe_common.molecules import get_molecule_config
-    from vqe_qpe_common.hamiltonian import build_hamiltonian
+    from common.molecules import get_molecule_config
+    from common.hamiltonian import build_hamiltonian
 
     for name in ["BeH2", "H4", "HeH+"]:
         cfg = get_molecule_config(name)
@@ -19,8 +19,8 @@ def test_qubit_hamiltonian_builds_for_new_molecules():
 
 
 def test_hamiltonian_term_structure():
-    from vqe_qpe_common.molecules import get_molecule_config
-    from vqe_qpe_common.hamiltonian import build_hamiltonian
+    from common.molecules import get_molecule_config
+    from common.hamiltonian import build_hamiltonian
 
     cfg = get_molecule_config("BeH2")
     H, n_qubits, hf_state = build_hamiltonian(**cfg)
@@ -31,8 +31,8 @@ def test_hamiltonian_term_structure():
 
 
 def test_hamiltonian_non_empty():
-    from vqe_qpe_common.molecules import get_molecule_config
-    from vqe_qpe_common.hamiltonian import build_hamiltonian
+    from common.molecules import get_molecule_config
+    from common.hamiltonian import build_hamiltonian
 
     for name in ["H2", "H3+", "LiH", "BeH2", "HeH+"]:
         cfg = get_molecule_config(name)
@@ -41,8 +41,8 @@ def test_hamiltonian_non_empty():
 
 
 def test_hf_state_matches_qubits():
-    from vqe_qpe_common.molecules import get_molecule_config
-    from vqe_qpe_common.hamiltonian import build_hamiltonian
+    from common.molecules import get_molecule_config
+    from common.hamiltonian import build_hamiltonian
 
     cfg = get_molecule_config("H2")
     H, nq, hf = build_hamiltonian(**cfg)

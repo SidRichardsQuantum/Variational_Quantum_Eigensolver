@@ -1,5 +1,5 @@
 """
-vqe_qpe_common.molecules
+common.molecules
 ================
 
 Canonical molecule registry shared by VQE and QPE.

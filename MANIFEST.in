@@ -8,7 +8,7 @@ include pyproject.toml
 # Include package source
 recursive-include vqe *.py
 recursive-include qpe *.py
-recursive-include vqe_qpe_common *.py
+recursive-include common *.py
 
 # Include only notebook *descriptions* but NOT results
 recursive-include notebooks *.md

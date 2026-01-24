@@ -1,5 +1,5 @@
 """
-vqe_qpe_common.geometry
+common.geometry
 ===============
 
 Shared geometry generation for bond scans, angle scans, etc.

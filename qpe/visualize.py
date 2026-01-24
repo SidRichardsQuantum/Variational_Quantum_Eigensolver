@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from vqe_qpe_common.plotting import (
+from common.plotting import (
     build_filename,
     format_molecule_name,
     format_molecule_title,
