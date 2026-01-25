@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "vqe-pennylane"
 version = "0.3.0"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = "MIT"
 license-files = ["LICENSE"]
@@ -57,6 +57,9 @@ qite = "qite.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["vqe*", "qpe*", "qite*", "common*"]
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.black]
 line-length = 88

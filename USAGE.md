@@ -74,7 +74,7 @@ To ignore cache:
 
 ---
 
-# 🔷 Running VQE
+## 🔷 Running VQE
 
 Supported molecule presets:
 
@@ -85,14 +85,12 @@ H2, LiH, H2O, H3+
 VQE supports:
 
 * Ground-state VQE
-* Geometry scans (bond / angle)
+* Geometry scans (bond / angle, VQE only)
 * Ansatz, optimizer, and mapping comparisons
 * Noise sweeps (single & multi-seed)
 * Excited states (SSVQE, VQD)
 
----
-
-## ▶ Basic ground-state VQE
+### ▶ Basic ground-state VQE
 
 ```bash
 vqe --molecule H2
@@ -110,17 +108,13 @@ Outputs:
 * `images/vqe/` — convergence plot
 * `results/vqe/` — JSON record
 
----
-
-## ▶ Choosing ansatz and optimizer
+### ▶ Choosing ansatz and optimizer
 
 ```bash
 vqe -m H2 -a UCCSD -o Adam
 vqe -m H2 -a RY-CZ -o GradientDescent
 vqe -m H2 -a StronglyEntanglingLayers -o Momentum
 ```
-
----
 
 ## ▶ Geometry scans
 
@@ -136,9 +130,7 @@ vqe --scan-geometry H2_BOND --range 0.5 1.5 7
 vqe --scan-geometry H2O_ANGLE --range 100 115 7
 ```
 
----
-
-## ▶ Noise studies (statistics)
+### ▶ Noise studies (statistics)
 
 ```bash
 vqe -m H2 --multi-seed-noise --noise-type depolarizing
@@ -148,9 +140,9 @@ Designed for **robust noise analysis**, not demos.
 
 ---
 
-# 🔷 Excited-State VQE
+## 🔷 Excited-State VQE
 
-## ▶ Subspace-Search VQE (SSVQE)
+### ▶ Subspace-Search VQE (SSVQE)
 
 ```bash
 vqe -m H3+ --ssvqe --penalty-weight 10.0
@@ -158,9 +150,7 @@ vqe -m H3+ --ssvqe --penalty-weight 10.0
 
 Optimizes multiple states **simultaneously**.
 
----
-
-## ▶ Variational Quantum Deflation (VQD)
+### ▶ Variational Quantum Deflation (VQD)
 
 VQD is exposed via the Python API and notebooks:
 
@@ -173,29 +163,23 @@ CLI exposure is intentionally deferred to keep workflows explicit.
 
 ---
 
-# 🔷 Running QPE
+## 🔷 Running QPE
 
 QPE estimates energies via phase estimation.
 
----
-
-## ▶ Basic QPE run
+### ▶ Basic QPE run
 
 ```bash
 qpe --molecule H2 --ancillas 4
 ```
 
----
-
-## ▶ Noisy QPE
+### ▶ Noisy QPE
 
 ```bash
-qpe --molecule H2 --p-dep 0.05 --p-amp 0.02
+qpe --molecule H2 --noisy --p-dep 0.05 --p-amp 0.02
 ```
 
----
-
-## ▶ Trotterized evolution
+### ▶ Trotterized evolution
 
 ```bash
 qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
@@ -203,15 +187,13 @@ qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
 
 ---
 
-# 🔷 Running QITE (VarQITE)
+## 🔷 Running QITE (VarQITE)
 
 QITE implements **variational imaginary-time evolution** using the McLachlan principle.
 
 It is split into **two explicit modes**:
 
----
-
-## ▶ True VarQITE (noiseless)
+### ▶ True VarQITE (noiseless)
 
 ```bash
 qite run --molecule H2 --steps 50 --dtau 0.2
@@ -222,9 +204,7 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 * Produces convergence plots and JSON records
 * Uses `default.qubit` (statevector)
 
----
-
-## ▶ Noisy evaluation of converged parameters
+### ▶ Noisy evaluation of converged parameters
 
 ```bash
 qite eval-noise --molecule H2 --dep 0.02 --amp 0.0 --pretty
@@ -235,9 +215,7 @@ qite eval-noise --molecule H2 --dep 0.02 --amp 0.0 --pretty
 * Does **not** re-optimize
 * Supports noise sweeps and multi-seed statistics
 
----
-
-## ▶ Depolarizing sweep (mean ± std)
+### ▶ Depolarizing sweep (mean ± std)
 
 ```bash
 qite eval-noise \
@@ -247,9 +225,25 @@ qite eval-noise \
   --seeds 0,1,2
 ```
 
+### ℹ️ QITE caching semantics
+
+VarQITE cache keys include:
+
+- Molecule + geometry
+- Mapping + unit
+- Ansatz
+- Seed
+- `dtau`, `steps`
+- Numerical solver settings (`fd_eps`, `reg`, `solver`, `pinv_rcond`)
+
+This guarantees that:
+- changing numerics always triggers a recompute
+- cached trajectories are physically and numerically consistent
+- noisy evaluation never pollutes optimization caches
+
 ---
 
-# 🔁 Caching & Reproducibility
+## 🔁 Caching & Reproducibility
 
 All algorithms share:
 
@@ -269,7 +263,7 @@ qite run --force
 
 ---
 
-# 🧪 Testing
+## 🧪 Testing
 
 ```bash
 pytest -v
@@ -285,7 +279,7 @@ Covers:
 
 ---
 
-# 📚 Citation
+## 📚 Citation
 
 If you use this software, please cite:
 

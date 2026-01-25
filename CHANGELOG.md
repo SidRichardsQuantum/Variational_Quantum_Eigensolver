@@ -4,48 +4,65 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.3.0] – 2026-01-24
+## [0.3.0] – 2026-01-25
 
 ### Added
-- **Unified Hamiltonian layer (`common.hamiltonian`)** as the single source of truth for:
-  - Molecule registry lookup
-  - Parametric geometries (bond / angle scans)
-  - Explicit molecule construction (symbols + coordinates)
-  - Hartree–Fock state generation
-  - Mapping and unit normalization
-- Full **VarQITE (McLachlan) workflow** promoted to a first-class package:
-  - Noiseless imaginary-time evolution with cached parameter trajectories.
-  - Post-hoc noisy evaluation on `default.mixed` using density-matrix expectation values.
-  - Depolarizing sweeps with multi-seed averaging and statistics.
-  - Seed-safe, reproducible caching keyed on physical and numerical parameters.
-- New **QITE CLI** with explicit command separation:
-  - `qite run` for true VarQITE (pure-state, noiseless).
-  - `qite eval-noise` for noisy evaluation and noise sweeps.
-- Matrix-level validation utilities to ensure Hamiltonian consistency across stacks.
-- Expanded test coverage for Hamiltonian registry, imports, and minimal VQE/QPE/QITE runs.
+
+* **Unified infrastructure layer (`common/`)** as the single source of truth for:
+
+  * Hamiltonian construction (`common.hamiltonian`)
+  * Filesystem layout (`common.paths`)
+  * Naming and ASCII-safe identifiers (`common.naming`)
+  * Plot routing and filenames (`common.plotting`)
+  * Atomic JSON persistence and stable hashing (`common.persist`)
+* Full **VarQITE (McLachlan) workflow** promoted to a first-class package:
+
+  * Noiseless imaginary-time evolution with cached parameter trajectories.
+  * Post-hoc noisy evaluation on `default.mixed` using density-matrix expectation values.
+  * Depolarizing sweeps with multi-seed averaging and statistics.
+  * Deterministic, seed-safe caching keyed on physical *and* numerical parameters.
+* New **QITE CLI** with explicit command separation:
+
+  * `qite run` for true VarQITE (pure-state, noiseless).
+  * `qite eval-noise` for noisy evaluation and noise sweeps.
+* **Round-trip caching tests** and **public API smoke tests** covering VQE, QPE, and QITE.
+* ASCII-safe path guarantees for all result and image outputs (titles vs filenames formally separated).
 
 ### Changed
-- **Major internal refactor of VQE, QPE, and QITE** to delegate Hamiltonian construction to `common.hamiltonian`.
-- Removed legacy `vqe_qpe_common` package and replaced it with a cleaner, explicit `common/` module.
-- Hardened all CLIs (VQE/QPE/QITE):
-  - Consistent argument semantics
-  - Stable caching behavior
-  - Deterministic seed handling
-- Standardized metadata returned by all Hamiltonian builders to ensure cross-algorithm compatibility.
-- Updated documentation and notebooks to reflect the unified architecture and new QITE capabilities.
-- Version bumped from **0.2.5 → 0.3.0**.
+
+* **Major internal refactor of VQE, QPE, and QITE** to fully delegate:
+
+  * Hamiltonians to `common.hamiltonian`
+  * Paths to `common.paths`
+  * Plot naming and routing to `common.plotting`
+  * Hashing and persistence to `common.persist`
+* Removed legacy `vqe_qpe_common` and replaced it with explicit, testable modules.
+* Hardened all CLIs (VQE / QPE / QITE):
+
+  * Deterministic run signatures
+  * Identical caching semantics
+  * Strict separation of computation, I/O, and plotting
+* Standardized metadata returned by all Hamiltonian builders to ensure cross-algorithm compatibility.
+* Notebooks updated to use **pure package APIs only** (no internal imports).
 
 ### Fixed
-- Multiple edge-case failures in noisy QITE evaluation caused by mismatched ansatz / Hamiltonian wiring.
-- Seed-dependent cache collisions in QITE noise sweeps.
-- CLI inconsistencies between VQE, QPE, and QITE argument handling.
-- Silent Hamiltonian mismatches that could lead to inconsistent matrix dimensions across modules.
+
+* Cache degeneracy and seed-collision bugs across QITE and QPE.
+* Inconsistent molecule naming between paths and plot titles.
+* Silent mismatches between Hamiltonian wire orderings in mixed stacks.
+* Import-order and packaging errors revealed by full test isolation.
 
 ### Internal
-- Rebuilt Git package structure to remove historical layering and ambiguity.
-- Verified Hamiltonian matrices are identical across `common`, `vqe`, `qpe`, and `qite`.
-- All tests, linting, formatting, and editable installs pass cleanly.
-- Repository is now release-ready for further algorithm additions (QITE extensions, QML, QSVT, etc.).
+
+* Repository architecture flattened and made fully explicit.
+* All algorithms now share the same:
+
+  * filesystem layout
+  * naming rules
+  * hashing logic
+  * persistence model
+* Test suite expanded to enforce architectural invariants, not just numerical correctness.
+* Project is now structurally ready for QITE extensions, QSVT, and QML modules.
 
 ---
 
