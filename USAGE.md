@@ -1,11 +1,16 @@
-# ⚛️ VQE–QPE Quantum Simulation Suite — Usage Guide
+# ⚛️ Usage Guide
 
-This guide explains how to run the **VQE** and **QPE** command-line interfaces, what each mode does, and where outputs are stored.
+This guide explains how to use the command-line interfaces for:
+
+- **VQE** — Variational Quantum Eigensolver (ground & excited states)
+- **QPE** — Quantum Phase Estimation
+- **QITE** — Variational Quantum Imaginary Time Evolution (VarQITE)
+- **common** — Unified Hamiltonian and molecule registry (internal)
 
 It complements:
 
-* **`README.md`** — project overview and structure
-* **`THEORY.md`** — algorithmic and physical background
+- **`README.md`** — project overview and architecture
+- **`THEORY.md`** — algorithmic and physical background
 
 ---
 
@@ -25,47 +30,53 @@ cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-This installs three Python packages:
+This installs four tightly integrated packages:
 
-* `vqe/` — Variational Quantum Eigensolver (VQE, SSVQE, VQD)
-* `qpe/` — Quantum Phase Estimation
-* `common/` — Shared Hamiltonians, molecules, geometry, plotting
+| Package  | Purpose                                                         |
+| -------- | --------------------------------------------------------------- |
+| `vqe`    | Ground- and excited-state variational solvers (VQE, SSVQE, VQD) |
+| `qpe`    | Quantum Phase Estimation                                        |
+| `qite`   | Variational imaginary-time evolution (VarQITE)                  |
+| `common` | Unified Hamiltonian, molecule registry, geometry, plotting      |
 
 Quick sanity check:
 
 ```bash
-python -c "import vqe, qpe; print('VQE + QPE OK')"
+python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 ```
 
 ---
 
 ## 📁 Output & Directory Layout
 
-All executions automatically cache results and plots.
+All runs are **automatically cached** and **fully reproducible**.
 
 ```
 ├── results/
-│   ├── vqe/            # JSON records (VQE, SSVQE, VQD)
-│   └── qpe/            # JSON records (QPE)
+│   ├── vqe/            # VQE, SSVQE, VQD JSON records
+│   ├── qpe/            # QPE JSON records
+│   └── qite/           # VarQITE JSON records
 │
 ├── images/
 │   ├── vqe/            # Convergence, scans, noise plots
-│   └── qpe/            # Phase distributions, sweeps
+│   ├── qpe/            # Phase distributions, sweeps
+│   └── qite/           # VarQITE convergence plots
 ```
 
-Each run is keyed by a **hash of the full configuration** (molecule, ansatz, optimizer, noise, seed, etc.), ensuring:
+Each run is keyed by a **hash of the full physical + numerical configuration**
+(molecule, mapping, ansatz, optimizer, noise, seed, etc.).
 
-* deterministic reproducibility
-* safe caching
-* no accidental overwrites
+To ignore cache:
 
-Use `--force` to ignore cached results.
+```bash
+--force
+```
 
 ---
 
 # 🔷 Running VQE
 
-Supported molecules (CLI presets):
+Supported molecule presets:
 
 ```
 H2, LiH, H2O, H3+
@@ -74,22 +85,20 @@ H2, LiH, H2O, H3+
 VQE supports:
 
 * Ground-state VQE
-* Geometry scans (bond length / bond angle)
-* Optimizer comparisons
-* Ansatz comparisons
-* Fermion-to-qubit mapping comparisons
-* Noise sweeps (single- and multi-seed)
-* Excited states via **SSVQE** and **VQD**
+* Geometry scans (bond / angle)
+* Ansatz, optimizer, and mapping comparisons
+* Noise sweeps (single & multi-seed)
+* Excited states (SSVQE, VQD)
 
 ---
 
 ## ▶ Basic ground-state VQE
 
 ```bash
-python -m vqe --molecule H2
+vqe --molecule H2
 ```
 
-This performs a standard VQE run using defaults:
+Defaults:
 
 * Ansatz: `UCCSD`
 * Optimizer: `Adam`
@@ -98,186 +107,82 @@ This performs a standard VQE run using defaults:
 
 Outputs:
 
-* convergence plot (`images/vqe/`)
-* JSON run record (`results/vqe/`)
+* `images/vqe/` — convergence plot
+* `results/vqe/` — JSON record
 
 ---
 
 ## ▶ Choosing ansatz and optimizer
 
 ```bash
-python -m vqe -m H2 -a UCCSD -o Adam
-python -m vqe -m H2 -a RY-CZ -o GradientDescent
-python -m vqe -m H2 -a StronglyEntanglingLayers -o Momentum
+vqe -m H2 -a UCCSD -o Adam
+vqe -m H2 -a RY-CZ -o GradientDescent
+vqe -m H2 -a StronglyEntanglingLayers -o Momentum
 ```
 
 ---
 
 ## ▶ Geometry scans
 
-### H₂ bond-length scan
+### H₂ bond scan
 
 ```bash
-python -m vqe \
-  --scan-geometry H2_BOND \
-  --range 0.5 1.5 7 \
-  --param-name bond \
-  -a UCCSD
+vqe --scan-geometry H2_BOND --range 0.5 1.5 7
 ```
 
-### LiH bond-length scan
+### H₂O angle scan
 
 ```bash
-python -m vqe \
-  --scan-geometry LiH_BOND \
-  --range 1.2 2.5 7
-```
-
-### H₂O bond-angle scan
-
-```bash
-python -m vqe \
-  --scan-geometry H2O_ANGLE \
-  --range 100 115 7
-```
-
-Each scan averages over seeds (if provided) and plots energy vs geometry.
-
----
-
-## ▶ Optimizer comparison
-
-```bash
-python -m vqe \
-  -m H2 \
-  --compare-optimizers Adam GradientDescent Momentum
-```
-
-Produces convergence overlays and summary statistics.
-
----
-
-## ▶ Ansatz comparison
-
-```bash
-python -m vqe \
-  -m H2 \
-  --compare-ansatzes UCCSD RY-CZ StronglyEntanglingLayers
+vqe --scan-geometry H2O_ANGLE --range 100 115 7
 ```
 
 ---
 
-## ▶ Fermion-to-qubit mapping comparison
+## ▶ Noise studies (statistics)
 
 ```bash
-python -m vqe \
-  -m H2 \
-  --mapping-comparison
+vqe -m H2 --multi-seed-noise --noise-type depolarizing
 ```
 
-Compares Jordan–Wigner, Bravyi–Kitaev, and parity mappings.
+Designed for **robust noise analysis**, not demos.
 
 ---
 
-## ▶ Noise sweeps (single-seed)
-
-```bash
-python -m vqe \
-  -m H2 \
-  --noise-sweep
-```
-
-Computes ΔE and fidelity relative to a noiseless reference.
-
----
-
-## ▶ Noise studies (multi-seed statistics)
-
-```bash
-python -m vqe \
-  -m H2 \
-  --multi-seed-noise \
-  --noise-type depolarizing
-```
-
-This mode is intended for **statistical robustness analysis**, not demonstrations.
-
----
-
-# 🔷 Excited-State Methods
+# 🔷 Excited-State VQE
 
 ## ▶ Subspace-Search VQE (SSVQE)
 
-SSVQE optimizes multiple states **simultaneously**.
-
 ```bash
-python -m vqe \
-  -m H3+ \
-  --ssvqe \
-  --penalty-weight 10.0
+vqe -m H3+ --ssvqe --penalty-weight 10.0
 ```
 
-Produces energy trajectories for each state and a multi-state convergence plot.
+Optimizes multiple states **simultaneously**.
 
 ---
 
 ## ▶ Variational Quantum Deflation (VQD)
 
-VQD finds excited states **sequentially** using deflation penalties.
-
-VQD is currently exposed via the **Python API** and example notebooks:
+VQD is exposed via the Python API and notebooks:
 
 ```python
 from vqe.vqd import run_vqd
-
-res = run_vqd(
-    molecule="H3+",
-    num_states=3,
-    ansatz_name="UCCSD",
-    optimizer_name="Adam",
-    noisy=True,
-    depolarizing_prob=0.02,
-)
+res = run_vqd(molecule="H3+", num_states=3)
 ```
 
-CLI support for VQD is intentionally deferred to keep the interface explicit and controlled.
+CLI exposure is intentionally deferred to keep workflows explicit.
 
 ---
 
 # 🔷 Running QPE
 
-Supported molecules:
-
-```
-H2, LiH, H2O, H3+
-```
-
-QPE supports:
-
-* Noiseless and noisy execution
-* Configurable ancilla register
-* Trotterized time evolution
-* Histogram and sweep plots
-* Result caching
+QPE estimates energies via phase estimation.
 
 ---
 
 ## ▶ Basic QPE run
 
 ```bash
-python -m qpe --molecule H2 --ancillas 4
-```
-
----
-
-## ▶ Plot phase distribution
-
-```bash
-python -m qpe \
-  --molecule H2 \
-  --ancillas 4 \
-  --shots 2000 \
-  --plot
+qpe --molecule H2 --ancillas 4
 ```
 
 ---
@@ -285,40 +190,82 @@ python -m qpe \
 ## ▶ Noisy QPE
 
 ```bash
-python -m qpe \
-  --molecule H2 \
-  --noisy \
-  --p-dep 0.05 \
-  --p-amp 0.02
+qpe --molecule H2 --p-dep 0.05 --p-amp 0.02
 ```
 
 ---
 
-## ▶ Evolution time & Trotter steps
+## ▶ Trotterized evolution
 
 ```bash
-python -m qpe \
+qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
+```
+
+---
+
+# 🔷 Running QITE (VarQITE)
+
+QITE implements **variational imaginary-time evolution** using the McLachlan principle.
+
+It is split into **two explicit modes**:
+
+---
+
+## ▶ True VarQITE (noiseless)
+
+```bash
+qite run --molecule H2 --steps 50 --dtau 0.2
+```
+
+* Pure-state evolution only
+* Cached parameter trajectories
+* Produces convergence plots and JSON records
+* Uses `default.qubit` (statevector)
+
+---
+
+## ▶ Noisy evaluation of converged parameters
+
+```bash
+qite eval-noise --molecule H2 --dep 0.02 --amp 0.0 --pretty
+```
+
+* Evaluates **Tr[ρH]** on `default.mixed`
+* Uses cached VarQITE parameters
+* Does **not** re-optimize
+* Supports noise sweeps and multi-seed statistics
+
+---
+
+## ▶ Depolarizing sweep (mean ± std)
+
+```bash
+qite eval-noise \
   --molecule H2 \
-  --t 2.0 \
-  --trotter-steps 4 \
-  --ancillas 8 \
-  --shots 3000
+  --steps 50 \
+  --sweep-dep 0,0.02,0.04 \
+  --seeds 0,1,2
 ```
 
 ---
 
 # 🔁 Caching & Reproducibility
 
-All runs are cached by a **full configuration hash**.
+All algorithms share:
+
+* Unified Hamiltonian construction (`common.hamiltonian`)
+* Deterministic run hashing
+* Seed-safe caching
+* JSON-first records
+* Plot regeneration without recomputation
 
 Force recomputation:
 
 ```bash
-python -m vqe --molecule H2 --force
-python -m qpe --molecule H2 --force
+vqe --force
+qpe --force
+qite run --force
 ```
-
-Seeds are always recorded in JSON outputs.
 
 ---
 
@@ -330,24 +277,23 @@ pytest -v
 
 Covers:
 
-* VQE & QPE engines
-* Excited-state workflows
-* Molecule registry
-* Hamiltonian construction
-* CLI entrypoints
+* Hamiltonian registry & geometry
+* VQE / QPE / QITE minimal runs
 * Noise handling
+* CLI entrypoints
+* Matrix consistency across stacks
 
 ---
 
-# Citation
+# 📚 Citation
 
 If you use this software, please cite:
 
-> Sid Richards (2025). *Variational Quantum Eigensolver and Quantum Phase Estimation using PennyLane.*
+> Sid Richards (2026). *Unified Variational and Phase-Estimation Quantum Simulation Suite.*
 
 ---
 
-📘 **Author:** Sid Richards (SidRichardsQuantum)
+**Author:** Sid Richards (SidRichardsQuantum)
 LinkedIn: [https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
 
-This project is licensed under the MIT License — see [LICENSE](LICENSE).
+MIT License — see [LICENSE](LICENSE)

@@ -26,6 +26,7 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 - **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
 - **Variational Quantum Deflation (VQD)** (excited states via deflation)
 - **Quantum Phase Estimation (QPE)** (phase-based energy estimation)
+- **Quantum Imaginary Time Evolution (QITE / VarQITE)** (imaginary-time ground-state filtering via McLachlan updates)
 - **Unified molecule registry, geometry generators, and plotting tools**
 - **Consistent caching and reproducibility across all solvers**
 
@@ -73,7 +74,14 @@ Variational_Quantum_Eigensolver/
 │   ├── noise.py             # Depolarizing + amplitude damping channels
 │   └── visualize.py         # Phase histograms + sweep plots
 │
-├── common/          # Shared logic for VQE + QPE
+├── qite/                    # QITE / VarQITE package
+│   ├── __main__.py          # CLI: python -m qite  (subcommands: run, eval-noise)
+│   ├── core.py              # VarQITE orchestration (cached runs)
+│   ├── engine.py            # Ansatz plumbing + energy/state QNodes for noiseless/noisy evaluation
+│   ├── hamiltonian.py       # QITE wrapper → uses common.hamiltonian
+│   └── visualize.py         # Convergence plots
+│
+├── common/                  # Shared logic for VQE + QPE + QITE
 │   ├── geometry.py          # Bond/angle geometry generators
 │   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
 │   ├── molecules.py         # Unified molecule registry
@@ -89,11 +97,11 @@ Variational_Quantum_Eigensolver/
     ├── vqe/                 # Package-client notebooks for VQE/SSVQE/VQD
     └── qpe/                 # Package-client notebooks for QPE
 
-````
+```
 
 This structure ensures:
 
-- **VQE and QPE share the same chemistry** (`common/`)
+- **VQE, QPE, and QITE share the same chemistry** (`common/`)
 - **All results are cached consistently** (`results/`)
 - **All plots use one naming system** (`common/plotting.py`)
 - **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
@@ -106,7 +114,7 @@ This structure ensures:
 
 ```bash
 pip install vqe-pennylane
-````
+```
 
 ### Install from source (development mode)
 
@@ -124,7 +132,7 @@ python -c "import vqe, qpe; print('VQE+QPE imported successfully!')"
 
 ---
 
-## Common Core (Shared by VQE & QPE)
+## Common Core (Shared by VQE, QPE & QITE)
 
 The following modules ensure full consistency between solvers:
 
@@ -212,6 +220,33 @@ result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 
 ---
 
+## QITE / VarQITE package
+
+### Capabilities
+
+* **VarQITE (McLachlan)** imaginary-time parameter updates (noiseless, pure-state)
+* Cached run records under `results/qite/` and convergence plots under `images/qite/`
+
+### Example
+
+```python
+from qite.core import run_qite
+
+res = run_qite(
+    molecule="H2",
+    ansatz_name="UCCSD",
+    steps=50,
+    dtau=0.2,
+    seed=0,
+    mapping="jordan_wigner",
+    unit="angstrom",
+    force=False,
+)
+print(res["energy"])
+```
+
+---
+
 ## CLI usage
 
 ### VQE
@@ -226,7 +261,19 @@ python -m vqe -m H2 -a UCCSD -o Adam --steps 50
 python -m qpe --molecule H2 --ancillas 4 --shots 2000
 ```
 
+### QITE / VarQITE
+
+```bash
+# Noiseless VarQITE run (cached)
+python -m qite run --molecule H2 --steps 50 --dtau 0.2 --seed 0
+
+# Noisy evaluation of cached parameters
+python -m qite eval-noise --molecule H2 --steps 50 --seed 0 --dep 0.02 --amp 0.0 --pretty
+
+# Depolarizing sweep averaged across seeds
+python -m qite eval-noise --molecule H2 --steps 50 --sweep-dep 0,0.02,0.04 --seeds 0,1,2 --pretty
 For full CLI coverage (including excited-state workflows), see [USAGE.md](USAGE.md).
+```
 
 ---
 
