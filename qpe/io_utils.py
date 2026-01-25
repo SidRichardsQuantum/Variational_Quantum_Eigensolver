@@ -13,15 +13,15 @@ PNG outputs:
 
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from common.plotting import format_molecule_name, save_plot
+from common.naming import format_molecule_name, format_token
+from common.paths import results_dir
+from common.persist import atomic_write_json, read_json, stable_hash_dict
+from common.plotting import save_plot
 
-BASE_DIR: Path = Path(__file__).resolve().parent.parent
-RESULTS_DIR: Path = BASE_DIR / "results" / "qpe"
+RESULTS_DIR: Path = results_dir("qpe")
 
 
 def ensure_dirs() -> None:
@@ -40,22 +40,21 @@ def signature_hash(
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
 ) -> str:
-    key = json.dumps(
-        {
-            "molecule": format_molecule_name(molecule),
-            "n_ancilla": int(n_ancilla),
-            "t": round(float(t), 10),
-            "seed": int(seed),
-            "trotter_steps": int(trotter_steps),
-            "shots": shots,
-            "noise": noise or {},
-            "mapping": str(mapping),
-            "unit": str(unit),
-        },
-        sort_keys=True,
-        separators=(",", ":"),
-    )
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+    # Canonicalise "no noise" consistently (None / {} / zeros => {})
+    nz = normalize_noise(noise)
+
+    cfg = {
+        "molecule": format_molecule_name(molecule),
+        "n_ancilla": int(n_ancilla),
+        "t": float(t),
+        "seed": int(seed),
+        "trotter_steps": int(trotter_steps),
+        "shots": (None if shots is None else int(shots)),
+        "noise": nz,
+        "mapping": str(mapping).strip().lower(),
+        "unit": str(unit).strip().lower(),
+    }
+    return stable_hash_dict(cfg, ndigits=10, n_hex=12)
 
 
 def cache_path(
@@ -78,11 +77,7 @@ def cache_path(
     toks = [
         mol,
         f"{int(n_ancilla)}ancilla",
-        (
-            f"t{int(float(t))}"
-            if float(t).is_integer()
-            else f"t{str(float(t)).replace('.', 'p')}"
-        ),
+        f"t{format_token(float(t))}",
         f"s{int(seed)}",
     ]
     if p_dep > 0:
@@ -123,8 +118,7 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         unit=result.get("unit", "angstrom"),
     )
 
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
+    atomic_write_json(path, result)
 
     print(f"💾 Saved QPE result → {path}")
     return str(path)
@@ -168,8 +162,7 @@ def load_qpe_result(
     if not path.exists():
         return None
 
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
+    return read_json(path)
 
 
 def save_qpe_plot(
@@ -179,3 +172,13 @@ def save_qpe_plot(
     show: bool = True,
 ) -> str:
     return save_plot(filename, kind="qpe", molecule=molecule, show=show)
+
+
+def normalize_noise(noise: Optional[Dict[str, float]]) -> Dict[str, float]:
+    if not noise:
+        return {}
+    p_dep = float(noise.get("p_dep", 0.0))
+    p_amp = float(noise.get("p_amp", 0.0))
+    if (p_dep == 0.0) and (p_amp == 0.0):
+        return {}
+    return {"p_dep": p_dep, "p_amp": p_amp}

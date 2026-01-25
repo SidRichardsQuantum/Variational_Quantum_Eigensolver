@@ -27,6 +27,9 @@ def build_hamiltonian(
     -------
     (H, n_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)
     """
+    mapping_out = str(mapping).strip().lower()
+    unit_in = str(unit).strip().lower()
+
     (
         H,
         n_qubits,
@@ -37,9 +40,9 @@ def build_hamiltonian(
         charge,
         unit_out,
     ) = _common_build_hamiltonian(
-        molecule=molecule,
-        mapping=mapping,
-        unit=unit,
+        molecule=str(molecule),
+        mapping=mapping_out,
+        unit=unit_in,
         return_metadata=True,
     )
 
@@ -49,7 +52,7 @@ def build_hamiltonian(
         np.array(hf_state, dtype=int),
         list(symbols),
         np.array(coordinates, dtype=float),
-        str(basis),
+        str(basis).strip().lower(),
         int(charge),
         str(unit_out),
     )

@@ -10,12 +10,8 @@ from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from common.plotting import (
-    build_filename,
-    format_molecule_name,
-    format_molecule_title,
-    save_plot,
-)
+from common.naming import format_molecule_name
+from common.plotting import build_filename, format_molecule_title, save_plot
 
 
 def _ket(bits: str) -> str:
@@ -149,13 +145,10 @@ def plot_qpe_sweep(
     save: bool = True,
     seed: int = 0,
 ) -> None:
+    mol_raw = str(molecule)
+    molecule = format_molecule_name(mol_raw)
+    molecule_title = format_molecule_title(mol_raw)
 
-    import numpy as np
-
-    np.random.seed(int(seed))
-
-    molecule = format_molecule_name(molecule)
-    molecule_title = format_molecule_title(molecule)
     noise_params = noise_params or {}
     p_dep = float(noise_params.get("p_dep", 0.0))
     p_amp = float(noise_params.get("p_amp", 0.0))
@@ -183,10 +176,6 @@ def plot_qpe_sweep(
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend()
     plt.tight_layout()
-
-    noise_params = noise_params or {}
-    p_dep = float(noise_params.get("p_dep", 0.0))
-    p_amp = float(noise_params.get("p_amp", 0.0))
 
     is_noise_scan = (p_dep > 0.0) or (p_amp > 0.0)
     noise_type = _infer_noise_type(p_dep, p_amp) if is_noise_scan else None

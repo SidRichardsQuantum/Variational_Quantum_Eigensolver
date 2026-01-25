@@ -29,7 +29,6 @@ import pennylane as qml
 from common.geometry import generate_geometry as _common_generate_geometry
 from common.hamiltonian import build_hamiltonian as _build_common_hamiltonian
 from common.molecules import MOLECULES as _COMMON_MOLECULES
-from common.molecules import get_molecule_config
 
 # ---------------------------------------------------------------------
 # Public re-export: molecule registry (backwards compatible)
@@ -52,90 +51,76 @@ def generate_geometry(
     return _common_generate_geometry(name, float(param_value))
 
 
-def _normalise_static_key(molecule: str) -> str:
-    """
-    Normalise molecule name for static registry lookups.
-
-    - Accepts "H3PLUS", "H3_PLUS" as aliases for "H3+"
-    - Case-insensitive lookup fallback
-    """
-    key = str(molecule).strip()
-    up = key.upper().replace(" ", "")
-
-    if up in {"H3PLUS", "H3_PLUS"}:
-        return "H3+"
-
-    if key in MOLECULES:
-        return key
-
-    for k in MOLECULES.keys():
-        if k.upper().replace(" ", "") == up:
-            return k
-
-    raise ValueError(
-        f"Unsupported molecule '{molecule}'. "
-        f"Available static presets: {list(MOLECULES.keys())}, "
-        "or parametric: H2_BOND, H3+_BOND, LiH_BOND, H2O_ANGLE."
-    )
-
-
 def build_hamiltonian(
     molecule: str,
     mapping: Optional[str] = "jordan_wigner",
     unit: str = "angstrom",
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str]:
-    """
-    Construct the qubit Hamiltonian for a given molecule.
-
-    Returns
-    -------
-    (H, num_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)
-    """
-    mol = str(molecule).strip()
-    up = mol.upper().replace(" ", "")
-
-    # Parametric tags
-    if "BOND" in up or "ANGLE" in up:
-        if up == "H2O_ANGLE":
-            default_param = 104.5
-        elif up in {"H3+_BOND", "H3PLUS_BOND", "H3_PLUS_BOND"}:
-            default_param = 0.9
-        else:
-            default_param = 0.74
-
-        symbols, coordinates = generate_geometry(mol, float(default_param))
-        charge = +1 if up.startswith(("H3+", "H3PLUS", "H3_PLUS")) else 0
-        basis = "sto-3g"
-    else:
-        key = _normalise_static_key(mol)
-        cfg = get_molecule_config(key)
-        symbols = list(cfg["symbols"])
-        coordinates = np.array(cfg["coordinates"], dtype=float)
-        charge = int(cfg["charge"])
-        basis = str(cfg["basis"]).strip().lower()
-
-    mapping_norm = None if mapping is None else str(mapping).strip().lower()
-    unit_norm = str(unit).strip().lower()
-
-    H, qubits, hf_state, sym_out, coords_out, basis_out, charge_out, unit_out = (
-        _build_common_hamiltonian(
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=int(charge),
-            basis=str(basis),
-            mapping=str(mapping_norm) if mapping_norm is not None else "jordan_wigner",
-            unit=str(unit_norm),
-            return_metadata=True,
-        )
+    (
+        H,
+        n_qubits,
+        hf_state,
+        symbols,
+        coordinates,
+        basis,
+        charge,
+        unit_out,
+    ) = _build_common_hamiltonian(
+        molecule=str(molecule),
+        mapping=(
+            str(mapping).strip().lower() if mapping is not None else "jordan_wigner"
+        ),
+        unit=str(unit).strip().lower(),
+        return_metadata=True,
     )
 
     return (
         H,
-        int(qubits),
+        int(n_qubits),
+        np.array(hf_state, dtype=int),
+        list(symbols),
+        np.array(coordinates, dtype=float),
+        str(basis).strip().lower(),
+        int(charge),
+        str(unit_out),
+    )
+
+
+def build_hamiltonian_from_geometry(
+    *,
+    symbols: list[str],
+    coordinates: np.ndarray,
+    charge: int,
+    basis: str,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
+) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str]:
+    (
+        H,
+        n_qubits,
+        hf_state,
+        sym_out,
+        coords_out,
+        basis_out,
+        charge_out,
+        unit_out,
+    ) = _build_common_hamiltonian(
+        symbols=list(symbols),
+        coordinates=np.array(coordinates, dtype=float),
+        charge=int(charge),
+        basis=str(basis),
+        mapping=str(mapping).strip().lower(),
+        unit=str(unit).strip().lower(),
+        return_metadata=True,
+    )
+
+    return (
+        H,
+        int(n_qubits),
         np.array(hf_state, dtype=int),
         list(sym_out),
         np.array(coords_out, dtype=float),
-        str(basis_out),
+        str(basis_out).strip().lower(),
         int(charge_out),
         str(unit_out),
     )

@@ -52,7 +52,7 @@ def build_hamiltonian(
         np.array(hf_state, dtype=int),
         list(symbols),
         np.array(coordinates, dtype=float),
-        str(basis).lower(),
+        str(basis).strip().lower(),
         int(charge),
         mapping_out,
         str(unit_out),

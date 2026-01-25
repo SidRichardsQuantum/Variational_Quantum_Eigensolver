@@ -18,8 +18,6 @@ Noise is supported only in the CLI's post-evaluation mode (see qite.__main__).
 
 from __future__ import annotations
 
-import json
-import os
 from typing import Any, Dict
 
 from pennylane import numpy as np
@@ -35,9 +33,9 @@ from qite.engine import (
 )
 from qite.hamiltonian import build_hamiltonian
 from qite.io_utils import (
-    RESULTS_DIR,
     ensure_dirs,
     is_effectively_noisy,
+    load_run_record,
     make_filename_prefix,
     make_run_config_dict,
     run_signature,
@@ -144,7 +142,7 @@ def run_qite(
         mapping=str(mapping),
         unit=str(unit),
     )
-    basis = str(basis).lower()
+    basis = str(basis).strip().lower()
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -175,19 +173,17 @@ def run_qite(
     prefix = make_filename_prefix(
         cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqite"
     )
-    result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
-    if not force and os.path.exists(result_path):
-        print(f"\n📂 Found cached result: {result_path}")
-        with open(result_path, "r", encoding="utf-8") as f:
-            record = json.load(f)
-        res = record["result"]
-        if "final_params" not in res or "final_params_shape" not in res:
-            raise KeyError(
-                "Cached VarQITE record is missing final parameters. "
-                "Re-run with force=True to refresh the cache."
-            )
-        return res
+    if not force:
+        record = load_run_record(prefix)
+        if record is not None:
+            res = record["result"]
+            if "final_params" not in res or "final_params_shape" not in res:
+                raise KeyError(
+                    "Cached VarQITE record is missing final parameters. "
+                    "Re-run with force=True to refresh the cache."
+                )
+            return res
 
     # --- Device, ansatz, QNodes ---
     dev = make_device(int(qubits), noisy=False)
@@ -296,6 +292,6 @@ def run_qite(
 
     record = {"config": cfg, "result": result}
     save_run_record(prefix, record)
-    print(f"\n💾 Saved run record to {result_path}\n")
+    print(f"\n💾 Saved run record: {prefix}.json\n")
 
     return result

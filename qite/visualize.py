@@ -14,57 +14,11 @@ Design notes
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from common.plotting import (
-    build_filename,
-    format_molecule_name,
-    format_molecule_title,
-)
-
-# -----------------------------------------------------------------------------
-# Paths
-# -----------------------------------------------------------------------------
-_BASE_DIR = Path(__file__).resolve().parent.parent
-_IMG_ROOT = _BASE_DIR / "images" / "qite"
-
-
-def _ensure_plot_dir(*, molecule: Optional[str]) -> Path:
-    target = _IMG_ROOT
-    if molecule:
-        target = target / format_molecule_name(molecule)
-    target.mkdir(parents=True, exist_ok=True)
-    return target
-
-
-def _save_plot(filename: str, *, molecule: Optional[str], show: bool) -> str:
-    """
-    Save current Matplotlib figure under images/qite/<MOLECULE>/filename.png.
-
-    Returns
-    -------
-    str
-        Absolute path to the saved PNG.
-    """
-    out_dir = _ensure_plot_dir(molecule=molecule)
-
-    fname = str(filename)
-    if not fname.lower().endswith(".png"):
-        fname = fname + ".png"
-
-    path = out_dir / fname
-    plt.savefig(str(path), dpi=300, bbox_inches="tight")
-
-    if show:
-        plt.show()
-    else:
-        plt.close()
-
-    print(f"📁 Saved plot → {path}")
-    return str(path)
+from common.plotting import build_filename, format_molecule_title, save_plot
 
 
 def _safe_title(*parts: object) -> str:
@@ -153,7 +107,8 @@ def plot_convergence(
         seed=seed,
         multi_seed=False,
     )
-    _save_plot(fname, molecule=molecule, show=bool(show))
+
+    save_plot(fname, kind="qite", molecule=molecule, show=bool(show))
 
 
 def plot_noise_statistics(
@@ -269,7 +224,8 @@ def plot_noise_statistics(
         seed=seed,
         multi_seed=True,
     )
-    _save_plot(fname, molecule=molecule, show=bool(show))
+
+    save_plot(fname, kind="qite", molecule=molecule, show=bool(show))
 
 
 def plot_diagnostics(
@@ -313,4 +269,5 @@ def plot_diagnostics(
         seed=seed,
         multi_seed=False,
     )
-    _save_plot(fname, molecule=molecule, show=bool(show))
+
+    save_plot(fname, kind="qite", molecule=molecule, show=bool(show))

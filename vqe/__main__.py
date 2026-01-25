@@ -1,4 +1,6 @@
 """
+vqe.__main__.py
+
 Command-line interface for the vqe package.
 
 This file powers:
@@ -228,34 +230,44 @@ def handle_special_modes(args) -> bool:
     # ---------------------------
     if args.compare_noise:
         print(f"🔹 Comparing noisy vs noiseless VQE for {args.molecule}")
+
         res_noiseless = run_vqe(
-            args.molecule,
-            args.steps,
-            stepsize=args.stepsize,
+            molecule=args.molecule,
+            seed=int(args.seed),
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=False,
             mapping=args.mapping,
+            force=bool(args.force),
+            plot=False,
         )
+
         res_noisy = run_vqe(
-            args.molecule,
-            args.steps,
-            stepsize=args.stepsize,
+            molecule=args.molecule,
+            seed=int(args.seed),
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=True,
-            depolarizing_prob=args.depolarizing_prob,
-            amplitude_damping_prob=args.amplitude_damping_prob,
+            depolarizing_prob=float(args.depolarizing_prob),
+            amplitude_damping_prob=float(args.amplitude_damping_prob),
             mapping=args.mapping,
+            force=bool(args.force),
+            plot=False,
         )
+
         plot_convergence(
             res_noiseless["energies"],
             args.molecule,
             energies_noisy=res_noisy["energies"],
             optimizer=args.optimizer,
             ansatz=args.ansatz,
-            dep_prob=args.depolarizing_prob,
-            amp_prob=args.amplitude_damping_prob,
+            dep_prob=float(args.depolarizing_prob),
+            amp_prob=float(args.amplitude_damping_prob),
+            seed=int(args.seed),
         )
         return True
 

@@ -13,9 +13,6 @@ Includes:
 
 from __future__ import annotations
 
-import json
-import os
-
 from pennylane import numpy as np
 
 from .engine import (
@@ -29,11 +26,15 @@ from .engine import (
     make_energy_qnode,
     make_state_qnode,
 )
-from .hamiltonian import build_hamiltonian, generate_geometry
+from .hamiltonian import (
+    build_hamiltonian,
+    build_hamiltonian_from_geometry,
+    generate_geometry,
+)
 from .io_utils import (
-    RESULTS_DIR,
     ensure_dirs,
     is_effectively_noisy,
+    load_run_record,
     make_filename_prefix,
     make_run_config_dict,
     run_signature,
@@ -87,99 +88,83 @@ def run_vqe(
     basis: str = "sto-3g",
     mapping: str = "jordan_wigner",
 ):
-    """
-    Run a Variational Quantum Eigensolver (VQE) workflow end-to-end.
-
-    Parameters
-    ----------
-    molecule : str
-        Molecular label (used when symbols/coordinates are not explicitly provided).
-    seed : int
-        RNG seed for parameter initialisation and any stochastic components.
-    steps : int
-        Number of optimisation steps.
-    stepsize : float
-        Optimizer learning rate.
-    plot : bool
-        If True, plot the convergence curve.
-    ansatz_name : str
-        Name of the ansatz from vqe.ansatz.ANSATZES.
-    optimizer_name : str
-        Name of the classical optimizer.
-    noisy : bool
-        Whether to include depolarizing / amplitude-damping noise.
-    depolarizing_prob : float
-        Depolarizing channel probability (per qubit).
-    amplitude_damping_prob : float
-        Amplitude damping probability (per qubit).
-    force : bool
-        If True, ignore cached results and rerun optimisation.
-    symbols, coordinates :
-        Optional direct molecular specification; if provided, qchem is used directly.
-    basis : str
-        Basis set string (e.g. "sto-3g", "STO-3G").
-    mapping : str
-        Fermion-to-qubit mapping label ("jordan_wigner", etc.).
-
-    Returns
-    -------
-    dict
-        {
-            "energy": float,
-            "energies": [float, ...],
-            "steps": int,
-            "final_state_real": [...],
-            "final_state_imag": [...],
-            "num_qubits": int,
-        }
-    """
     ensure_dirs()
-    np.random.seed(seed)
+    np.random.seed(int(seed))
 
-    # --- Hamiltonian & molecular data ---
-    from common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
+    mapping_norm = str(mapping).strip().lower()
+    basis_norm = str(basis).strip().lower()
 
+    # --- Hamiltonian & molecular data (VQE-facing adapters only) ---
     if symbols is not None and coordinates is not None:
-        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
-            _common_build_hamiltonian(
-                symbols=list(symbols),
-                coordinates=np.array(coordinates, dtype=float),
-                charge=0,
-                basis=str(basis),
-                mapping=str(mapping).strip().lower(),
-                unit="angstrom",
-                return_metadata=True,
-            )
-        )
-    else:
-        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
-            build_hamiltonian(molecule, mapping=mapping)
-        )
-    basis = str(basis).lower()
+        sym = list(symbols)
+        coords = np.array(coordinates, dtype=float)
 
-    # Decide effective noisiness (canonical: affects device, diff, filenames, caching)
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = build_hamiltonian_from_geometry(
+            symbols=sym,
+            coordinates=coords,
+            charge=0,
+            basis=basis_norm,
+            mapping=mapping_norm,
+            unit="angstrom",
+        )
+
+        molecule_label = str(molecule).strip() or "molecule"
+    else:
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = build_hamiltonian(
+            str(molecule),
+            mapping=mapping_norm,
+            unit="angstrom",
+        )
+        molecule_label = str(molecule).strip()
+
+    basis_out = str(basis_out).strip().lower()
+
+    # Decide effective noisiness (canonical: affects device/filenames/caching)
     effective_noisy = is_effectively_noisy(
-        noisy,
-        depolarizing_prob,
-        amplitude_damping_prob,
+        bool(noisy),
+        float(depolarizing_prob),
+        float(amplitude_damping_prob),
         noise_model=None,
     )
 
+    # Canonicalise: if noise is not effectively enabled, do not carry nonzero dep/amp into caching or filenames.
+    if not bool(effective_noisy):
+        depolarizing_prob = 0.0
+        amplitude_damping_prob = 0.0
+
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
-        ansatz_desc=ansatz_name,
-        optimizer_name=optimizer_name,
-        stepsize=stepsize,
-        max_iterations=steps,
-        seed=seed,
-        mapping=mapping,
-        noisy=effective_noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
-        molecule_label=molecule,
+        symbols=symbols_out,
+        coordinates=coordinates_out,
+        basis=basis_out,
+        ansatz_desc=str(ansatz_name),
+        optimizer_name=str(optimizer_name),
+        stepsize=float(stepsize),
+        max_iterations=int(steps),
+        seed=int(seed),
+        mapping=mapping_norm,
+        noisy=bool(effective_noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        molecule_label=molecule_label,
     )
 
     sig = run_signature(cfg)
@@ -190,60 +175,60 @@ def run_vqe(
         hash_str=sig,
         algo="vqe",
     )
-    result_path = os.path.join(RESULTS_DIR, f"{prefix}.json")
 
-    if not force and os.path.exists(result_path):
-        print(f"\n📂 Found cached result: {result_path}")
-        with open(result_path, "r") as f:
-            record = json.load(f)
-        return record["result"]
+    if not force:
+        record = load_run_record(prefix)
+        if record is not None:
+            return record["result"]
 
     # --- Device, ansatz, optim, QNodes ---
-    dev = make_device(qubits, noisy=effective_noisy)
+    dev = make_device(int(qubits), noisy=bool(effective_noisy))
+
     ansatz_fn, params = engine_build_ansatz(
-        ansatz_name,
-        qubits,
-        seed=seed,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
+        str(ansatz_name),
+        int(qubits),
+        seed=int(seed),
+        symbols=symbols_out,
+        coordinates=coordinates_out,
+        basis=basis_out,
     )
+
     energy_qnode = make_energy_qnode(
         H,
         dev,
         ansatz_fn,
-        qubits,
-        noisy=effective_noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
+        int(qubits),
+        noisy=bool(effective_noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        symbols=symbols_out,
+        coordinates=coordinates_out,
+        basis=basis_out,
     )
+
     state_qnode = make_state_qnode(
         dev,
         ansatz_fn,
-        qubits,
-        noisy=effective_noisy,
-        depolarizing_prob=depolarizing_prob,
-        amplitude_damping_prob=amplitude_damping_prob,
-        symbols=symbols,
-        coordinates=coordinates,
-        basis=basis,
+        int(qubits),
+        noisy=bool(effective_noisy),
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        symbols=symbols_out,
+        coordinates=coordinates_out,
+        basis=basis_out,
     )
-    opt = engine_build_optimizer(optimizer_name, stepsize=stepsize)
+
+    opt = engine_build_optimizer(str(optimizer_name), stepsize=float(stepsize))
 
     # --- Optimization loop ---
     params = np.array(params, requires_grad=True)
     energies = [float(energy_qnode(params))]
 
-    for step in range(steps):
+    for step in range(int(steps)):
         try:
-            # Use cost returned by step_and_cost to avoid extra QNode calls
             params, cost = opt.step_and_cost(energy_qnode, params)
             e = float(cost)
         except AttributeError:
-            # Optimizers without step_and_cost
             params = opt.step(energy_qnode, params)
             e = float(energy_qnode(params))
 
@@ -257,24 +242,23 @@ def run_vqe(
     if plot:
         plot_convergence(
             energies,
-            molecule,
-            optimizer=optimizer_name,
-            ansatz=ansatz_name,
+            molecule_label,
+            optimizer=str(optimizer_name),
+            ansatz=str(ansatz_name),
         )
 
     # --- Save ---
     result = {
-        "energy": final_energy,
+        "energy": float(final_energy),
         "energies": [float(e) for e in energies],
-        "steps": steps,
+        "steps": int(steps),
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
-        "num_qubits": qubits,
+        "num_qubits": int(qubits),
     }
 
-    record = {"config": cfg, "result": result}
-    save_run_record(prefix, record)
-    print(f"\n💾 Saved run record to {result_path}\n")
+    save_run_record(prefix, {"config": cfg, "result": result})
+    print(f"\n💾 Saved run record: {prefix}.json\n")
 
     return result
 

@@ -21,6 +21,7 @@ from typing import Any, Dict, Optional
 import pennylane as qml
 from pennylane import numpy as np
 
+from qpe.io_utils import normalize_noise
 from qpe.noise import apply_noise_all
 
 
@@ -204,7 +205,11 @@ def run_qpe(
     uses `noise or {}` in its signature hash, so we normalise "no noise" to {}.
     """
     # Local import to keep qpe.core usable without I/O side effects at import time
-    from qpe.io_utils import ensure_dirs, load_qpe_result, save_qpe_result
+    from qpe.io_utils import (
+        ensure_dirs,
+        load_qpe_result,
+        save_qpe_result,
+    )
 
     ensure_dirs()
 
@@ -215,12 +220,7 @@ def run_qpe(
     shots_i = int(shots)
 
     # 2) Noise: collapse None, {}, and {"p_dep":0,"p_amp":0} to "no noise"
-    norm_noise: Dict[str, float] = {}
-    if noise_params:
-        p_dep = float(noise_params.get("p_dep", 0.0))
-        p_amp = float(noise_params.get("p_amp", 0.0))
-        if (p_dep != 0.0) or (p_amp != 0.0):
-            norm_noise = {"p_dep": p_dep, "p_amp": p_amp}
+    norm_noise = normalize_noise(noise_params)
 
     # -------------------------
     # Cache lookup

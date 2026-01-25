@@ -1,5 +1,5 @@
 """
-common
+common.__init__.py
 ======
 
 Shared utilities used across VQE, QPE, and future solvers.
@@ -17,9 +17,12 @@ to avoid duplication and ensure reproducibility.
 
 from __future__ import annotations
 
-from importlib.metadata import version as _pkg_version
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
-__version__ = _pkg_version("vqe-pennylane")
+try:
+    __version__ = _pkg_version("vqe-pennylane")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "0.0.0"
 
 
 # Molecule data + helpers
@@ -39,12 +42,8 @@ from .molecule_viz import (
 )  # noqa: F401
 
 # Plotting utilities shared across VQE + QPE
-from .plotting import (
-    build_filename,
-    save_plot,
-    format_molecule_name,
-    format_token,
-)  # noqa: F401
+from .plotting import build_filename, save_plot  # noqa: F401
+from .naming import format_molecule_name, format_token  # noqa: F401
 
 __all__ = [
     # Molecules

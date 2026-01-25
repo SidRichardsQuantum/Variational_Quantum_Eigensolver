@@ -12,65 +12,19 @@ Plots are handled by qite.visualize (images/qite/<MOLECULE>/...).
 
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Any, Dict
 
-BASE_DIR: Path = Path(__file__).resolve().parent.parent
-RESULTS_DIR: Path = BASE_DIR / "results" / "qite"
+import numpy as np
+
+from common.paths import results_dir
+from common.persist import atomic_write_json, read_json, stable_hash_dict
+
+RESULTS_DIR: Path = results_dir("qite")
 
 
 def ensure_dirs() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-
-
-def _round_floats(x: Any, ndigits: int = 8) -> Any:
-    """Round floats recursively to stabilize config hashing against tiny fp noise."""
-    if isinstance(x, float):
-        return round(x, ndigits)
-
-    try:
-        if hasattr(x, "item"):
-            scalar = x.item()
-            if isinstance(scalar, float):
-                return round(float(scalar), ndigits)
-    except Exception:
-        pass
-
-    if hasattr(x, "tolist"):
-        return _round_floats(x.tolist(), ndigits)
-
-    if isinstance(x, (list, tuple)):
-        return type(x)(_round_floats(v, ndigits) for v in x)
-
-    if isinstance(x, dict):
-        return {k: _round_floats(v, ndigits) for k, v in x.items()}
-
-    return x
-
-
-def _to_serializable(obj: Any) -> Any:
-    """Convert nested objects (numpy / pennylane types) to JSON-serializable types."""
-    if hasattr(obj, "item"):
-        try:
-            return obj.item()
-        except Exception:
-            pass
-
-    if hasattr(obj, "tolist"):
-        try:
-            return obj.tolist()
-        except Exception:
-            pass
-
-    if isinstance(obj, dict):
-        return {k: _to_serializable(v) for k, v in obj.items()}
-
-    if isinstance(obj, (list, tuple)):
-        return [_to_serializable(v) for v in obj]
-
-    return obj
 
 
 def make_run_config_dict(
@@ -120,7 +74,7 @@ def make_run_config_dict(
     cfg = {
         "molecule": str(molecule_label),
         "symbols": list(symbols),
-        "coordinates": coordinates.tolist(),
+        "coordinates": np.asarray(coordinates, dtype=float).tolist(),
         "basis": str(basis),
         "seed": int(seed),
         "mapping": str(mapping),
@@ -149,15 +103,14 @@ def make_run_config_dict(
 
 
 def run_signature(cfg: Dict[str, Any]) -> str:
-    """
-    Stable short hash used to identify a run config.
+    return stable_hash_dict(cfg, ndigits=8, n_hex=12)
 
-    Important: cfg should already be JSON-safe (or at least JSON-dumpable).
-    We additionally round floats recursively to reduce accidental cache misses.
-    """
-    cfg_stable = _round_floats(_to_serializable(cfg))
-    payload = json.dumps(cfg_stable, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:12]
+
+def load_run_record(prefix: str) -> Dict[str, Any] | None:
+    path = _result_path_from_prefix(prefix)
+    if not path.exists():
+        return None
+    return read_json(path)
 
 
 def _result_path_from_prefix(prefix: str) -> Path:
@@ -168,9 +121,7 @@ def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     """Save run record JSON under results/qite/<prefix>.json."""
     ensure_dirs()
     path = _result_path_from_prefix(prefix)
-    serializable_record = _to_serializable(record)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(serializable_record, f, indent=2)
+    atomic_write_json(path, record)
     return str(path)
 
 
@@ -205,10 +156,12 @@ def make_filename_prefix(
     -----
     Accepts extra kwargs so qite.core can evolve without breaking I/O.
     """
+    from common.naming import format_molecule_name, format_token
+
     mol = str(cfg.get("molecule", cfg.get("molecule_label", "UNK")))
 
     # Normalise molecule label for filesystem
-    mol_fs = mol.replace("+", "plus").replace(" ", "_").replace("/", "_")
+    mol_fs = format_molecule_name(mol)
 
     ansatz = str(cfg.get("ansatz", ""))
     mapping = str(cfg.get("mapping", ""))
@@ -217,8 +170,9 @@ def make_filename_prefix(
 
     algo_tag = str(algo).strip().lower() if algo else "qite"
     noise_tag = "noisy" if bool(noisy) else "noiseless"
+    dtau_tok = format_token(dtau)
 
     return (
         f"{algo_tag}__{mol_fs}__{ansatz}__{mapping}__"
-        f"{noise_tag}__steps{steps}__dtau{dtau:g}__s{int(seed)}__{hash_str}"
+        f"{noise_tag}__steps{steps}__dtau{dtau_tok}__s{int(seed)}__{hash_str}"
     )

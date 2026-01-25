@@ -260,17 +260,25 @@ def _noisy_eval_energy_and_diag(
 
 def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
     """
-    qite.hamiltonian.build_hamiltonian delegates to common and may not expose
-    a consistent return_metadata kwarg across wrappers.
+    Unpack the outputs of qite.hamiltonian.build_hamiltonian in a robust way.
 
-    We therefore support BOTH of these possibilities:
-      A) returns (H, n_qubits, hf_state) only
-      B) returns (H, n_qubits, hf_state, symbols, coords, basis, charge, unit_out)
+    Supported return shapes
+    -----------------------
+    A) (H, n_qubits, hf_state)
+       -> NOT sufficient for eval-noise (needs metadata); raise.
 
-    For eval-noise, we need symbols/coords/basis/charge/unit_out. If they are not
-    returned, we raise a clear error (instead of an unpacking ValueError).
+    B) (H, n_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)
+       -> legacy metadata (no mapping_out); mapping_out will be taken from the input.
+
+    C) (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
+       -> preferred/modern form (current qite.hamiltonian in your tree).
+
+    Returns
+    -------
+    (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
     """
     out = build_hamiltonian(str(molecule), mapping=str(mapping), unit=str(unit))
+
     if not isinstance(out, (tuple, list)) or len(out) < 3:
         raise TypeError(
             "build_hamiltonian(...) must return at least (H, n_qubits, hf_state)."
@@ -279,32 +287,66 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
     if len(out) == 3:
         raise TypeError(
             "qite eval-noise requires build_hamiltonian to return metadata "
-            "(symbols, coordinates, basis, charge, unit). Update qite.hamiltonian "
-            "to forward metadata from common, or expose a return_metadata=True path."
+            "(symbols, coordinates, basis, charge, mapping_out, unit_out). "
+            "Update qite.hamiltonian to forward metadata from common."
         )
 
-    if len(out) < 8:
-        raise TypeError(
-            f"build_hamiltonian returned {len(out)} values; expected at least 8 "
-            "(H, n_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)."
+    # Legacy metadata shape: no mapping_out
+    if len(out) == 8:
+        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = out
+        mapping_out = str(mapping).strip().lower()
+        return (
+            H,
+            qubits,
+            hf_state,
+            symbols,
+            coordinates,
+            basis,
+            charge,
+            mapping_out,
+            unit_out,
         )
 
-    # Standard metadata tuple
-    H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = out[:8]
-    return H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out
+    # Preferred shape: mapping_out + unit_out
+    if len(out) >= 9:
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols,
+            coordinates,
+            basis,
+            charge,
+            mapping_out,
+            unit_out,
+        ) = out[:9]
+        return (
+            H,
+            qubits,
+            hf_state,
+            symbols,
+            coordinates,
+            basis,
+            charge,
+            mapping_out,
+            unit_out,
+        )
+
+    # Any other length (4..7) is an error
+    raise TypeError(
+        f"build_hamiltonian returned {len(out)} values; expected 3, 8, or >=9."
+    )
 
 
 def _eval_noise(args) -> dict:
     # Single source of truth for Hamiltonian + HF + molecule metadata
-    H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
+    H, qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out = (
         _unpack_hamiltonian_metadata(
             molecule=str(args.molecule),
             mapping=str(args.mapping),
             unit=str(args.unit),
         )
     )
-
-    mapping_out = str(args.mapping).strip().lower()
 
     sweep_levels = _parse_float_list(getattr(args, "sweep_dep", None))
     seeds = _parse_int_list(getattr(args, "seeds", None))
@@ -460,8 +502,14 @@ def main(argv: Optional[list[str]] = None) -> None:
     if args.command == "eval-noise":
         out = _eval_noise(args)
 
-        # Default behavior: pretty unless --json is explicitly requested
-        if bool(getattr(args, "json", False)):
+        as_json = bool(getattr(args, "json", False))
+        as_pretty = bool(getattr(args, "pretty", False))
+
+        if as_json and as_pretty:
+            # Mutually exclusive group should prevent this, but keep it robust.
+            raise ValueError("Choose only one of --json or --pretty.")
+
+        if as_json:
             print(json.dumps(out, indent=2))
         else:
             _print_pretty_eval(out)

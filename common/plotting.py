@@ -17,47 +17,52 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-IMG_ROOT = os.path.join(BASE_DIR, "images")
+from common.naming import format_token
+from common.paths import images_dir
 
 _SUB_RE = re.compile(r"([A-Za-z])(\d+)")
 
 
+def slug_token(val: object) -> str:
+    s = format_token(val)
+    s = s.lower()
+    s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
+    while "__" in s:
+        s = s.replace("__", "_")
+    return s.strip("_")
+
+
 def format_molecule_title(mol: str) -> str:
     """
-    Title-safe molecule label:
-    - digits immediately following an element symbol become subscripts (H2 -> H$_2$)
-    - leaves filenames alone (this is NOT used for paths)
-    - returns a string Matplotlib can render in titles
+    Title-safe molecule label (Matplotlib mathtext):
+
+    - Subscript digits that immediately follow an element symbol: H2 -> H$_2$
+    - Preserve non-filename-safe readability in titles only
+    - Render trailing charge as a superscript: H3+ -> H$_3$$^{+}$ (as one math segment)
+
+    Notes
+    -----
+    We avoid inserting raw '$...$' fragments before running the subscript regex,
+    because that can create invalid nested mathtext.
     """
     s = str(mol).strip()
 
-    # Optional: keep charge readable in titles
-    # e.g., "Na+" -> "Na$^{+}$"
-    s = s.replace("+", r"$^{+}$").replace("-", r"$^{-}$")
+    # Extract a *trailing* charge like '+', '-', '++', '--'
+    charge = ""
+    m = re.search(r"([+-]+)$", s)
+    if m:
+        charge = m.group(1)
+        s = s[: -len(charge)].strip()
 
-    # Element + digits -> subscript
+    # Element + digits -> subscript (H2O -> H$_2$O)
     s = _SUB_RE.sub(r"\1$_\2$", s)
 
+    # Apply charge as superscript at the end (mathtext)
+    if charge:
+        # normalize: '++' stays '++', etc.
+        s = f"{s}$^{{{charge}}}$"
+
     return s
-
-
-def format_token(val: object) -> str:
-    if val is None:
-        return ""
-    if isinstance(val, (int, float)):
-        s = f"{float(val):.5f}".rstrip("0").rstrip(".")
-        return s.replace(".", "p")
-    s = str(val).strip()
-    return s.replace(" ", "_").replace("+", "plus")
-
-
-def format_molecule_name(mol: str) -> str:
-    mol = str(mol).strip()
-    mol = mol.replace("+", "plus")
-    mol = mol.replace(" ", "_")
-
-    return mol
 
 
 def _fmt_noise_pct(p: float) -> str:
@@ -140,7 +145,7 @@ def build_filename(
         parts.append(f"{int(ancilla)}ancilla")
 
     if t is not None:
-        parts.append(f"t{format_token(float(t))}")
+        parts.append(f"t{_fmt_float_token(float(t))}")
 
     tg = _tok(tag)
     if tg:
@@ -152,19 +157,10 @@ def build_filename(
     return "_".join(parts) + ".png"
 
 
-def _kind_dir(kind: str) -> str:
-    k = str(kind).strip().lower()
-    if k not in {"vqe", "qpe", "qite"}:
-        raise ValueError(f"kind must be 'vqe', 'qpe', or 'qite' (got {kind!r})")
-    return os.path.join(IMG_ROOT, k)
-
-
 def ensure_plot_dirs(*, kind: str, molecule: Optional[str] = None) -> str:
-    target = _kind_dir(kind)
-    if molecule:
-        target = os.path.join(target, format_molecule_name(molecule))
-    os.makedirs(target, exist_ok=True)
-    return target
+    target = images_dir(kind, molecule=molecule)
+    target.mkdir(parents=True, exist_ok=True)
+    return str(target)
 
 
 def save_plot(

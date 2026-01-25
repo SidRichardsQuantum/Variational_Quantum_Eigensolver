@@ -18,9 +18,13 @@ Primary user-facing API:
     - load_qpe_result()
 """
 
-from importlib.metadata import version as _pkg_version
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
-__version__ = _pkg_version("vqe-pennylane")
+try:
+    __version__ = _pkg_version("vqe-pennylane")
+except PackageNotFoundError:  # pragma: no cover
+    __version__ = "0.0.0"
+
 __docformat__ = "restructuredtext"
 
 
