@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE + VQD + SSVQE + QPE (PennyLane)
+# Quantum Simulation Suite — VQE + SSVQE + VQD + QPE + QITE (PennyLane)
 
 <p align="center">
 
@@ -30,7 +30,7 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 - **Unified molecule registry, geometry generators, and plotting tools**
 - **Consistent caching and reproducibility across all solvers**
 
-This project refactors all previous notebooks into a clean Python package with a shared `common/` layer for Hamiltonians, molecules, geometry, and plotting.
+This project refactors all previous notebooks into a clean, versioned Python package with a shared `common/` layer for Hamiltonians, molecules, geometry, plotting, paths, and persistence.
 
 ## How to get started
 
@@ -83,10 +83,13 @@ Variational_Quantum_Eigensolver/
 │
 ├── common/                  # Shared logic for VQE + QPE + QITE
 │   ├── geometry.py          # Bond/angle geometry generators
-│   ├── hamiltonian.py       # Unified Hamiltonian builder (PennyLane/OpenFermion)
-│   ├── molecules.py         # Unified molecule registry
-│   ├── molecule_viz.py      # Draw molecules
-│   └── plotting.py          # Shared plotting + filename builders
+│   ├── hamiltonian.py       # Unified Hamiltonian builder
+│   ├── molecules.py         # Molecule registry
+│   ├── naming.py            # Stable filename / token formatting
+│   ├── paths.py             # Results/images root resolution
+│   ├── persist.py           # Atomic JSON read/write
+│   ├── plotting.py          # Unified plotting + filename builders
+│   └── molecule_viz.py      # Molecule visualization helpers
 │
 ├── images/                  # Saved png files. In .gitignore
 ├── results/                 # JSON outputs.    In .gitignore
@@ -127,7 +130,7 @@ pip install -e .
 ### Confirm installation
 
 ```bash
-python -c "import vqe, qpe; print('VQE+QPE imported successfully!')"
+python -c "import vqe, qpe, qite, common; print('All stacks imported successfully!')"
 ```
 
 ---
@@ -214,7 +217,11 @@ from qpe.core import run_qpe
 symbols = ["H", "H"]
 coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]]
 
-H, n_qubits, hf_state = build_hamiltonian(symbols, coords, charge=0, basis="STO-3G")
+H, n_qubits, hf_state, *_ = build_hamiltonian(
+    molecule="H2",
+    mapping="jordan_wigner",
+    unit="angstrom",
+)
 result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 ```
 
@@ -226,6 +233,7 @@ result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
 
 * **VarQITE (McLachlan)** imaginary-time parameter updates (noiseless, pure-state)
 * Cached run records under `results/qite/` and convergence plots under `images/qite/`
+* Explicit separation between optimization (`qite run`) and noisy evaluation (`qite eval-noise`)
 
 ### Example
 
@@ -248,6 +256,8 @@ print(res["energy"])
 ---
 
 ## CLI usage
+
+All CLIs are installed as entrypoints (`vqe`, `qpe`, `qite`) or can be invoked via `python -m`.
 
 ### VQE
 
