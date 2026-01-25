@@ -1261,3 +1261,29 @@ def run_vqe_mapping_comparison(
         )
 
     return results
+
+
+def get_exact_spectrum(
+    molecule: str = "H2",
+    *,
+    k: int = 10,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
+) -> list[float]:
+    """
+    Return the lowest-k exact eigenvalues (Ha) for the qubit Hamiltonian of `molecule`.
+
+    This is a package-level helper so notebooks do not need to call build_hamiltonian/qml.matrix directly.
+    """
+    import numpy as _np
+    import pennylane as _qml
+
+    H, n_wires, *_ = build_hamiltonian(
+        str(molecule),
+        mapping=str(mapping).strip().lower(),
+        unit=str(unit).strip().lower(),
+    )
+    Hmat = _np.array(_qml.matrix(H), dtype=float)
+    evals = _np.sort(_np.linalg.eigvalsh(Hmat))
+    k = int(max(1, k))
+    return [float(x) for x in evals[:k]]

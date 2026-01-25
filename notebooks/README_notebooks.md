@@ -1,12 +1,13 @@
 # 📘 Notebooks
 
-This directory contains curated Jupyter notebooks demonstrating **VQE** and **QPE** workflows using the packaged code in:
+This directory contains curated Jupyter notebooks demonstrating **VQE**, **VQD/SSVQE** (excited states), **QPE**, and **VarQITE** workflows using the packaged code in:
 
 - `vqe/`
 - `qpe/`
+- `qite/`
 - `common/`
 
-Most notebooks are written as **pure package clients** (i.e., they call `vqe.core` / `qpe.core` and do not define their own engines, devices, QNodes, caching, or plotting logic).
+Most notebooks are written as **pure package clients**: they call public APIs (e.g., `vqe.core`, `qpe.core`, `qite.core`) and do not define their own devices, QNodes, engines, caching, or plotting infrastructure.
 
 For background and CLI usage:
 
@@ -28,10 +29,12 @@ notebooks/
 ├── vqe/
 │   ├── H2/
 │   ├── H2O/
-│   ├── H3plus/
-│   └── LiH/
+│   └── H3plus/
 │
-└── qpe/
+├── qpe/
+│   └── H2/
+│
+└── qite/
     └── H2/
 ```
 
@@ -55,25 +58,25 @@ Path: `notebooks/vqe/H2/`
 
 H₂ is the primary educational benchmark: it is small enough to run quickly while still demonstrating the full VQE pipeline (ansatz choice, optimizers, geometry dependence, noise modelling, and excited-state methods).
 
-| Notebook                            | Purpose                                                                                                             | Style                                |           |                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------ | --------- | -------------- |
-| `Ansatz_Comparison.ipynb`           | Compare ansätze with an educational section plus a pure package-client workflow                                     | Mixed (educational + package client) |           |                |
-| `Bond_Length.ipynb`                 | H₂ bond-length scan using the package geometry-scan API                                                             | Package client                       |           |                |
-| `Mapping_Comparison.ipynb`          | Compare fermion-to-qubit mappings for H₂                                                                            | Package client                       |           |                |
-| `Noise_Scan.ipynb`                  | **Multi-seed** noise statistics for H₂ (robustness under noise)                                                     | Package client                       |           |                |
-| `Noisy_Ansatz_Comparison.ipynb`     | Compare ansätze under noise (summary metrics / curves)                                                              | Package client                       |           |                |
-| `Noisy_Ansatz_Convergence.ipynb`    | Noisy convergence behaviour for ansatz choices                                                                      | Package client                       |           |                |
-| `Noisy_Optimizer_Comparison.ipynb`  | Compare optimizers under noise (summary metrics / curves)                                                           | Package client                       |           |                |
-| `Noisy_Optimizer_Convergence.ipynb` | Noisy convergence behaviour for optimizer choices                                                                   | Package client                       |           |                |
-| `SSVQE.ipynb`                       | k-state excited states via **SSVQE** (noiseless + noisy validation; prints ΔEᵢ vs exact) | Package client |
-| `SSVQE_Comparisons.ipynb`           | **Noiseless** SSVQE sweeps (optimizer / ansatz / full grid), pick “best” config, multi-seed validation (mean ± std) | Package client                       |           |                |
-| `VQD.ipynb`                         | k-state excited states via **VQD** (noiseless + noisy validation; prints ΔEᵢ vs exact) | Package client |
-| `VQD_Comparisons.ipynb`             | **Noiseless** VQD sweeps (optimizer / ansatz / full grid), pick “best” config, multi-seed validation (mean ± std)   | Package client                       |           |                |
+| Notebook                            | Purpose                                                                                                           | Style                                |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `Ansatz_Comparison.ipynb`           | Compare ansätze with an educational section plus a production package-client workflow                             | Mixed (educational + package client) |
+| `Bond_Length.ipynb`                 | H₂ bond-length scan using the package geometry-scan API                                                           | Package client                       |
+| `Mapping_Comparison.ipynb`          | Compare fermion-to-qubit mappings for H₂                                                                          | Package client                       |
+| `Noise_Scan.ipynb`                  | **Multi-seed** noise statistics for H₂ (robustness under noise)                                                   | Package client                       |
+| `Noisy_Ansatz_Comparison.ipynb`     | Compare ansätze under noise (summary metrics / curves)                                                            | Package client                       |
+| `Noisy_Ansatz_Convergence.ipynb`    | Noisy convergence behaviour for ansatz choices                                                                    | Package client                       |
+| `Noisy_Optimizer_Comparison.ipynb`  | Compare optimizers under noise (summary metrics / curves)                                                         | Package client                       |
+| `Noisy_Optimizer_Convergence.ipynb` | Noisy convergence behaviour for optimizer choices                                                                 | Package client                       |
+| `SSVQE.ipynb`                       | k-state excited states via **SSVQE** (noiseless + noisy validation; prints ΔEᵢ vs exact)                        | Package client                       |
+| `SSVQE_Comparisons.ipynb`           | **Noiseless** SSVQE sweeps (optimizer / ansatz / full grid), pick “best” config, multi-seed validation (mean ± std) | Package client                     |
+| `VQD.ipynb`                         | k-state excited states via **VQD** (noiseless + noisy validation; prints ΔEᵢ vs exact)                          | Package client                       |
+| `VQD_Comparisons.ipynb`             | **Noiseless** VQD sweeps (optimizer / ansatz / full grid), pick “best” config, multi-seed validation (mean ± std) | Package client                       |
 
 Notes:
 
-* `Noise_Scan.ipynb` is intentionally **multi-seed** (statistical behaviour), not a single-seed demonstration notebook.
-* `Ansatz_Comparison.ipynb` contains an explicitly educational section; the remainder of the notebook demonstrates the production workflow as a pure package client.
+- `Noise_Scan.ipynb` is intentionally **multi-seed** (statistical behaviour), not a single-seed demonstration notebook.
+- `Ansatz_Comparison.ipynb` contains an explicitly educational “toy ansatz” section; the remainder demonstrates the production workflow.
 
 ---
 
@@ -81,28 +84,12 @@ Notes:
 
 Path: `notebooks/vqe/H3plus/`
 
-H₃⁺ is used as the “next step up” from H₂ (more qubits, more structure), but notebooks here remain focused and practical.
+H₃⁺ is used as the “next step up” from H₂ (more qubits, more structure), but notebooks here remain focused to keep runtimes reasonable.
 
 | Notebook          | Purpose                                                   | Style          |
 | ----------------- | --------------------------------------------------------- | -------------- |
 | `Noiseless.ipynb` | Noiseless VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺ | Package client |
 | `Noisy.ipynb`     | Noisy VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺     | Package client |
-
-Note:
-
-* H₂ is the canonical noise-scan benchmark; H₃⁺ notebooks are kept shorter to keep runtimes reasonable.
-
----
-
-### LiH (package client example)
-
-Path: `notebooks/vqe/LiH/`
-
-LiH demonstrates a larger chemistry system in a simple, reproducible way.
-
-| Notebook          | Purpose                                                      | Style          |
-| ----------------- | ------------------------------------------------------------ | -------------- |
-| `Noiseless.ipynb` | Noiseless LiH ground-state VQE using **UCCSD** via `run_vqe` | Package client |
 
 ---
 
@@ -124,50 +111,64 @@ H₂O is included primarily to demonstrate a **bond-angle scan** workflow.
 
 Path: `notebooks/qpe/H2/`
 
-These notebooks demonstrate the full QPE pipeline on H₂, including:
+These notebooks demonstrate the QPE pipeline on H₂, including:
 
-* controlled time evolution via `ApproxTimeEvolution`
-* inverse QFT on ancillas
-* phase → energy unwrapping using a Hartree–Fock reference
-* optional noise models and parameter sweeps
+- controlled time evolution via `ApproxTimeEvolution`
+- inverse QFT on ancillas
+- phase → energy unwrapping using a Hartree–Fock reference
+- optional noise models and parameter sweeps
 
 They are kept intentionally minimal for runtime and clarity.
 
-| Notebook          | Purpose                           |
-| ----------------- | --------------------------------- |
-| `Noiseless.ipynb` | Noiseless QPE distribution for H₂ |
-| `Noisy.ipynb`     | Noisy QPE distribution for H₂     |
+| Notebook          | Purpose                                         | Style          |
+| ----------------- | ----------------------------------------------- | -------------- |
+| `Noiseless.ipynb` | Noiseless QPE distribution and ancilla sweep    | Package client |
+| `Noisy.ipynb`     | Noisy QPE distribution + multi-seed noise sweep | Package client |
 
 All QPE notebooks are pure package clients, importing exclusively from `qpe.core`, `qpe.hamiltonian`, `qpe.io_utils`, and `qpe.visualize`.
 
 ---
 
+## 🟣 QITE / VarQITE Notebooks
+
+### H₂ (VarQITE)
+
+Path: `notebooks/qite/H2/`
+
+VarQITE is demonstrated on H₂ as a pure package client.
+
+| Notebook          | Purpose                     | Style          |
+| ----------------- | --------------------------- | -------------- |
+| `Noiseless.ipynb` | Noiseless VarQITE on H₂      | Package client |
+
+Note:
+- If you add a noisy-evaluation notebook for VarQITE, it should follow the same convention as other “noisy evaluation / sweep” notebooks: run the *parameter update* noiseless, then evaluate the converged circuit under noise.
+
+---
+
 ## Recommended Reading Order
 
-1. **VQE on H₂ (core intuition + workflows)**
+1. **Conceptual baseline**
+   - `getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb`
 
-   * `Ansatz_Comparison.ipynb`
-   * `Bond_Length.ipynb`
+2. **VQE on H₂ (core workflows)**
+   - `vqe/H2/Ansatz_Comparison.ipynb`
+   - `vqe/H2/Bond_Length.ipynb`
 
-2. **Noise robustness (statistical)**
-
-   * `Noise_Scan.ipynb`
-
-3. **Larger molecules (package client usage)**
-
-   * `LiH/Noiseless.ipynb`
-   * `H3plus/Noiseless.ipynb` and `H3plus/Noisy.ipynb`
-   * `H2O/Bond_Angle.ipynb`
+3. **Noise robustness (statistical)**
+   - `vqe/H2/Noise_Scan.ipynb`
+   - `qpe/H2/Noisy.ipynb`
 
 4. **Excited states**
+   - `vqe/H2/SSVQE.ipynb`, `vqe/H2/VQD.ipynb`
+   - `vqe/H2/SSVQE_Comparisons.ipynb`, `vqe/H2/VQD_Comparisons.ipynb`
 
-   * `H2/SSVQE.ipynb` and `H2/VQD.ipynb`
-   * `H2/SSVQE_Comparisons.ipynb` and `H2/VQD_Comparisons.ipynb`
+5. **Larger molecules / geometry**
+   - `vqe/H3plus/Noiseless.ipynb`, `vqe/H3plus/Noisy.ipynb`
+   - `vqe/H2O/Bond_Angle.ipynb`
 
-5. **QPE**
-
-   * `H2/Noiseless.ipynb`
-   * `H2/Noisy.ipynb`
+6. **VarQITE**
+   - `qite/H2/Noiseless.ipynb`
 
 ---
 
@@ -175,12 +176,12 @@ All QPE notebooks are pure package clients, importing exclusively from `qpe.core
 
 Running these notebooks generates plots and JSON records via the package’s caching and I/O utilities.
 
-Output locations in this repo layout:
+Default output locations:
 
-* `results/vqe/` and `results/qpe/` — JSON run records
-* `images/vqe/` and `images/qpe/` — saved plots
+- `results/vqe/`, `results/qpe/`, `results/qite/` — JSON run records
+- `images/vqe/`, `images/qpe/`, `images/qite/` — saved plots
 
-If you are using the CLI workflows described in `USAGE.md`, output locations follow the same package defaults.
+CLI workflows described in `USAGE.md` follow the same defaults.
 
 ---
 

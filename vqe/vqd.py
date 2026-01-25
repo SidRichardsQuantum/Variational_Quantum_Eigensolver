@@ -138,6 +138,7 @@ def run_vqd(
     basis: str = "sto-3g",
     plot: bool = True,
     force: bool = False,
+    mapping: str = "jordan_wigner",
 ):
     """
     Variational Quantum Deflation (VQD) for ground + excited states (k-state).
@@ -182,7 +183,7 @@ def run_vqd(
     # 1) Hamiltonian + molecular data
     if symbols is None or coordinates is None:
         H, num_wires, hf_state, symbols, coordinates, basis, charge, unit_out = (
-            build_hamiltonian(molecule)
+            build_hamiltonian(molecule, mapping=mapping)
         )
     else:
         charge = +1 if str(molecule).upper() == "H3+" else 0
@@ -248,7 +249,7 @@ def run_vqd(
         stepsize=stepsize,
         max_iterations=steps,
         seed=seed,
-        mapping="jordan_wigner",
+        mapping=mapping,
         noisy=bool(effective_noisy),
         depolarizing_prob=depolarizing_prob,
         amplitude_damping_prob=amplitude_damping_prob,
