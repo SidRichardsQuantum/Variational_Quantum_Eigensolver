@@ -338,7 +338,7 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
     )
 
 
-def _eval_noise(args) -> dict:
+def eval_noise(args) -> dict:
     # Single source of truth for Hamiltonian + HF + molecule metadata
     H, qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out = (
         _unpack_hamiltonian_metadata(
@@ -500,7 +500,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command == "eval-noise":
-        out = _eval_noise(args)
+        out = eval_noise(args)
 
         as_json = bool(getattr(args, "json", False))
         as_pretty = bool(getattr(args, "pretty", False))

@@ -79,6 +79,7 @@ __all__ = [
     "run_vqe_geometry_scan",
     "run_vqe_mapping_comparison",
     # Excited-state methods
+    "get_exact_spectrum",
     "run_ssvqe",
     "run_vqd",
     # Ansatz / optimizer registries
