@@ -57,10 +57,10 @@ All runs are **automatically cached** and **fully reproducible**.
 │   ├── qpe/            # QPE JSON records
 │   └── qite/           # VarQITE JSON records
 │
-├── images/
-│   ├── vqe/            # Convergence, scans, noise plots
-│   ├── qpe/            # Phase distributions, sweeps
-│   └── qite/           # VarQITE convergence plots
+└── images/
+    ├── vqe/            # Convergence, scans, noise plots
+    ├── qpe/            # Phase distributions, sweeps
+    └── qite/           # VarQITE convergence, diagnostics, noise plots
 ```
 
 Each run is keyed by a **hash of the full physical + numerical configuration**
@@ -76,11 +76,7 @@ To ignore cache:
 
 ## 🔷 Running VQE
 
-Supported molecule presets:
-
-```
-H2, LiH, H2O, H3+
-```
+All commands below can be invoked either as `vqe ...` **or** equivalently as `python -m vqe ...` (recommended for reproducibility across environments).
 
 VQE supports:
 
@@ -89,6 +85,12 @@ VQE supports:
 * Ansatz, optimizer, and mapping comparisons
 * Noise sweeps (single & multi-seed)
 * Excited states (SSVQE, VQD)
+
+Supported molecule presets:
+
+```
+H2, LiH, H2O, H3+
+```
 
 ### ▶ Basic ground-state VQE
 
@@ -179,6 +181,8 @@ qpe --molecule H2 --ancillas 4
 qpe --molecule H2 --noisy --p-dep 0.05 --p-amp 0.02
 ```
 
+`--noisy` must be explicitly set, otherwise `--p-dep/--p-amp` are ignored
+
 ### ▶ Trotterized evolution
 
 ```bash
@@ -187,7 +191,7 @@ qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
 
 ---
 
-## 🔷 Running QITE (VarQITE)
+## 🔷 Running QITE (VarQITE / McLachlan)
 
 QITE implements **variational imaginary-time evolution** using the McLachlan principle.
 
@@ -222,7 +226,8 @@ qite eval-noise \
   --molecule H2 \
   --steps 50 \
   --sweep-dep 0,0.02,0.04 \
-  --seeds 0,1,2
+  --seeds 0,1,2 \
+  --pretty
 ```
 
 ### ℹ️ QITE caching semantics

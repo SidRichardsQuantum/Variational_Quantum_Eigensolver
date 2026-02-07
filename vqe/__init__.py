@@ -36,6 +36,7 @@ from .core import (  # noqa: E402
     run_vqe_mapping_comparison,
     run_vqe_multi_seed_noise,
     run_vqe_optimizer_comparison,
+    get_exact_spectrum,
 )
 
 # Ansatz registry & utilities ---------------------------------------------------

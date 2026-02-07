@@ -79,7 +79,8 @@ Variational_Quantum_Eigensolver/
 │   ├── core.py              # VarQITE orchestration (cached runs)
 │   ├── engine.py            # Ansatz plumbing + energy/state QNodes for noiseless/noisy evaluation
 │   ├── hamiltonian.py       # QITE wrapper → uses common.hamiltonian
-│   └── visualize.py         # Convergence plots
+│   ├── io_utils.py          # Run config hashing + JSON run records
+│   └── visualize.py         # Convergence + diagnostics/noise plots
 │
 ├── common/                  # Shared logic for VQE + QPE + QITE
 │   ├── geometry.py          # Bond/angle geometry generators
@@ -282,8 +283,9 @@ python -m qite eval-noise --molecule H2 --steps 50 --seed 0 --dep 0.02 --amp 0.0
 
 # Depolarizing sweep averaged across seeds
 python -m qite eval-noise --molecule H2 --steps 50 --sweep-dep 0,0.02,0.04 --seeds 0,1,2 --pretty
-For full CLI coverage (including excited-state workflows), see [USAGE.md](USAGE.md).
 ```
+
+For full CLI coverage (including excited-state workflows), see [USAGE.md](USAGE.md).
 
 ---
 

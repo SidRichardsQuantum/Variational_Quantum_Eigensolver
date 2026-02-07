@@ -34,7 +34,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 All molecular geometries now come from the **shared registry** in `common/molecules.py`.
 All simulations use the **STO-3G** basis set for consistency.
 
-Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the **unified common/molecules.py registry**. This ensures VQE and QPE always use identical symbols, coordinates, charge, and basis.
+Molecular Hamiltonians are constructed using PennyLane’s `qchem.molecular_hamiltonian` via the unified builder in `common/hamiltonian.py`, which sources symbols/coordinates/basis/charge from the shared registry (`common/molecules.py`).
 
 ---
 
@@ -239,9 +239,11 @@ Subspace-Search VQE (SSVQE) is a variational method that finds **multiple eigens
 
 $$\mathcal{L} = \sum_i w_i ⟨\psi_i| H |\psi_i⟩$$
 
-3. Adding **orthogonality penalties** to ensure distinct states with $\text{Penalty} \propto | ⟨\psi_i | \psi_j⟩ |^2$
+3. Orthogonality is enforced by choosing **orthogonal computational-basis input states** $|\phi_k\rangle$ and applying a **shared** parameterized unitary $U(\theta)$:
 
-This enforces that each optimized state corresponds to a different eigenvector of the Hamiltonian.
+$$|\psi_k(\theta)\rangle = U(\theta)\,|\phi_k\rangle.$$
+
+In this formulation, no explicit overlap penalties are required; distinct optimized states arise from the orthogonality of the inputs.
 
 ```
          θ(0)               θ(1)
@@ -254,10 +256,8 @@ This enforces that each optimized state corresponds to a different eigenvector o
 
 Loss function:
 
-   𝓛(θ(0), θ(1), …) =
-       Σᵢ wᵢ ⟨ψᵢ| H |ψᵢ⟩        (weighted energies)
-     + λ Σ_{i<j} |⟨ψᵢ | ψⱼ⟩|²   (orthogonality penalty)
-
+   𝓛(θ) =
+       Σᵢ wᵢ ⟨ψᵢ(θ)| H |ψᵢ(θ)⟩        (weighted energies)
 
 OPTIMIZATION LOOP:
 
@@ -431,7 +431,7 @@ QPE operates by coupling a register of $n$ qubits, which encodes the phase infor
     $$E = -\frac{2\pi\theta}{t}.$$
 
 In this implementation, each controlled-unitary block uses **trotterized time evolution**, with the number of Trotter steps configurable from the CLI or Python API.  
-The initial state is always the **Hartree–Fock state** constructed directly from the qubit count returned by `qchem.molecular_hamiltonian`, ensuring correctness for all supported molecules.
+The initial state is the **Hartree–Fock reference** returned by the unified Hamiltonian pipeline; QPE performance depends on its overlap with the target eigenstate (HF is typically a good starting point for weakly correlated systems).
 
 ```
 Ancilla register (phase qubits):    a₀  a₁  ...  a_{n-1}
@@ -540,9 +540,12 @@ ensuring that cross-method comparisons are chemically consistent.
 
 This project models two primary noise channels — **depolarizing** and **amplitude damping** — using PennyLane’s `default.mixed` backend.
 
-Both VQE *and* QPE support these channels:
+Both VQE and QPE support these channels:
 - VQE applies noise layer-by-layer inside the ansatz.
 - QPE applies noise after each controlled-unitary evolution using `qpe.noise.apply_noise_all`.
+
+**VarQITE (QITE)** parameter updates are **noiseless by design** (pure-state McLachlan update).  
+Noise is supported only for **post-evaluation** of converged parameters (density-matrix expectation values on `default.mixed` via `qite eval-noise`).
 
 ```
 NOISE IN SIMULATIONS
@@ -567,6 +570,7 @@ Noise effects studied:
 Used in:
    • VQE (after each ansatz layer)
    • QPE (after each controlled evolution step)
+   • QITE / VarQITE (post-evaluation only; not during parameter updates)
 ```
 
 For excited-state methods (SSVQE and VQD), noise is handled consistently by computing overlap penalties using density-matrix inner products rather than statevector overlaps.
