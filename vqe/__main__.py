@@ -31,6 +31,7 @@ import numpy as np
 
 from vqe import (
     plot_convergence,
+    run_adapt_vqe,
     run_ssvqe,
     run_vqd,
     run_vqe,
@@ -138,6 +139,39 @@ def handle_special_modes(args) -> bool:
         print("Final energies per state (reported as E0, E1, ...):")
         for i, e in enumerate(finals):
             print(f"  E{i}: {e:+.10f} Ha")
+        return True
+
+    # ---------------------------
+    #  ADAPT-VQE (adaptive ansatz)
+    # ---------------------------
+    if args.adapt:
+        print("🔹 Running ADAPT-VQE (adaptive ansatz growth)...")
+
+        inner_steps = (
+            int(args.inner_steps) if args.inner_steps is not None else int(args.steps)
+        )
+        inner_stepsize = (
+            float(args.inner_stepsize)
+            if args.inner_stepsize is not None
+            else float(args.stepsize)
+        )
+
+        res = run_adapt_vqe(
+            molecule=args.molecule,
+            pool=str(args.pool),
+            max_ops=int(args.max_ops),
+            grad_tol=float(args.grad_tol),
+            inner_steps=inner_steps,
+            inner_stepsize=inner_stepsize,
+            optimizer_name=args.optimizer,
+            seed=int(args.seed),
+            noisy=bool(args.noisy),
+            depolarizing_prob=float(args.depolarizing_prob),
+            amplitude_damping_prob=float(args.amplitude_damping_prob),
+            mapping=str(args.mapping),
+            plot=bool(args.plot),
+            force=bool(args.force),
+        )
         return True
 
     # ---------------------------
@@ -364,12 +398,15 @@ def main() -> None:
     )
     special.add_argument("--param-name", type=str, default="param")
 
-    # Excited-state flags (mutually exclusive)
+    # Excited-state / adaptive solvers (mutually exclusive)
     excited = special.add_mutually_exclusive_group()
     excited.add_argument(
         "--ssvqe", action="store_true", help="Run SSVQE (excited states)"
     )
     excited.add_argument("--vqd", action="store_true", help="Run VQD (excited states)")
+    excited.add_argument(
+        "--adapt", action="store_true", help="Run ADAPT-VQE (adaptive ansatz)"
+    )
 
     special.add_argument(
         "--num-states",
@@ -411,6 +448,39 @@ def main() -> None:
         help="VQD hold fraction in [0,1) before ramping beta",
     )
 
+    # ADAPT-VQE-specific knobs
+    special.add_argument(
+        "--pool",
+        type=str,
+        default="uccsd",
+        choices=["uccsd", "uccs", "uccd"],
+        help="ADAPT-VQE operator pool (default: uccsd).",
+    )
+    special.add_argument(
+        "--max-ops",
+        type=int,
+        default=20,
+        help="Maximum number of operators to add to the adaptive ansatz.",
+    )
+    special.add_argument(
+        "--grad-tol",
+        type=float,
+        default=1e-3,
+        help="Stop when the max operator gradient norm falls below this tolerance.",
+    )
+    special.add_argument(
+        "--inner-steps",
+        type=int,
+        default=None,
+        help="ADAPT-VQE inner-loop optimizer steps per outer iteration (default: --steps).",
+    )
+    special.add_argument(
+        "--inner-stepsize",
+        type=float,
+        default=None,
+        help="ADAPT-VQE inner-loop optimizer stepsize (default: --stepsize).",
+    )
+
     # ------------------------------------------------------------------
     # Misc
     # ------------------------------------------------------------------
@@ -436,7 +506,15 @@ def main() -> None:
         print(f"• Mode:       SSVQE (num_states={args.num_states})")
     elif args.vqd:
         print(f"• Mode:       VQD   (num_states={args.num_states}, beta={args.beta})")
-    print()
+    elif args.adapt:
+        inner_steps = args.inner_steps if args.inner_steps is not None else args.steps
+        inner_stepsize = (
+            args.inner_stepsize if args.inner_stepsize is not None else args.stepsize
+        )
+        print(
+            f"• Mode:       ADAPT-VQE (pool={args.pool}, max_ops={args.max_ops}, grad_tol={args.grad_tol}, "
+            f"inner_steps={inner_steps}, inner_stepsize={inner_stepsize})"
+        )
 
     # Try special modes first
     if handle_special_modes(args):

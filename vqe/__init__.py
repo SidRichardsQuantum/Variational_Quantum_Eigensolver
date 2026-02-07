@@ -39,6 +39,9 @@ from .core import (  # noqa: E402
     get_exact_spectrum,
 )
 
+# ADAPT-VQE ----------------------------------------------------------------------
+from .adapt import run_adapt_vqe  # noqa: E402
+
 # Ansatz registry & utilities ---------------------------------------------------
 from .ansatz import ANSATZES, get_ansatz, init_params  # noqa: E402
 
@@ -102,4 +105,6 @@ __all__ = [
     "plot_ansatz_comparison",
     "plot_noise_statistics",
     "plot_multi_state_convergence",
+    # ADAPT-VQE
+    "run_adapt_vqe",
 ]

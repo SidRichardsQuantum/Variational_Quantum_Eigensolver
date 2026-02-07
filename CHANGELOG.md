@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.1] - 2026-02-07
+
+### Added
+
+* **Full ADAPT-VQE implementation** as a first-class solver in the `vqe` package:
+
+  * Chemistry-oriented ADAPT-VQE with Hartree–Fock reference state.
+  * Operator pools based on **UCC singles / doubles / singles+doubles** (`uccs`, `uccd`, `uccsd`).
+  * Deterministic operator selection via maximum energy gradient
+    $|\partial E / \partial \theta|$ evaluated at zero initialization.
+  * Explicit inner/outer loop structure with configurable:
+
+    * inner optimizer steps and step size,
+    * maximum operator budget,
+    * gradient stopping tolerance.
+  * Fully compatible with existing VQE infrastructure:
+
+    * device selection,
+    * noise handling,
+    * caching,
+    * plotting,
+    * run hashing.
+
+* **ADAPT-VQE CLI support** via `python -m vqe --adapt`:
+
+  * Unified with existing VQE / SSVQE / VQD CLI dispatcher.
+  * Supports operator pool selection, stopping criteria, noise flags, plotting, and cache control.
+  * Results cached under the same deterministic hashing and filesystem conventions as standard VQE.
+
+* **ADAPT-VQE result schema** standardized and persisted:
+
+  * Outer-loop energies.
+  * Inner-loop convergence trajectories per ADAPT iteration.
+  * Maximum gradient history used for stopping.
+  * Ordered list of selected operators with wire indices.
+  * Final optimized parameter vector.
+  * Full run configuration embedded in JSON records.
+
+* **New ADAPT-VQE smoke test**:
+
+  * Ensures end-to-end execution, caching, and deterministic behavior.
+  * Integrated into the existing pytest suite alongside VQE / QPE / QITE tests.
+
+### Changed
+
+* **`vqe` CLI generalized** to act as a unified driver for:
+
+  * ground-state VQE,
+  * excited-state solvers (SSVQE, VQD),
+  * adaptive ansatz construction (ADAPT-VQE).
+* Documentation updates across:
+
+  * `README.md` — ADAPT-VQE promoted to a first-class solver with conceptual and CLI overview.
+  * `USAGE.md` — explicit ADAPT-VQE CLI usage and Python API examples.
+* Plotting for ADAPT-VQE integrated with `common.plotting`:
+
+  * unified filename construction,
+  * consistent molecule labeling,
+  * reproducible image paths.
+
+### Fixed
+
+* Ensured ADAPT-VQE noise flags are canonicalized consistently with standard VQE
+  (non-effective noise parameters no longer pollute cache keys or filenames).
+* Prevented silent operator/parameter mismatches by enforcing strict length checks
+  between selected operator lists and parameter vectors.
+
+### Internal
+
+* ADAPT-VQE implemented without introducing any new infrastructure layers:
+
+  * reuses `common.hamiltonian`, `common.plotting`, `common.persist`, and existing VQE engine utilities.
+* Test suite expanded to cover adaptive workflows without increasing runtime instability.
+* Codebase now supports **fixed-ansatz, adaptive-ansatz, variational imaginary-time, and phase-estimation workflows** under a single, coherent architecture.
+
+---
+
 ## [0.3.0] – 2026-01-25
 
 ### Added

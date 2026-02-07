@@ -2,7 +2,7 @@
 
 This guide explains how to use the command-line interfaces for:
 
-- **VQE** — Variational Quantum Eigensolver (ground & excited states)
+- **VQE** — Variational Quantum Eigensolver (ground & excited states, plus ADAPT-VQE)
 - **QPE** — Quantum Phase Estimation
 - **QITE** — Variational Quantum Imaginary Time Evolution (VarQITE)
 - **common** — Unified Hamiltonian and molecule registry (internal)
@@ -34,7 +34,7 @@ This installs four tightly integrated packages:
 
 | Package  | Purpose                                                         |
 | -------- | --------------------------------------------------------------- |
-| `vqe`    | Ground- and excited-state variational solvers (VQE, SSVQE, VQD) |
+| `vqe`    | Variational solvers (VQE, ADAPT-VQE, SSVQE, VQD)                |
 | `qpe`    | Quantum Phase Estimation                                        |
 | `qite`   | Variational imaginary-time evolution (VarQITE)                  |
 | `common` | Unified Hamiltonian, molecule registry, geometry, plotting      |
@@ -53,7 +53,7 @@ All runs are **automatically cached** and **fully reproducible**.
 
 ```
 ├── results/
-│   ├── vqe/            # VQE, SSVQE, VQD JSON records
+│   ├── vqe/            # VQE, ADAPT-VQE, SSVQE, VQD JSON records
 │   ├── qpe/            # QPE JSON records
 │   └── qite/           # VarQITE JSON records
 │
@@ -81,6 +81,7 @@ All commands below can be invoked either as `vqe ...` **or** equivalently as `py
 VQE supports:
 
 * Ground-state VQE
+* ADAPT-VQE (adaptive ansatz construction)
 * Geometry scans (bond / angle, VQE only)
 * Ansatz, optimizer, and mapping comparisons
 * Noise sweeps (single & multi-seed)
@@ -162,6 +163,48 @@ res = run_vqd(molecule="H3+", num_states=3)
 ```
 
 CLI exposure is intentionally deferred to keep workflows explicit.
+
+---
+
+## 🔷 ADAPT-VQE
+
+ADAPT-VQE constructs the variational ansatz adaptively by selecting operators from an excitation pool using gradient scores, growing the circuit until a stopping tolerance is met.
+
+### ▶ ADAPT-VQE via CLI
+
+```bash
+# Basic ADAPT-VQE run (defaults: pool=uccsd, max_ops=20, grad_tol=1e-3)
+vqe -m H3+ --adapt
+
+# Configure pool + stopping criteria
+vqe -m H3+ --adapt --pool uccsd --max-ops 20 --grad-tol 1e-3
+
+# Override ADAPT inner-loop optimization (defaults to --steps/--stepsize if omitted)
+vqe -m H3+ --adapt --inner-steps 75 --inner-stepsize 0.2
+
+# Noisy ADAPT-VQE (noise must be explicitly enabled)
+vqe -m H3+ --adapt --noisy --depolarizing-prob 0.02 --amplitude-damping-prob 0.0
+```
+
+### ▶ ADAPT-VQE via Python API
+
+```python
+from vqe.adapt import run_adapt_vqe
+
+res = run_adapt_vqe(
+    molecule="H3+",
+    pool="uccsd",
+    max_ops=20,
+    grad_tol=1e-3,
+    inner_steps=75,
+    inner_stepsize=0.2,
+    optimizer_name="Adam",
+    seed=0,
+    mapping="jordan_wigner",
+    plot=True,
+)
+print(res["energy"])
+```
 
 ---
 
@@ -277,7 +320,7 @@ pytest -v
 Covers:
 
 * Hamiltonian registry & geometry
-* VQE / QPE / QITE minimal runs
+* VQE / ADAPT-VQE / QPE / QITE minimal runs
 * Noise handling
 * CLI entrypoints
 * Matrix consistency across stacks

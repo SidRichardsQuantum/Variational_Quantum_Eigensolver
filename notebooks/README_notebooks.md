@@ -1,6 +1,6 @@
 # 📘 Notebooks
 
-This directory contains curated Jupyter notebooks demonstrating **VQE**, **VQD/SSVQE** (excited states), **QPE**, and **VarQITE** workflows using the packaged code in:
+This directory contains curated Jupyter notebooks demonstrating **VQE**, **ADAPT-VQE**, **VQD/SSVQE** (excited states), **QPE**, and **VarQITE** workflows using the packaged code in:
 
 - `vqe/`
 - `qpe/`
@@ -88,6 +88,7 @@ H₃⁺ is used as the “next step up” from H₂ (more qubits, more structure
 
 | Notebook          | Purpose                                                   | Style          |
 | ----------------- | --------------------------------------------------------- | -------------- |
+| `Adapt.ipynb`     | ADAPT-VQE smoke test / convergence on H₃⁺ (operator growth + inner-loop optimization) | Package client |
 | `Noiseless.ipynb` | Noiseless VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺ | Package client |
 | `Noisy.ipynb`     | Noisy VQE comparison for UCC-S / UCC-D / UCCSD on H₃⁺     | Package client |
 
@@ -164,7 +165,7 @@ Note:
    - `vqe/H2/SSVQE_Comparisons.ipynb`, `vqe/H2/VQD_Comparisons.ipynb`
 
 5. **Larger molecules / geometry**
-   - `vqe/H3plus/Noiseless.ipynb`, `vqe/H3plus/Noisy.ipynb`
+   - `vqe/H3plus/Adapt.ipynb`, `vqe/H3plus/Noiseless.ipynb`, `vqe/H3plus/Noisy.ipynb`
    - `vqe/H2O/Bond_Angle.ipynb`
 
 6. **VarQITE**
@@ -184,6 +185,7 @@ Default output locations:
 CLI workflows described in `USAGE.md` follow the same defaults.
 
 ---
+
 
 📘 Author: Sid Richards (SidRichardsQuantum)
 

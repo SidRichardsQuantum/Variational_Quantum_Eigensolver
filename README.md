@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE + SSVQE + VQD + QPE + QITE (PennyLane)
+# Quantum Simulation Suite — VQE + ADAPT-VQE + SSVQE + VQD + QPE + QITE (PennyLane)
 
 <p align="center">
 
@@ -25,6 +25,7 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 - **Variational Quantum Eigensolver (VQE)** (ground state)
 - **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
 - **Variational Quantum Deflation (VQD)** (excited states via deflation)
+- **Adaptive Derivative-Assembled Pseudo-Trotter VQE (ADAPT-VQE)** (adaptive ansatz growth)
 - **Quantum Phase Estimation (QPE)** (phase-based energy estimation)
 - **Quantum Imaginary Time Evolution (QITE / VarQITE)** (imaginary-time ground-state filtering via McLachlan updates)
 - **Unified molecule registry, geometry generators, and plotting tools**
@@ -58,7 +59,8 @@ Variational_Quantum_Eigensolver/
 │   ├── __main__.py          # CLI: python -m vqe
 │   ├── core.py              # VQE orchestration (runs, scans, sweeps)
 │   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
-│   ├── ansatz.py            # UCCSD, RY-CZ, HEA, minimal ansätze
+│   ├── ansatz.py            # UCCSD, RY-CZ, HEA, minimal ansatz
+│   ├── adapt.py             # ADAPT-VQE (adaptive ansatz growth)
 │   ├── optimizer.py         # Adam, GD, Momentum, SPSA, etc.
 │   ├── hamiltonian.py       # VQE wrapper → uses common.hamiltonian
 │   ├── io_utils.py          # JSON caching, run signatures
@@ -155,18 +157,10 @@ The following modules ensure full consistency between solvers:
 
 * Ground-state VQE
 * Excited states via **SSVQE** and **VQD**
+* ADAPT-VQE (adaptive operator selection from an excitation pool)
 * Geometry scans and mapping comparisons
 * Optional noise models (depolarizing / amplitude damping and custom noise callables)
 * Result caching (hash-based signatures) and unified plot naming
-
-### Energy ordering policy (important)
-
-For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a consistent way:
-
-* `energies_per_state[k]` is the trajectory for the *k-th reported energy*.
-* **Final energies are ordered ascending (lowest → highest)** for stable reporting in notebooks/tables.
-
-This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
 
 ### VQE example
 
@@ -176,6 +170,15 @@ from vqe.core import run_vqe
 result = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", steps=50)
 print(result["energy"])
 ```
+
+### Energy ordering policy (important)
+
+For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a consistent way:
+
+* `energies_per_state[k]` is the trajectory for the *k-th reported energy*.
+* **Final energies are ordered ascending (lowest → highest)** for stable reporting in notebooks/tables.
+
+This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
 
 ### SSVQE (excited-state) overview
 
@@ -196,6 +199,24 @@ VQD computes excited states sequentially:
 * Then optimize an excited state $|\psi_1(\theta_1)\rangle$ using a deflation term:
   $$\mathcal{L}(\theta_1) = E(\theta_1) + \beta \cdot \text{Overlap}(\psi_0,\psi_1)$$
   In the noiseless case, overlap approximates $|\langle \psi_0|\psi_1\rangle|^2$; with noise it can be implemented using a density-matrix similarity proxy.
+
+### ADAPT-VQE overview
+
+ADAPT-VQE (adaptive ansatz) constructs the variational ansatz **on the fly**, rather than fixing it in advance.
+
+The workflow alternates between two loops:
+
+* **Inner loop:** optimize the parameters of the current ansatz using standard VQE.
+* **Outer loop:** evaluate the energy gradient that would result from appending each candidate operator from a predefined pool (e.g. UCC singles/doubles), and **append the operator with the largest gradient magnitude**.
+
+This procedure continues until the maximum gradient falls below a tolerance or a maximum operator budget is reached.
+
+Key features of this implementation:
+
+* Chemistry-motivated operator pools (**UCC-S / UCC-D / UCCSD**)
+* Hartree–Fock reference state
+* Deterministic operator selection via $|\partial E / \partial \theta|$ at $\theta=0$
+* Fully compatible with the existing VQE engine, noise handling, caching, and plotting infrastructure
 
 ---
 

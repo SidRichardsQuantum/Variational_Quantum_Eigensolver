@@ -9,12 +9,13 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 - [Molecules Studied](#molecules-studied)
 - [Background](#background)
 - [VQE Algorithm Overview](#vqe-algorithm-overview)
-  - [Ansatz Construction](#ansatz-construction)
-  - [Optimizers](#optimizers)
-  - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
-  - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
-   - [Subspace-Search VQE](#subspace-search-vqe)
-   - [Variational Quantum Deflation](#variational-quantum-deflation)
+   - [Ansatz Construction](#ansatz-construction)
+   - [Optimizers](#optimizers)
+   - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
+   - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+      - [Subspace-Search VQE](#subspace-search-vqe)
+      - [Variational Quantum Deflation](#variational-quantum-deflation)
+  - [ADAPT-VQE](#adapt-vqe)
 - [Quantum Phase Estimation](#quantum-phase-estimation)
 - [Quantum Imaginary Time Evolution](#quantum-imaginary-time-evolution)
 - [Noise Types](#noise-types)
@@ -304,8 +305,6 @@ where:
 - $\beta$ is a tunable deflation strength
 - $\mathcal{O}$ is an overlap penalty enforcing orthogonality
 
----
-
 #### Overlap Penalty
 
 The overlap metric depends on whether the simulation is noiseless or noisy:
@@ -321,8 +320,6 @@ $$\mathcal{O}(\rho_k, \rho_n) = \mathrm{Tr}(\rho_k \rho_n)$$
 This formulation allows VQD to remain valid when circuits are executed on
 mixed-state simulators or noisy hardware.
 
----
-
 #### k-State Generalization
 
 VQD naturally generalizes to an arbitrary number of states:
@@ -335,8 +332,6 @@ VQD naturally generalizes to an arbitrary number of states:
 
 Each state is optimized **independently**, with its own parameter vector and
 its own optimization loop.
-
----
 
 #### Beta Scheduling
 
@@ -354,7 +349,7 @@ the energy landscape is sufficiently explored.
 
 ---
 
-### Comparison with SSVQE
+### Excited State Comparisons
 
 | Method | Optimization | Orthogonality | Noise support | Scaling |
 |------|-------------|---------------|---------------|---------|
@@ -364,6 +359,104 @@ the energy landscape is sufficiently explored.
 In this project:
 - **SSVQE** is used for pedagogical demonstrations and small subspaces
 - **VQD** is preferred for systematic, scalable excited-state studies
+
+---
+
+### ADAPT-VQE
+
+ADAPT-VQE (Adaptive Derivative-Assembled Pseudo-Trotter VQE) is a variational method that **constructs the ansatz on the fly**, rather than fixing a circuit structure in advance.
+
+Instead of choosing a large, expressive ansatz up front (e.g., UCCSD), ADAPT-VQE grows a compact ansatz by repeatedly selecting the **most “useful” operator** from an excitation pool, based on an energy-gradient criterion.
+
+This project implements a chemistry-oriented ADAPT-VQE variant:
+
+- **Reference state:** Hartree–Fock determinant $|HF\rangle$
+- **Operator pool:** UCC excitation generators (singles, doubles, or both)
+
+#### Core idea
+
+Let the current adaptive ansatz (after $k$ selections) be
+
+$$|\psi_k(\theta)\rangle = U_k(\theta)\,|HF\rangle,$$
+
+where $U_k(\theta)$ is a product of excitation unitaries chosen from a pool:
+
+$$U_k(\theta) = \prod_{j=1}^{k} e^{\theta_j A_j}.$$
+
+At each outer iteration, ADAPT-VQE scores every candidate operator $A$ in the remaining pool by asking:
+
+> “If I appended this operator with parameter initialized at $\theta=0$, how large is the energy gradient?”
+
+In this implementation the score is:
+
+$$g(A) = \left|\frac{\partial E}{\partial \theta}\right|_{\theta=0}, \quad
+E(\theta)=\langle \psi(\theta)|H|\psi(\theta)\rangle.$$
+
+The operator with the **largest gradient magnitude** is appended:
+
+$$A_{k+1} = \arg\max_{A\in\mathcal{P}\setminus\{A_1,\dots,A_k\}} g(A).$$
+
+#### Two-loop workflow
+
+ADAPT-VQE alternates between:
+
+1. **Inner loop (standard VQE optimization)**  
+   Optimize the parameters for the **current** selected operator list:
+
+   $$\theta^{*}_k = \arg\min_{\theta}\;\langle \psi_k(\theta)|H|\psi_k(\theta)\rangle.$$
+
+2. **Outer loop (operator selection)**  
+   Evaluate $g(A)$ for each candidate operator $A$ when appended at zero,
+   then append the best candidate and continue.
+
+Stopping conditions:
+
+- **Gradient tolerance:** stop when $\max_A g(A) < \varepsilon$ (called `grad_tol`)
+- **Operator budget:** stop when $k$ reaches `max_ops`
+
+```
+
+# ADAPT-VQE WORKFLOW
+
+Initialize:
+|ψ₀⟩ = |HF⟩ , selected_ops = []
+
+Repeat (outer loop):
+
+1. Inner optimize current ansatz parameters θ
+   → minimize E(θ) with Adam / GradientDescent / etc.
+
+2. For each candidate operator A in pool:
+   score g(A) = |∂E/∂θ_new| at θ_new = 0 (appended)
+
+3. Append operator with largest g(A)
+
+Stop if:
+max g(A) < grad_tol  OR  len(selected_ops) == max_ops
+
+```
+
+#### Relationship to UCCSD and “fixed ansatz” VQE
+
+- **Fixed ansatz VQE:** pick a circuit family (UCCSD, RY-CZ, HEA, …) and optimize its parameters.
+- **ADAPT-VQE:** uses a pool (often UCC-like) but **selects only a subset** of operators, in an order chosen by gradient information.
+
+In practice, this often yields:
+- shallower circuits than “full UCCSD” at comparable accuracy (for small systems),
+- more interpretable operator selections (which excitations mattered),
+- a natural convergence diagnostic via the max-gradient stopping metric.
+
+#### Notes on this implementation
+
+- The excitation pool is generated from the same chemistry metadata used throughout the package (molecule registry + Hamiltonian builder).
+- Noise handling and caching semantics match standard VQE:
+  - noise parameters are canonicalized (non-effective noise does not pollute cache keys),
+  - run records are hash-keyed by the full physical + numerical configuration.
+- The solver records both:
+  - outer-loop energies (post inner-optimization),
+  - inner-loop energy trajectories per ADAPT iteration,
+  - max-gradient history used for stopping,
+  - the final ordered operator list and optimized parameters.
 
 ---
 
@@ -623,6 +716,9 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
 **Imaginary-Time / VarQITE**
 - McLachlan, *A variational solution of the time-dependent Schrödinger equation* (1964).
 - Yuan et al., *Theory of variational quantum simulation* (for McLachlan-based real/imaginary-time variational evolution).
+
+**ADAPT-VQE**
+- Grimsley et al., *An adaptive variational algorithm for exact molecular simulations on a quantum computer* (ADAPT-VQE, Nature Communications, 2019). :contentReference[oaicite:0]{index=0}
 
 **Quantum Chemistry**
 - **Hartree–Fock Method** — overview  
