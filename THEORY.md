@@ -12,7 +12,8 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
    - [Ansatz Construction](#ansatz-construction)
    - [Optimizers](#optimizers)
    - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
-   - [Excited State Methods in VQE](#excited-state-methods-in-vqe)
+   - [Excited-State Methods](#excited-state-methods)
+      - [Quantum Subspace Expansion](#quantum-subspace-expansion)
       - [Subspace-Search VQE](#subspace-search-vqe)
       - [Variational Quantum Deflation](#variational-quantum-deflation)
   - [ADAPT-VQE](#adapt-vqe)
@@ -27,7 +28,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
 
 | Molecule | Properties Investigated                         | Basis     | Qubits (mapped) |
 |:--------:|:------------------------------------------------|:-----------|:----------------:|
-| **H₂**    | Ansatz comparison, optimizer comparison, QPE    | STO-3G     | 4 |
+| **H₂**    | Ansatz comparison, optimizer comparison, QPE, QSE | STO-3G     | 4 |
 | **LiH**   | Bond-length scans (VQE)                         | STO-3G     | 12 |
 | **H₂O**   | Bond-angle scans (VQE)                          | STO-3G     | 14 |
 | **H₃⁺**   | Mapping comparisons, SSVQE excited states       | STO-3G     | 6 |
@@ -218,7 +219,7 @@ Each mapping transforms the Hamiltonian into a different structure of Pauli oper
 
 ---
 
-### Excited State Methods in VQE
+### Excited-State Methods
 
 While the standard VQE algorithm is designed to find the **ground state** of a molecular Hamiltonian, many applications in quantum chemistry require access to **excited states** — for example, to predict **spectroscopic transitions**, **photoexcitation energies**, and **reaction pathways**.
 
@@ -229,6 +230,27 @@ The original VQE formulation finds the **lowest eigenvalue** of the Hamiltonian 
 $$E_0 = \min_{\theta} ⟨\psi(\theta)| H |\psi(\theta)⟩$$
 
 This process does not directly provide excited states, and repeating VQE with orthogonality constraints is non-trivial.
+
+#### Quantum Subspace Expansion
+
+Quantum Subspace Expansion (QSE) is a **post-VQE** method: it starts from a **converged
+(noiseless) VQE reference state** $|\psi\rangle$ and builds a small linear subspace around it
+using a chosen operator set $\{O_i\}$.
+
+##### Subspace construction
+
+Define the (generally non-orthonormal) basis states:
+
+$$|\phi_i\rangle = O_i |\psi\rangle.$$
+
+Then construct the subspace matrices
+
+$$H_{ij} = \langle \psi| O_i^\dagger H O_j |\psi\rangle,\qquad
+S_{ij} = \langle \psi| O_i^\dagger O_j |\psi\rangle.$$
+
+The approximate spectrum in this subspace is obtained by solving the generalized eigenvalue problem:
+
+$$Hc = ESc.$$
 
 #### Subspace-Search VQE
 
@@ -268,7 +290,7 @@ Initialize {θ(0), θ(1), …}
 Prepare { |ψᵢ(θ(i))⟩ } on device
       │
       ▼
-Measure ⟨ψᵢ|H|ψᵢ⟩ and overlaps ⟨ψᵢ|ψⱼ⟩
+Measure ⟨ψᵢ|H|ψᵢ⟩ for each reference-indexed state
       │
       ▼
 Compute 𝓛  → update all θ(i) with Adam
@@ -351,10 +373,11 @@ the energy landscape is sufficiently explored.
 
 ### Excited State Comparisons
 
-| Method | Optimization | Orthogonality | Noise support | Scaling |
-|------|-------------|---------------|---------------|---------|
-| **SSVQE** | Simultaneous | Explicit pairwise penalties | Supported | Harder with many states |
-| **VQD** | Sequential | Deflation against past states | Supported | Naturally k-state |
+| Method | Type | Optimization | Orthogonality mechanism | Noise support | Scaling |
+|------|------|-------------|--------------------------|---------------|---------|
+| **QSE** | Post-VQE | None (linear algebra) | Generalized EVP in $\{O_i|\psi\rangle\}$ subspace | Noiseless-only (statevector reference) | Pool-limited subspace |
+| **SSVQE** | Variational | Simultaneous | Orthogonal reference inputs + shared $U(\theta)$ | Supported | Harder with many states |
+| **VQD** | Variational | Sequential | Deflation against previously found states | Supported | Naturally $k$-state |
 
 In this project:
 - **SSVQE** is used for pedagogical demonstrations and small subspaces
@@ -718,7 +741,7 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
 - Yuan et al., *Theory of variational quantum simulation* (for McLachlan-based real/imaginary-time variational evolution).
 
 **ADAPT-VQE**
-- Grimsley et al., *An adaptive variational algorithm for exact molecular simulations on a quantum computer* (ADAPT-VQE, Nature Communications, 2019). :contentReference[oaicite:0]{index=0}
+- Grimsley et al., *An adaptive variational algorithm for exact molecular simulations on a quantum computer* (ADAPT-VQE, Nature Communications, 2019).
 
 **Quantum Chemistry**
 - **Hartree–Fock Method** — overview  

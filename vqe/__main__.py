@@ -32,6 +32,7 @@ import numpy as np
 from vqe import (
     plot_convergence,
     run_adapt_vqe,
+    run_qse,
     run_ssvqe,
     run_vqd,
     run_vqe,
@@ -260,6 +261,32 @@ def handle_special_modes(args) -> bool:
         return True
 
     # ---------------------------
+    #  QSE (post-VQE excited states)
+    # ---------------------------
+    if args.qse:
+        print("🔹 Running QSE (post-VQE subspace expansion)...")
+
+        res = run_qse(
+            molecule=args.molecule,
+            k=int(args.qse_k),
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            mapping=str(args.mapping),
+            pool=str(args.qse_pool),
+            max_ops=int(args.qse_max_ops),
+            eps=float(args.qse_eps),
+            force=bool(args.force),
+        )
+
+        print("QSE eigenvalues (lowest first):")
+        for i, e in enumerate(res["eigenvalues"]):
+            print(f"  E{i}: {float(e):+.10f} Ha")
+        return True
+
+    # ---------------------------
     # Compare noisy vs noiseless
     # ---------------------------
     if args.compare_noise:
@@ -407,6 +434,9 @@ def main() -> None:
     excited.add_argument(
         "--adapt", action="store_true", help="Run ADAPT-VQE (adaptive ansatz)"
     )
+    excited.add_argument(
+        "--qse", action="store_true", help="Run QSE (post-VQE excited states)"
+    )
 
     special.add_argument(
         "--num-states",
@@ -446,6 +476,33 @@ def main() -> None:
         type=float,
         default=0.0,
         help="VQD hold fraction in [0,1) before ramping beta",
+    )
+
+    # QSE-specific knobs
+    special.add_argument(
+        "--qse-k",
+        type=int,
+        default=3,
+        help="Number of QSE eigenvalues to return (lowest-k).",
+    )
+    special.add_argument(
+        "--qse-pool",
+        type=str,
+        default="hamiltonian_topk",
+        choices=["hamiltonian_topk"],
+        help="QSE operator pool strategy.",
+    )
+    special.add_argument(
+        "--qse-max-ops",
+        type=int,
+        default=24,
+        help="Max operators in the QSE pool (includes identity).",
+    )
+    special.add_argument(
+        "--qse-eps",
+        type=float,
+        default=1e-8,
+        help="Overlap eigenvalue cutoff for QSE (S filtering).",
     )
 
     # ADAPT-VQE-specific knobs
@@ -506,6 +563,10 @@ def main() -> None:
         print(f"• Mode:       SSVQE (num_states={args.num_states})")
     elif args.vqd:
         print(f"• Mode:       VQD   (num_states={args.num_states}, beta={args.beta})")
+    elif args.qse:
+        print(
+            f"• Mode:       QSE (k={args.qse_k}, pool={args.qse_pool}, max_ops={args.qse_max_ops}, eps={args.qse_eps})"
+        )
     elif args.adapt:
         inner_steps = args.inner_steps if args.inner_steps is not None else args.steps
         inner_stepsize = (

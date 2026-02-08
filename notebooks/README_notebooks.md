@@ -1,6 +1,6 @@
 # 📘 Notebooks
 
-This directory contains curated Jupyter notebooks demonstrating **VQE**, **ADAPT-VQE**, **VQD/SSVQE** (excited states), **QPE**, and **VarQITE** workflows using the packaged code in:
+This directory contains curated Jupyter notebooks demonstrating **VQE**, **ADAPT-VQE**, **QSE/VQD/SSVQE** (excited states), **QPE**, and **VarQITE** workflows using the packaged code in:
 
 - `vqe/`
 - `qpe/`
@@ -68,6 +68,7 @@ H₂ is the primary educational benchmark: it is small enough to run quickly whi
 | `Noisy_Ansatz_Convergence.ipynb`    | Noisy convergence behaviour for ansatz choices                                                                    | Package client                       |
 | `Noisy_Optimizer_Comparison.ipynb`  | Compare optimizers under noise (summary metrics / curves)                                                         | Package client                       |
 | `Noisy_Optimizer_Convergence.ipynb` | Noisy convergence behaviour for optimizer choices                                                                 | Package client                       |
+| `QSE.ipynb`                         | **Quantum Subspace Expansion (QSE)**: post-VQE subspace spectrum vs exact eigenvalues (noiseless)               | Package client                       |
 | `SSVQE.ipynb`                       | k-state excited states via **SSVQE** (noiseless + noisy validation; prints ΔEᵢ vs exact)                        | Package client                       |
 | `SSVQE_Comparisons.ipynb`           | **Noiseless** SSVQE sweeps (optimizer / ansatz / full grid), pick “best” config, multi-seed validation (mean ± std) | Package client                     |
 | `VQD.ipynb`                         | k-state excited states via **VQD** (noiseless + noisy validation; prints ΔEᵢ vs exact)                          | Package client                       |
@@ -77,6 +78,7 @@ Notes:
 
 - `Noise_Scan.ipynb` is intentionally **multi-seed** (statistical behaviour), not a single-seed demonstration notebook.
 - `Ansatz_Comparison.ipynb` contains an explicitly educational “toy ansatz” section; the remainder demonstrates the production workflow.
+- `QSE.ipynb` demonstrates **Quantum Subspace Expansion** as a *post-processing* method built on a converged VQE reference state.
 
 ---
 
@@ -161,6 +163,7 @@ Note:
    - `qpe/H2/Noisy.ipynb`
 
 4. **Excited states**
+   - `vqe/H2/QSE.ipynb` (post-VQE subspace expansion)
    - `vqe/H2/SSVQE.ipynb`, `vqe/H2/VQD.ipynb`
    - `vqe/H2/SSVQE_Comparisons.ipynb`, `vqe/H2/VQD_Comparisons.ipynb`
 

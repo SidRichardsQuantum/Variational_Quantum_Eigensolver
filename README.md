@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE + ADAPT-VQE + SSVQE + VQD + QPE + QITE (PennyLane)
+# Quantum Simulation Suite — VQE + ADAPT-VQE + QSE + SSVQE + VQD + QPE + QITE (PennyLane)
 
 <p align="center">
 
@@ -23,6 +23,7 @@
 A modern, modular, and fully reproducible **quantum-chemistry simulation suite** built on **PennyLane**, featuring:
 
 - **Variational Quantum Eigensolver (VQE)** (ground state)
+- **Quantum Subspace Expansion (QSE)** (post-VQE subspace spectrum around a reference state)
 - **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
 - **Variational Quantum Deflation (VQD)** (excited states via deflation)
 - **Adaptive Derivative-Assembled Pseudo-Trotter VQE (ADAPT-VQE)** (adaptive ansatz growth)
@@ -65,6 +66,7 @@ Variational_Quantum_Eigensolver/
 │   ├── hamiltonian.py       # VQE wrapper → uses common.hamiltonian
 │   ├── io_utils.py          # JSON caching, run signatures
 │   ├── visualize.py         # Convergence, scans, noise plots
+│   ├── qse.py               # QSE (post-VQE subspace expansion)
 │   ├── vqd.py               # VQD (excited states)
 │   └── ssvqe.py             # SSVQE (excited states)
 │
@@ -156,7 +158,7 @@ The following modules ensure full consistency between solvers:
 ### Capabilities
 
 * Ground-state VQE
-* Excited states via **SSVQE** and **VQD**
+* Excited-state tooling via **QSE**, **SSVQE**, and **VQD**
 * ADAPT-VQE (adaptive operator selection from an excitation pool)
 * Geometry scans and mapping comparisons
 * Optional noise models (depolarizing / amplitude damping and custom noise callables)
@@ -180,13 +182,26 @@ For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a 
 
 This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
 
+### QSE (post-VQE) overview
+
+Quantum Subspace Expansion (QSE) is a **post-processing** method built on top of a converged VQE reference state $|\psi\rangle$.
+
+Given an operator pool $\{O_i\}$ (default: Hamiltonian-driven top-$k$ Pauli terms), QSE forms the subspace matrices
+
+$$H_{ij}=\langle\psi|O_i^\dagger H O_j|\psi\rangle,\qquad
+S_{ij}=\langle\psi|O_i^\dagger O_j|\psi\rangle$$
+
+and solves the generalized eigenvalue problem
+
+$$Hc = ESc$$
+
 ### SSVQE (excited-state) overview
 
 SSVQE targets multiple low-lying states in a single shared-parameter optimization:
 
 * Choose orthogonal computational-basis reference states (|\phi_k\rangle)
 * Apply a shared parameterized unitary (U(\theta)) to each reference:
-  $$|\psi_k(\theta)\rangle = U(\theta),|\phi_k\rangle$$
+  $$|\psi_k(\theta)\rangle = U(\theta)\,|\phi_k\rangle$$
 * Minimize a weighted sum of energies:
   $$\mathcal{L}(\theta) = \sum_k w_k \langle \psi_k(\theta)|H|\psi_k(\theta)\rangle$$
   Orthogonality is enforced by the orthogonality of the inputs (|\phi_k\rangle), not by overlap penalties.
@@ -236,10 +251,7 @@ Key features of this implementation:
 from common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
-symbols = ["H", "H"]
-coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]]
-
-H, n_qubits, hf_state, *_ = build_hamiltonian(
+H, n_qubits, hf_state = build_hamiltonian(
     molecule="H2",
     mapping="jordan_wigner",
     unit="angstrom",

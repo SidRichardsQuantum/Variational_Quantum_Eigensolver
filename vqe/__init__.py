@@ -71,6 +71,7 @@ from .visualize import (  # noqa: E402
 # Excited-state methods ---------------------------------------------------------
 from .ssvqe import run_ssvqe  # noqa: E402
 from .vqd import run_vqd  # noqa: E402
+from .qse import run_qse  # noqa: E402
 
 __all__ = [
     # Package metadata
@@ -86,6 +87,7 @@ __all__ = [
     "get_exact_spectrum",
     "run_ssvqe",
     "run_vqd",
+    "run_qse",
     # Ansatz / optimizer registries
     "ANSATZES",
     "get_ansatz",

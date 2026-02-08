@@ -4,6 +4,68 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.2] – 2026-02-08
+
+### Added
+
+* **Quantum Subspace Expansion (QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
+
+  * Implements standard QSE via subspace projection around a converged VQE reference state.
+  * Operator pools constructed from top-|coeff| Pauli terms of the molecular Hamiltonian (plus identity).
+  * Generalized eigenvalue problem $Hc = ESc$ solved with overlap-matrix eigenvalue filtering for numerical stability.
+  * Returns lowest-*k* approximate eigenvalues with detailed diagnostics (subspace rank, conditioning, kept modes).
+  * Designed explicitly as **noiseless-only**, consistent with statevector-based QSE theory.
+
+* **New QSE example notebook**:
+
+  * `notebooks/vqe/H2/QSE.ipynb`
+  * Demonstrates end-to-end QSE workflow on H₂:
+
+    * cached VQE reference,
+    * subspace construction,
+    * comparison against the exact qubit Hamiltonian spectrum,
+    * visualization of QSE vs exact energies.
+  * Written as a **pure package client**, using only public APIs and shared plotting utilities.
+
+* **New QSE smoke + sanity tests**:
+
+  * Minimal end-to-end pytest covering:
+
+    * successful execution on H₂,
+    * correct handling of reduced-rank subspaces,
+    * sorted, finite eigenvalues,
+    * presence and structure of diagnostics and configuration metadata.
+  * Integrated into the existing test suite without increasing runtime instability.
+
+### Changed
+
+* **Documentation updates across the project**:
+
+  * `README.md` — QSE added to the solver overview and project capabilities.
+  * `USAGE.md` — clarified solver scope and excited-state landscape.
+  * `THEORY.md` — extended excited-state discussion to include subspace-based (post-VQE) methods.
+  * `notebooks/README_notebooks.md` — QSE notebook added, positioned alongside SSVQE and VQD.
+
+* **Internal linear-algebra handling hardened**:
+
+  * Explicit use of complex-valued Hamiltonian matrices where required to avoid silent imaginary-part truncation.
+  * Improves numerical correctness without altering existing solver semantics.
+
+### Fixed
+
+* Prevented silent truncation of requested QSE eigenvalues when subspace rank is reduced by overlap filtering.
+* Eliminated ambiguous casting of complex Hamiltonians to real arrays in internal linear-algebra paths.
+
+### Internal
+
+* QSE implemented **without introducing new infrastructure layers**:
+
+  * reuses `common.hamiltonian`, `common.persist`, `common.plotting`, and existing VQE caching semantics.
+* Maintains strict backward compatibility with all existing VQE, SSVQE, VQD, QPE, and QITE APIs.
+* Version bumped from **0.3.1 → 0.3.2**.
+
+---
+
 ## [0.3.1] - 2026-02-07
 
 ### Added

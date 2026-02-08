@@ -2,7 +2,7 @@
 
 This guide explains how to use the command-line interfaces for:
 
-- **VQE** — Variational Quantum Eigensolver (ground & excited states, plus ADAPT-VQE)
+- **VQE** — Variational Quantum Eigensolver (ground states, ADAPT-VQE, and post-VQE excited states)
 - **QPE** — Quantum Phase Estimation
 - **QITE** — Variational Quantum Imaginary Time Evolution (VarQITE)
 - **common** — Unified Hamiltonian and molecule registry (internal)
@@ -34,7 +34,7 @@ This installs four tightly integrated packages:
 
 | Package  | Purpose                                                         |
 | -------- | --------------------------------------------------------------- |
-| `vqe`    | Variational solvers (VQE, ADAPT-VQE, SSVQE, VQD)                |
+| `vqe`    | Variational solvers (VQE, ADAPT-VQE, QSE, SSVQE, VQD)           |
 | `qpe`    | Quantum Phase Estimation                                        |
 | `qite`   | Variational imaginary-time evolution (VarQITE)                  |
 | `common` | Unified Hamiltonian, molecule registry, geometry, plotting      |
@@ -143,7 +143,34 @@ Designed for **robust noise analysis**, not demos.
 
 ---
 
-## 🔷 Excited-State VQE
+## 🔷 Excited-State Methods (Post-VQE)
+
+### ▶ Quantum Subspace Expansion (QSE)
+
+QSE computes approximate **excited-state energies** by expanding a small operator
+subspace around a **converged noiseless VQE reference state**.
+
+It is a **post-VQE method**:
+- the variational optimization is performed once (ground state),
+- excited states are obtained by solving a generalized eigenvalue problem
+  in the expanded subspace.
+
+#### ▶ QSE via Python API
+
+```python
+from vqe import run_qse
+
+res = run_qse(
+    molecule="H2",
+    k=3,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=60,
+    stepsize=0.2,
+    mapping="jordan_wigner",
+)
+print(res["eigenvalues"])
+```
 
 ### ▶ Subspace-Search VQE (SSVQE)
 

@@ -1283,7 +1283,7 @@ def get_exact_spectrum(
         mapping=str(mapping).strip().lower(),
         unit=str(unit).strip().lower(),
     )
-    Hmat = _np.array(_qml.matrix(H), dtype=float)
+    Hmat = _np.array(_qml.matrix(H), dtype=complex)
     evals = _np.sort(_np.linalg.eigvalsh(Hmat))
     k = int(max(1, k))
     return [float(x) for x in evals[:k]]
