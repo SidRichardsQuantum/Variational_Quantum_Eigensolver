@@ -72,6 +72,7 @@ from .visualize import (  # noqa: E402
 from .ssvqe import run_ssvqe  # noqa: E402
 from .vqd import run_vqd  # noqa: E402
 from .qse import run_qse  # noqa: E402
+from .lr_vqe import run_lr_vqe
 
 __all__ = [
     # Package metadata
@@ -87,6 +88,7 @@ __all__ = [
     "get_exact_spectrum",
     "run_ssvqe",
     "run_vqd",
+    "run_lr_vqe",
     "run_qse",
     # Ansatz / optimizer registries
     "ANSATZES",

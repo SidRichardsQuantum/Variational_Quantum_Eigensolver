@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.2"
+version = "0.3.3"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]

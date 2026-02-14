@@ -2,7 +2,7 @@
 
 This guide explains how to use the command-line interfaces for:
 
-- **VQE** — Variational Quantum Eigensolver (ground states, ADAPT-VQE, and post-VQE excited states)
+- **VQE** — Variational Quantum Eigensolver (ground states, ADAPT-VQE, and excited-state workflows)
 - **QPE** — Quantum Phase Estimation
 - **QITE** — Variational Quantum Imaginary Time Evolution (VarQITE)
 - **common** — Unified Hamiltonian and molecule registry (internal)
@@ -20,7 +20,7 @@ It complements:
 
 ```bash
 pip install vqe-pennylane
-```
+````
 
 ### Install from source (development mode)
 
@@ -32,12 +32,12 @@ pip install -e .
 
 This installs four tightly integrated packages:
 
-| Package  | Purpose                                                         |
-| -------- | --------------------------------------------------------------- |
-| `vqe`    | Variational solvers (VQE, ADAPT-VQE, QSE, SSVQE, VQD)           |
-| `qpe`    | Quantum Phase Estimation                                        |
-| `qite`   | Variational imaginary-time evolution (VarQITE)                  |
-| `common` | Unified Hamiltonian, molecule registry, geometry, plotting      |
+| Package  | Purpose                                                       |
+| -------- | ------------------------------------------------------------- |
+| `vqe`    | Variational solvers (VQE, ADAPT-VQE, LR-VQE, QSE, SSVQE, VQD) |
+| `qpe`    | Quantum Phase Estimation                                      |
+| `qite`   | Variational imaginary-time evolution (VarQITE)                |
+| `common` | Unified Hamiltonian, molecule registry, geometry, plotting    |
 
 Quick sanity check:
 
@@ -53,12 +53,12 @@ All runs are **automatically cached** and **fully reproducible**.
 
 ```
 ├── results/
-│   ├── vqe/            # VQE, ADAPT-VQE, SSVQE, VQD JSON records
+│   ├── vqe/            # VQE-family records (VQE, ADAPT-VQE, LR-VQE, QSE, SSVQE, VQD)
 │   ├── qpe/            # QPE JSON records
 │   └── qite/           # VarQITE JSON records
 │
 └── images/
-    ├── vqe/            # Convergence, scans, noise plots
+    ├── vqe/            # Convergence, scans, noise plots, LR/QSE spectra
     ├── qpe/            # Phase distributions, sweeps
     └── qite/           # VarQITE convergence, diagnostics, noise plots
 ```
@@ -76,7 +76,8 @@ To ignore cache:
 
 ## 🔷 Running VQE
 
-All commands below can be invoked either as `vqe ...` **or** equivalently as `python -m vqe ...` (recommended for reproducibility across environments).
+All commands below can be invoked either as `vqe ...` **or** equivalently as `python -m vqe ...`
+(recommended for reproducibility across environments).
 
 VQE supports:
 
@@ -85,7 +86,10 @@ VQE supports:
 * Geometry scans (bond / angle, VQE only)
 * Ansatz, optimizer, and mapping comparisons
 * Noise sweeps (single & multi-seed)
-* Excited states (SSVQE, VQD)
+* Excited states:
+
+  * **post-VQE**: LR-VQE, QSE
+  * **variational**: SSVQE, VQD
 
 Supported molecule presets:
 
@@ -108,7 +112,7 @@ Defaults:
 
 Outputs:
 
-* `images/vqe/` — convergence plot
+* `images/vqe/` — convergence plot (if `--plot`)
 * `results/vqe/` — JSON record
 
 ### ▶ Choosing ansatz and optimizer
@@ -118,6 +122,8 @@ vqe -m H2 -a UCCSD -o Adam
 vqe -m H2 -a RY-CZ -o GradientDescent
 vqe -m H2 -a StronglyEntanglingLayers -o Momentum
 ```
+
+---
 
 ## ▶ Geometry scans
 
@@ -133,7 +139,9 @@ vqe --scan-geometry H2_BOND --range 0.5 1.5 7
 vqe --scan-geometry H2O_ANGLE --range 100 115 7
 ```
 
-### ▶ Noise studies (statistics)
+---
+
+## ▶ Noise studies (statistics)
 
 ```bash
 vqe -m H2 --multi-seed-noise --noise-type depolarizing
@@ -143,17 +151,81 @@ Designed for **robust noise analysis**, not demos.
 
 ---
 
-## 🔷 Excited-State Methods (Post-VQE)
+## 🔷 Excited-State Methods
+
+This project supports two classes of excited-state workflows:
+
+* **Post-VQE** (no additional variational optimization):
+
+  * **LR-VQE** (tangent-space TDA generalized EVP)
+  * **QSE** (operator subspace expansion generalized EVP)
+
+* **Variational excited-state solvers**:
+
+  * **SSVQE** (multi-state objective with shared unitary)
+  * **VQD** (sequential deflation)
+
+### ▶ Linear-Response VQE (LR-VQE)
+
+LR-VQE computes excitation energies by constructing the **tangent-space generalized eigenvalue problem**
+around a converged **noiseless VQE reference state**.
+
+Stage-1 implementation:
+
+* Tangent-space TDA (Tamm–Dancoff approximation)
+* Finite-difference parameter derivatives
+* Generalized EVP: **A c = ω S c**
+* **Noiseless-only** (statevector reference)
+
+#### ▶ LR-VQE via CLI
+
+```bash
+# Run LR-VQE (no plot)
+vqe -m H2 --lr-vqe --lr-k 4
+
+# Plot spectrum (exact vs LR-VQE matched by nearest exact level index)
+vqe -m H2 --lr-vqe --lr-k 4 --plot
+
+# Save the plot to images/vqe/ (and show it)
+vqe -m H2 --lr-vqe --lr-k 4 --save
+
+# Control tangent numerics
+vqe -m H2 --lr-vqe --lr-k 4 --lr-fd-eps 1e-3 --lr-eps 1e-10
+```
+
+#### ▶ LR-VQE via Python API
+
+```python
+from vqe.lr_vqe import run_lr_vqe
+
+res = run_lr_vqe(
+    molecule="H2",
+    k=3,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=80,
+    stepsize=0.2,
+    mapping="jordan_wigner",
+    fd_eps=1e-3,
+    eps=1e-10,
+)
+
+print(res["excitations"])   # ω_i
+print(res["eigenvalues"])   # E0 + ω_i
+```
+
+---
 
 ### ▶ Quantum Subspace Expansion (QSE)
 
-QSE computes approximate **excited-state energies** by expanding a small operator
-subspace around a **converged noiseless VQE reference state**.
+QSE computes approximate excited-state energies by expanding a small operator
+subspace around a converged noiseless VQE reference state.
 
-It is a **post-VQE method**:
-- the variational optimization is performed once (ground state),
-- excited states are obtained by solving a generalized eigenvalue problem
-  in the expanded subspace.
+#### ▶ QSE via CLI
+
+```bash
+vqe -m H2 --qse --qse-k 4 --qse-max-ops 24 --qse-eps 1e-8
+```
 
 #### ▶ QSE via Python API
 
@@ -172,30 +244,60 @@ res = run_qse(
 print(res["eigenvalues"])
 ```
 
+---
+
 ### ▶ Subspace-Search VQE (SSVQE)
 
+SSVQE optimizes multiple states **simultaneously** via a multi-state objective.
+
+#### ▶ SSVQE via CLI
+
 ```bash
-vqe -m H3+ --ssvqe --penalty-weight 10.0
+# Two states (default)
+vqe -m H3+ --ssvqe --num-states 2
+
+# Custom weights (must provide exactly --num-states values)
+vqe -m H3+ --ssvqe --num-states 3 --weights 1 2 3
 ```
 
-Optimizes multiple states **simultaneously**.
+#### ▶ SSVQE via Python API
+
+```python
+from vqe.ssvqe import run_ssvqe
+res = run_ssvqe(molecule="H3+", num_states=3)
+print(res["energies_per_state"])
+```
+
+---
 
 ### ▶ Variational Quantum Deflation (VQD)
 
-VQD is exposed via the Python API and notebooks:
+VQD computes excited states **sequentially** via deflation against previously converged states.
+
+#### ▶ VQD via CLI
+
+```bash
+# Two states (default), beta controls deflation strength
+vqe -m H3+ --vqd --num-states 2 --beta 10.0
+
+# Optional beta schedule controls
+vqe -m H3+ --vqd --num-states 3 --beta 10.0 --beta-start 0.0 --beta-ramp cosine --beta-hold-fraction 0.2
+```
+
+#### ▶ VQD via Python API
 
 ```python
 from vqe.vqd import run_vqd
 res = run_vqd(molecule="H3+", num_states=3)
+print(res["energies_per_state"])
 ```
-
-CLI exposure is intentionally deferred to keep workflows explicit.
 
 ---
 
 ## 🔷 ADAPT-VQE
 
-ADAPT-VQE constructs the variational ansatz adaptively by selecting operators from an excitation pool using gradient scores, growing the circuit until a stopping tolerance is met.
+ADAPT-VQE constructs the variational ansatz adaptively by selecting operators from an excitation pool
+using gradient scores, growing the circuit until a stopping tolerance is met.
 
 ### ▶ ADAPT-VQE via CLI
 
@@ -251,7 +353,7 @@ qpe --molecule H2 --ancillas 4
 qpe --molecule H2 --noisy --p-dep 0.05 --p-amp 0.02
 ```
 
-`--noisy` must be explicitly set, otherwise `--p-dep/--p-amp` are ignored
+`--noisy` must be explicitly set, otherwise `--p-dep/--p-amp` are ignored.
 
 ### ▶ Trotterized evolution
 
@@ -263,9 +365,9 @@ qpe --molecule H2 --t 2.0 --trotter-steps 4 --ancillas 8
 
 ## 🔷 Running QITE (VarQITE / McLachlan)
 
-QITE implements **variational imaginary-time evolution** using the McLachlan principle.
+QITE implements variational imaginary-time evolution using the McLachlan principle.
 
-It is split into **two explicit modes**:
+It is split into two explicit modes.
 
 ### ▶ True VarQITE (noiseless)
 
@@ -284,9 +386,9 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 qite eval-noise --molecule H2 --dep 0.02 --amp 0.0 --pretty
 ```
 
-* Evaluates **Tr[ρH]** on `default.mixed`
+* Evaluates Tr[ρH] on `default.mixed`
 * Uses cached VarQITE parameters
-* Does **not** re-optimize
+* Does not re-optimize
 * Supports noise sweeps and multi-seed statistics
 
 ### ▶ Depolarizing sweep (mean ± std)
@@ -304,17 +406,18 @@ qite eval-noise \
 
 VarQITE cache keys include:
 
-- Molecule + geometry
-- Mapping + unit
-- Ansatz
-- Seed
-- `dtau`, `steps`
-- Numerical solver settings (`fd_eps`, `reg`, `solver`, `pinv_rcond`)
+* Molecule + geometry
+* Mapping + unit
+* Ansatz
+* Seed
+* `dtau`, `steps`
+* Numerical solver settings (`fd_eps`, `reg`, `solver`, `pinv_rcond`)
 
 This guarantees that:
-- changing numerics always triggers a recompute
-- cached trajectories are physically and numerically consistent
-- noisy evaluation never pollutes optimization caches
+
+* changing numerics always triggers a recompute
+* cached trajectories are physically and numerically consistent
+* noisy evaluation never pollutes optimization caches
 
 ---
 
@@ -341,13 +444,13 @@ qite run --force
 ## 🧪 Testing
 
 ```bash
-pytest -v
+pytest -q
 ```
 
 Covers:
 
 * Hamiltonian registry & geometry
-* VQE / ADAPT-VQE / QPE / QITE minimal runs
+* VQE / ADAPT-VQE / LR-VQE / QSE / QPE / QITE minimal runs
 * Noise handling
 * CLI entrypoints
 * Matrix consistency across stacks

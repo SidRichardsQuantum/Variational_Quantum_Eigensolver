@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE + ADAPT-VQE + QSE + SSVQE + VQD + QPE + QITE (PennyLane)
+# Quantum Simulation Suite — VQE + ADAPT-VQE + LR-VQE + QSE + SSVQE + VQD + QPE + QITE (PennyLane)
 
 <p align="center">
 
@@ -23,7 +23,8 @@
 A modern, modular, and fully reproducible **quantum-chemistry simulation suite** built on **PennyLane**, featuring:
 
 - **Variational Quantum Eigensolver (VQE)** (ground state)
-- **Quantum Subspace Expansion (QSE)** (post-VQE subspace spectrum around a reference state)
+- **Linear-Response VQE (LR-VQE)** (post-VQE tangent-space excited states via TDA)
+- **Quantum Subspace Expansion (QSE)** (post-VQE operator-subspace spectrum around a reference state)
 - **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
 - **Variational Quantum Deflation (VQD)** (excited states via deflation)
 - **Adaptive Derivative-Assembled Pseudo-Trotter VQE (ADAPT-VQE)** (adaptive ansatz growth)
@@ -66,7 +67,8 @@ Variational_Quantum_Eigensolver/
 │   ├── hamiltonian.py       # VQE wrapper → uses common.hamiltonian
 │   ├── io_utils.py          # JSON caching, run signatures
 │   ├── visualize.py         # Convergence, scans, noise plots
-│   ├── qse.py               # QSE (post-VQE subspace expansion)
+│   ├── lr_vqe.py            # LR-VQE (tangent-space linear response / TDA)
+│   ├── qse.py               # QSE (post-VQE operator-subspace expansion)
 │   ├── vqd.py               # VQD (excited states)
 │   └── ssvqe.py             # SSVQE (excited states)
 │
@@ -158,7 +160,7 @@ The following modules ensure full consistency between solvers:
 ### Capabilities
 
 * Ground-state VQE
-* Excited-state tooling via **QSE**, **SSVQE**, and **VQD**
+* Excited-state tooling via **LR-VQE**, **QSE**, **SSVQE**, and **VQD**
 * ADAPT-VQE (adaptive operator selection from an excitation pool)
 * Geometry scans and mapping comparisons
 * Optional noise models (depolarizing / amplitude damping and custom noise callables)
@@ -182,7 +184,9 @@ For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a 
 
 This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
 
-### QSE (post-VQE) overview
+### Operator-Subspace Methods (Post-VQE)
+
+#### QSE overview
 
 Quantum Subspace Expansion (QSE) is a **post-processing** method built on top of a converged VQE reference state $|\psi\rangle$.
 
@@ -194,6 +198,27 @@ S_{ij}=\langle\psi|O_i^\dagger O_j|\psi\rangle$$
 and solves the generalized eigenvalue problem
 
 $$Hc = ESc$$
+
+#### LR-VQE overview
+
+Linear-Response VQE (LR-VQE) extracts excited-state information from a **converged VQE reference state** by analysing the **ansatz tangent space**.
+
+Rather than expanding a discrete operator pool (as in QSE), LR-VQE constructs the generalized eigenvalue problem
+
+A c = ω S c
+
+where
+
+• S encodes overlaps between parameter-derivative (tangent) states  
+• A encodes Hamiltonian projections in the same tangent space  
+• ω are excitation energies relative to the VQE reference energy E₀
+
+Excited energies are then
+
+Eᵢ = E₀ + ωᵢ
+
+This implementation uses a **Tamm–Dancoff approximation (TDA)**, which is numerically stable,
+noise-resistant, and sufficient for small-molecule benchmarks.
 
 ### SSVQE (excited-state) overview
 

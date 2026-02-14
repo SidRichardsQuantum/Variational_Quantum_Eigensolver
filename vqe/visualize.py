@@ -28,6 +28,112 @@ def _safe_title(*parts):
     return " — ".join([str(p) for p in parts if p is not None])
 
 
+def plot_lr_vqe_spectrum(
+    exact_evals,
+    lr_result: dict,
+    *,
+    molecule_label: str,
+    show: bool = True,
+    save: bool = False,
+    title: str | None = None,
+):
+    import matplotlib.pyplot as _plt
+    import numpy as _np
+
+    exact_evals = _np.asarray(exact_evals, dtype=float).ravel()
+    E0 = float(lr_result["reference_energy"])
+    lr_energies = _np.asarray(lr_result["eigenvalues"], dtype=float).ravel()
+
+    ref = (lr_result.get("diagnostics", {}) or {}).get("reference", {}) or {}
+    ansatz = ref.get("ansatz", None)
+    optimizer = ref.get("optimizer", None)
+    seed = ref.get("seed", None)
+
+    nearest_idx, nearest_E, nearest_err = [], [], []
+    for E in lr_energies:
+        diffs = _np.abs(exact_evals - float(E))
+        j = int(_np.argmin(diffs))
+        nearest_idx.append(j)
+        nearest_E.append(float(exact_evals[j]))
+        nearest_err.append(float(diffs[j]))
+
+    nearest_idx = _np.asarray(nearest_idx, dtype=int)
+    nearest_E = _np.asarray(nearest_E, dtype=float)
+    nearest_err = _np.asarray(nearest_err, dtype=float)
+
+    max_j = int(nearest_idx.max()) if nearest_idx.size else 0
+    m_show = int(max(10, max_j + 6))
+    exact_show = _np.asarray(exact_evals[:m_show], dtype=float)
+
+    _plt.figure(figsize=(10, 4.2))
+
+    x_exact = _np.arange(exact_show.size)
+    _plt.vlines(
+        x_exact,
+        ymin=float(exact_show.min()),
+        ymax=exact_show,
+        linewidth=2,
+        label="Exact eigenvalues",
+    )
+
+    _plt.axhline(E0, linestyle="--", linewidth=1.5, label="VQE reference E0")
+
+    if lr_energies.size:
+        x_lr = nearest_idx.astype(float)
+        _plt.scatter(
+            x_lr,
+            lr_energies,
+            s=70,
+            marker="x",
+            color="red",
+            label="LR-VQE: E0 + ω",
+        )
+
+        for x, E_lr, E_ex in zip(x_lr, lr_energies, nearest_E):
+            _plt.plot([x, x], [E_ex, E_lr], linewidth=1)
+
+        for x, E_lr, dE in zip(x_lr, lr_energies, nearest_err):
+            _plt.annotate(
+                f"|ΔE|={float(dE):.1e}",
+                (float(x), float(E_lr)),
+                textcoords="offset points",
+                xytext=(0, 8),
+                ha="center",
+                fontsize=8,
+            )
+
+    molecule_title = format_molecule_title(molecule_label)
+
+    if title is None:
+        suffix = None
+        if ansatz is not None or optimizer is not None:
+            suffix = f"{optimizer}, {ansatz}" if optimizer is not None else f"{ansatz}"
+        title = _safe_title(f"{molecule_title} spectrum: exact vs LR-VQE", suffix)
+
+    _plt.title(title)
+    _plt.xlabel("Eigenvalue level index")
+    _plt.ylabel("Energy (Ha)")
+    _plt.grid(True, alpha=0.3)
+    _plt.xlim(-0.8, exact_show.size - 0.2)
+    _plt.legend()
+    _plt.tight_layout()
+
+    if save:
+        fname = build_filename(
+            topic="lr_vqe_spectrum",
+            ansatz=ansatz,
+            optimizer=optimizer,
+            seed=seed,
+            multi_seed=False,
+        )
+        save_plot(fname, kind="vqe", molecule=molecule_label, show=(show or save))
+
+    if show or save:
+        _plt.show()
+    else:
+        _plt.close()
+
+
 def plot_convergence(
     energies_noiseless,
     molecule: str,
@@ -210,26 +316,9 @@ def plot_multi_state_convergence(
     seed: int | None = None,
     show: bool = True,
     save: bool = True,
-    # New (backwards compatible) controls:
     state_labels: Optional[Sequence[str]] = None,
     order: Optional[Sequence[int]] = None,
 ):
-    """
-    Plot multi-state convergence trajectories.
-
-    Parameters
-    ----------
-    energies_per_state
-        Either a list-of-lists (index semantics defined by the caller) or a dict.
-        If dict, keys are sorted and values plotted in that order.
-    state_labels
-        Optional labels for each plotted curve. If omitted, uses "State i".
-    order
-        Optional permutation to reorder curves BEFORE plotting.
-        Useful if you want to plot in a canonical order (e.g., final-energy-sorted),
-        while keeping the underlying data unchanged.
-        Example: order=[1,0] will plot trajectory[1] as "State 0" (or label 0).
-    """
     molecule_title = format_molecule_title(molecule)
 
     if optimizer_name is not None:

@@ -184,7 +184,7 @@ def run_vqe(
     # --- Device, ansatz, optim, QNodes ---
     dev = make_device(int(qubits), noisy=bool(effective_noisy))
 
-    ansatz_fn, params = engine_build_ansatz(
+    ansatz_fn, params0 = engine_build_ansatz(
         str(ansatz_name),
         int(qubits),
         seed=int(seed),
@@ -221,8 +221,14 @@ def run_vqe(
     opt = engine_build_optimizer(str(optimizer_name), stepsize=float(stepsize))
 
     # --- Optimization loop ---
-    params = np.array(params, requires_grad=True)
-    energies = [float(energy_qnode(params))]
+    params = np.array(params0, requires_grad=True)
+    energies: list[float] = [float(energy_qnode(params))]
+
+    # Canonical: store final parameters for LR-VQE and reproducibility
+    # (and optionally full history, which is cheap for small parameter counts)
+    params_history: list[list[float]] = [
+        [float(x) for x in np.asarray(params, dtype=float).ravel()]
+    ]
 
     for step in range(int(steps)):
         try:
@@ -232,10 +238,16 @@ def run_vqe(
             params = opt.step(energy_qnode, params)
             e = float(energy_qnode(params))
 
-        energies.append(e)
-        print(f"Step {step + 1:02d}/{steps}: E = {e:.6f} Ha")
+        energies.append(float(e))
+        params_history.append(
+            [float(x) for x in np.asarray(params, dtype=float).ravel()]
+        )
+
+        print(f"Step {step + 1:02d}/{steps}: E = {float(e):.6f} Ha")
 
     final_energy = float(energies[-1])
+    final_params = params_history[-1]
+
     final_state = state_qnode(params)
 
     # --- Optional plot ---
@@ -255,6 +267,10 @@ def run_vqe(
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
         "num_qubits": int(qubits),
+        # NEW: required for true tangent-space LR-VQE
+        "final_params": final_params,
+        # Optional but recommended (helps debugging LR conditioning, convergence)
+        "params_history": params_history,
     }
 
     save_run_record(prefix, {"config": cfg, "result": result})

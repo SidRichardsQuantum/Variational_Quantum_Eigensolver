@@ -4,7 +4,78 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.3.2] – 2026-02-08
+## [0.3.3] – February 14, 2026
+
+### Added
+
+* **Linear-Response VQE (LR-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
+
+  * Implements **tangent-space TDA LR-VQE** via the generalized eigenvalue problem
+    $A c = \omega S c$, solved by **overlap-spectrum filtering + whitening** for numerical stability.
+  * Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
+  * Returns excitation energies $\omega_i$ and excited-state energies $E_i = E_0 + \omega_i$, plus diagnostics
+    (overlap spectrum, kept rank, conditioning, and thresholds).
+  * Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space LR theory.
+
+* **LR-VQE spectrum plotting utility**:
+
+  * `vqe.visualize.plot_lr_vqe_spectrum(...)`
+  * Plots the exact spectrum and LR-VQE roots **matched to nearest exact level index** (no horizontal jitter),
+    with per-root $|\Delta E|$ annotations.
+  * Uses molecule **pretty titles** (subscripts) while keeping filenames **ASCII-safe** via shared plotting utilities.
+
+* **New LR-VQE example notebook**:
+
+  * `notebooks/vqe/H2/LR_VQE.ipynb`
+  * Demonstrates end-to-end LR-VQE workflow on H₂:
+
+    * exact-spectrum benchmark,
+    * deterministic VQE reference $E_0$ and parameters $\theta^\*$ (used to build the tangent space),
+    * tangent-space generalized EVP (TDA),
+    * comparison against nearest exact eigenvalues with $|\Delta E|$ reporting.
+  * Written as a **pure package client**, using only public APIs.
+
+* **LR-VQE CLI support** via `python -m vqe --lr-vqe`:
+
+  * Runs LR-VQE using the same molecule/ansatz/optimizer configuration flags as VQE.
+  * Optional plotting / saving of the LR spectrum figure using the standard `--plot` / `--save` semantics.
+
+* **New LR-VQE deterministic test**:
+
+  * Minimal end-to-end pytest covering:
+
+    * successful execution on H₂,
+    * deterministic results given seed and forced recomputation,
+    * sorted, finite excitation energies and eigenvalues,
+    * presence and structure of diagnostics and configuration metadata.
+
+### Changed
+
+* **`run_vqe()` result schema extended** to support post-VQE methods cleanly:
+
+  * Adds `final_params` (optimized parameter vector) and `params_history` (parameter trajectory).
+  * Enables true post-VQE methods (e.g., LR-VQE) without rebuilding optimization logic externally.
+
+* **Documentation updates across the project**:
+
+  * `README.md` — LR-VQE added to solver overview and project capabilities.
+  * `USAGE.md` — LR-VQE documented alongside other post-VQE excited-state workflows (CLI + API).
+  * `THEORY.md` — excited-state discussion extended to include tangent-space linear response (TDA).
+  * `notebooks/README_notebooks.md` — LR-VQE notebook added in the H₂ section.
+
+### Fixed
+
+* Standardized access to VQE optimized parameters for post-processing workflows by introducing `final_params`
+  (eliminates brittle reliance on implicit/legacy parameter keys).
+
+### Internal
+
+* LR-VQE implemented **without introducing new infrastructure layers**:
+
+  * reuses the existing VQE engine for devices/ansatz/state QNodes,
+  * reuses `common` plotting/I/O conventions via existing utilities.
+
+## [0.3.2] – February 8, 2026
 
 ### Added
 
@@ -61,12 +132,11 @@ All notable changes to this project will be documented in this file.
 * QSE implemented **without introducing new infrastructure layers**:
 
   * reuses `common.hamiltonian`, `common.persist`, `common.plotting`, and existing VQE caching semantics.
-* Maintains strict backward compatibility with all existing VQE, SSVQE, VQD, QPE, and QITE APIs.
 * Version bumped from **0.3.1 → 0.3.2**.
 
 ---
 
-## [0.3.1] - 2026-02-07
+## [0.3.1] – February 7, 2026
 
 ### Added
 
@@ -116,10 +186,12 @@ All notable changes to this project will be documented in this file.
   * ground-state VQE,
   * excited-state solvers (SSVQE, VQD),
   * adaptive ansatz construction (ADAPT-VQE).
+
 * Documentation updates across:
 
   * `README.md` — ADAPT-VQE promoted to a first-class solver with conceptual and CLI overview.
   * `USAGE.md` — explicit ADAPT-VQE CLI usage and Python API examples.
+
 * Plotting for ADAPT-VQE integrated with `common.plotting`:
 
   * unified filename construction,
@@ -139,11 +211,10 @@ All notable changes to this project will be documented in this file.
 
   * reuses `common.hamiltonian`, `common.plotting`, `common.persist`, and existing VQE engine utilities.
 * Test suite expanded to cover adaptive workflows without increasing runtime instability.
-* Codebase now supports **fixed-ansatz, adaptive-ansatz, variational imaginary-time, and phase-estimation workflows** under a single, coherent architecture.
 
 ---
 
-## [0.3.0] – 2026-01-25
+## [0.3.0] – January 25, 2026
 
 ### Added
 
@@ -154,16 +225,19 @@ All notable changes to this project will be documented in this file.
   * Naming and ASCII-safe identifiers (`common.naming`)
   * Plot routing and filenames (`common.plotting`)
   * Atomic JSON persistence and stable hashing (`common.persist`)
+
 * Full **VarQITE (McLachlan) workflow** promoted to a first-class package:
 
   * Noiseless imaginary-time evolution with cached parameter trajectories.
   * Post-hoc noisy evaluation on `default.mixed` using density-matrix expectation values.
   * Depolarizing sweeps with multi-seed averaging and statistics.
   * Deterministic, seed-safe caching keyed on physical *and* numerical parameters.
+
 * New **QITE CLI** with explicit command separation:
 
   * `qite run` for true VarQITE (pure-state, noiseless).
   * `qite eval-noise` for noisy evaluation and noise sweeps.
+
 * **Round-trip caching tests** and **public API smoke tests** covering VQE, QPE, and QITE.
 * ASCII-safe path guarantees for all result and image outputs (titles vs filenames formally separated).
 
@@ -175,12 +249,14 @@ All notable changes to this project will be documented in this file.
   * Paths to `common.paths`
   * Plot naming and routing to `common.plotting`
   * Hashing and persistence to `common.persist`
+
 * Removed legacy `vqe_qpe_common` and replaced it with explicit, testable modules.
 * Hardened all CLIs (VQE / QPE / QITE):
 
   * Deterministic run signatures
   * Identical caching semantics
   * Strict separation of computation, I/O, and plotting
+
 * Standardized metadata returned by all Hamiltonian builders to ensure cross-algorithm compatibility.
 * Notebooks updated to use **pure package APIs only** (no internal imports).
 
@@ -200,12 +276,12 @@ All notable changes to this project will be documented in this file.
   * naming rules
   * hashing logic
   * persistence model
+
 * Test suite expanded to enforce architectural invariants, not just numerical correctness.
-* Project is now structurally ready for QITE extensions, QSVT, and QML modules.
 
 ---
 
-## [0.2.5] – 2026-01-12
+## [0.2.5] – January 12, 2026
 
 ### Added
 - **Variational Quantum Deflation (VQD)** implementation for excited-state calculations:
@@ -235,11 +311,10 @@ All notable changes to this project will be documented in this file.
 ### Internal
 - Refactored excited-state logic to reuse the shared VQE engine (devices, ansatz, noise, caching).
 - Ensured deterministic ordering of excited-state energies independent of weight choices.
-- Maintained full backwards compatibility with existing VQE and QPE APIs.
 
 ---
 
-## [0.2.3] – 2025-12-22
+## [0.2.3] – December 22, 2025
 
 ### Added
 - QPE CLI stability improvements
@@ -255,7 +330,8 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.2.2] - 2025-12-12
+## [0.2.2] – December 12, 2025
+
 ### Fixed
 - Resolved GitHub Actions CI failures caused by invalid `pyproject.toml` license configuration.
 - Corrected `project.license` to a valid SPDX string to satisfy PEP 621 validation.
@@ -275,7 +351,8 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.2.1] - 2025-11-30
+## [0.2.1] – November 30, 2025
+
 ### Fixed
 - Resolved QPE sampling bug where 0-D arrays caused CLI crashes.
 - Corrected `run_qpe()` handling to accept only keyword arguments.
@@ -297,7 +374,8 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.2.0] - 2025-11-29
+## [0.2.0] – November 29, 2025
+
 ### Added
 - First PyPI release of `vqe-pennylane`.
 - Modularized `vqe/` and `qpe/` packages with shared logic under `vqe_qpe_common/`.

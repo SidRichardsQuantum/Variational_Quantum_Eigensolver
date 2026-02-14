@@ -14,6 +14,7 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
    - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
    - [Excited-State Methods](#excited-state-methods)
       - [Quantum Subspace Expansion](#quantum-subspace-expansion)
+      - [Linear-Response VQE](#linear-response-vqe)
       - [Subspace-Search VQE](#subspace-search-vqe)
       - [Variational Quantum Deflation](#variational-quantum-deflation)
   - [ADAPT-VQE](#adapt-vqe)
@@ -252,6 +253,64 @@ The approximate spectrum in this subspace is obtained by solving the generalized
 
 $$Hc = ESc.$$
 
+#### Linear-Response VQE
+
+Linear-Response VQE (LR-VQE) is a **post-VQE** excited-state method that uses the **tangent space of the variational manifold** at a converged ground-state solution $\theta^\*$.
+
+Let the converged reference state be
+
+$$|\psi_0\rangle = |\psi(\theta^\*)\rangle,\qquad
+E_0 = \langle \psi_0|H|\psi_0\rangle.$$
+
+Define the tangent vectors
+
+$$|\partial_i\psi\rangle = \frac{\partial}{\partial \theta_i}|\psi(\theta)\rangle\Big|_{\theta=\theta^\*}.$$
+
+LR-VQE constructs two matrices in this tangent basis:
+
+**Overlap / metric matrix**
+$$S_{ij}=\langle \partial_i\psi | \partial_j\psi\rangle.$$
+
+**Projected (shifted) Hamiltonian**
+$$A_{ij}=\langle \partial_i\psi | (H-E_0) | \partial_j\psi\rangle.$$
+
+Excitation energies $\omega$ are obtained by solving the generalized eigenvalue problem
+
+$$A c = \omega\, S c.$$
+
+The corresponding excited-state energy estimates are
+
+$$E_k \approx E_0 + \omega_k.$$
+
+##### Tamm–Dancoff approximation (TDA)
+
+The implementation in this repository uses a **TDA-style** tangent-space formulation:
+we solve the single generalized EVP above without coupling to de-excitation blocks.
+This is typically sufficient for small molecules in minimal bases and is an effective Stage-1 milestone.
+
+##### Practical construction in this project
+
+This project forms the tangent vectors using **finite-difference derivatives** of the statevector (noiseless reference):
+
+$$|\partial_i\psi\rangle \approx \frac{|\psi(\theta^\*+\varepsilon e_i)\rangle - |\psi(\theta^\*-\varepsilon e_i)\rangle}{2\varepsilon},$$
+
+where $\varepsilon$ is `fd_eps` and $e_i$ is the unit vector in parameter $i$.
+
+Given the matrix representation of the qubit Hamiltonian $H$ (via `qml.matrix(H)`), $S$ and $A$ are built classically from the tangent matrix $D=[|\partial_1\psi\rangle,\dots,|\partial_p\psi\rangle]$:
+
+$$S = D^\dagger D,\qquad
+A = D^\dagger (H-E_0 I) D.$$
+
+Both matrices are explicitly symmetrized to enforce Hermiticity in the presence of finite-difference noise.
+
+##### Regularization / rank truncation
+
+In practice $S$ can be ill-conditioned because tangent directions may be nearly linearly dependent. We stabilize the generalized EVP by diagonalizing $S$ and discarding eigenmodes with eigenvalues $\le \epsilon$ (`eps`), then solving the EVP in the retained subspace.
+
+##### Noise support
+
+This Stage-1 LR-VQE implementation is **noiseless-only**, because it assumes access to a pure statevector and uses state derivatives. A mixed-state/noisy extension would require a density-matrix (or response-function) formulation and different measurement strategy.
+
 #### Subspace-Search VQE
 
 Subspace-Search VQE (SSVQE) is a variational method that finds **multiple eigenstates simultaneously** by:
@@ -373,9 +432,10 @@ the energy landscape is sufficiently explored.
 
 ### Excited State Comparisons
 
-| Method | Type | Optimization | Orthogonality mechanism | Noise support | Scaling |
-|------|------|-------------|--------------------------|---------------|---------|
-| **QSE** | Post-VQE | None (linear algebra) | Generalized EVP in $\{O_i|\psi\rangle\}$ subspace | Noiseless-only (statevector reference) | Pool-limited subspace |
+| Method | Type | Optimization | Orthogonality / subspace mechanism | Noise support | Scaling |
+|------|------|-------------|-------------------------------------|---------------|---------|
+| **LR-VQE (TDA)** | Post-VQE | None (linear algebra) | Tangent-space EVP: $A c = \omega S c$ | Noiseless-only (statevector tangents) | Parameter-count-limited tangent subspace |
+| **QSE** | Post-VQE | None (linear algebra) | EVP in $\{O_i|\psi\rangle\}$ subspace | Noiseless-only (statevector reference) | Pool-limited operator subspace |
 | **SSVQE** | Variational | Simultaneous | Orthogonal reference inputs + shared $U(\theta)$ | Supported | Harder with many states |
 | **VQD** | Variational | Sequential | Deflation against previously found states | Supported | Naturally $k$-state |
 
@@ -764,6 +824,10 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
   https://docs.pennylane.ai/en/stable/code/qml.html  
 - **Optimizers & Interfaces**  
   https://docs.pennylane.ai/en/stable/introduction/interfaces.html  
+
+**Linear Response / EOM-style excited states**
+- Parrish et al., *Quantum Computation of Electronic Transitions using a Variational Quantum Eigensolver* (EOM-VQE / LR-style excited states).
+- Higgott et al., *Variational Quantum Computation of Excited States* (VQD/SSVQE context and excited-state variational strategies).
 
 ---
 

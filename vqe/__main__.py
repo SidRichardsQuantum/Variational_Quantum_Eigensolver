@@ -32,6 +32,7 @@ import numpy as np
 from vqe import (
     plot_convergence,
     run_adapt_vqe,
+    run_lr_vqe,
     run_qse,
     run_ssvqe,
     run_vqd,
@@ -102,6 +103,43 @@ def handle_special_modes(args) -> bool:
         print("Final energies per state (reported as E0, E1, ...):")
         for i, e in enumerate(finals):
             print(f"  E{i}: {e:+.10f} Ha")
+        return True
+
+    # ---------------------------
+    #  LR-VQE (post-VQE excited states)
+    # ---------------------------
+    if args.lr_vqe:
+        if args.noisy:
+            raise ValueError(
+                "LR-VQE is noiseless-only (statevector reference). Remove --noisy."
+            )
+
+        print("🔹 Running LR-VQE (post-VQE tangent-space TDA)...")
+
+        res = run_lr_vqe(
+            molecule=args.molecule,
+            k=int(args.lr_k),
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            mapping=str(args.mapping),
+            fd_eps=float(args.lr_fd_eps),
+            eps=float(args.lr_eps),
+            force=bool(args.force),
+            plot=bool(args.plot or args.save),
+            show=bool(args.plot or args.save),
+            save=bool(args.save),
+        )
+
+        print("LR-VQE excitations ω (lowest first):")
+        for i, w in enumerate(res["excitations"]):
+            print(f"  ω{i}: {float(w):+.10f} Ha")
+
+        print("LR-VQE excited energies E0 + ω (lowest first):")
+        for i, e in enumerate(res["eigenvalues"]):
+            print(f"  E{i}: {float(e):+.10f} Ha")
         return True
 
     # ---------------------------
@@ -437,6 +475,11 @@ def main() -> None:
     excited.add_argument(
         "--qse", action="store_true", help="Run QSE (post-VQE excited states)"
     )
+    excited.add_argument(
+        "--lr-vqe",
+        action="store_true",
+        help="Run LR-VQE (post-VQE tangent-space linear response; TDA, noiseless-only)",
+    )
 
     special.add_argument(
         "--num-states",
@@ -538,6 +581,31 @@ def main() -> None:
         help="ADAPT-VQE inner-loop optimizer stepsize (default: --stepsize).",
     )
 
+    # LR-VQE-specific knobs
+    special.add_argument(
+        "--lr-k",
+        type=int,
+        default=3,
+        help="Number of LR-VQE excitation energies to return (lowest-k).",
+    )
+    special.add_argument(
+        "--lr-fd-eps",
+        type=float,
+        default=1e-3,
+        help="Finite-difference step for tangent vectors (δ).",
+    )
+    special.add_argument(
+        "--lr-eps",
+        type=float,
+        default=1e-10,
+        help="Overlap eigenvalue cutoff for LR-VQE (S filtering).",
+    )
+    special.add_argument(
+        "--save",
+        action="store_true",
+        help="Save plots (in addition to showing them).",
+    )
+
     # ------------------------------------------------------------------
     # Misc
     # ------------------------------------------------------------------
@@ -575,6 +643,10 @@ def main() -> None:
         print(
             f"• Mode:       ADAPT-VQE (pool={args.pool}, max_ops={args.max_ops}, grad_tol={args.grad_tol}, "
             f"inner_steps={inner_steps}, inner_stepsize={inner_stepsize})"
+        )
+    elif args.lr_vqe:
+        print(
+            f"• Mode:       LR-VQE (k={args.lr_k}, fd_eps={args.lr_fd_eps}, eps={args.lr_eps})"
         )
 
     # Try special modes first
