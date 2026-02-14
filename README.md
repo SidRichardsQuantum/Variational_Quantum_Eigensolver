@@ -205,17 +205,17 @@ Linear-Response VQE (LR-VQE) extracts excited-state information from a **converg
 
 Rather than expanding a discrete operator pool (as in QSE), LR-VQE constructs the generalized eigenvalue problem
 
-A c = ω S c
+$$Ac = \omega Sc$$
 
 where
 
-• S encodes overlaps between parameter-derivative (tangent) states  
-• A encodes Hamiltonian projections in the same tangent space  
-• ω are excitation energies relative to the VQE reference energy E₀
+• $S$ encodes overlaps between parameter-derivative (tangent) states  
+• $A$ encodes Hamiltonian projections in the same tangent space  
+• $\omega$ are excitation energies relative to the VQE reference energy $E₀$
 
 Excited energies are then
 
-Eᵢ = E₀ + ωᵢ
+$$Eᵢ = E₀ + \omega_i$$
 
 This implementation uses a **Tamm–Dancoff approximation (TDA)**, which is numerically stable,
 noise-resistant, and sufficient for small-molecule benchmarks.
