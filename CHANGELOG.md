@@ -4,6 +4,75 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.4] – February 26, 2026
+
+### Added
+
+* **Equation-of-Motion VQE (EOM-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
+
+  * Implements **tangent-space full-response EOM-VQE** (positive-root spectrum) as a sister method to LR-VQE.
+  * Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
+  * Solves a stabilized full-response eigenproblem using overlap-spectrum filtering + whitening,
+    returning excitation energies $\omega_i$ and excited-state energies $E_i = E_0 + \omega_i$.
+  * Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space response theory.
+
+* **Equation-of-Motion QSE (EOM-QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
+
+  * Implements commutator-based EOM in an operator manifold via the generalized eigenvalue problem
+    $A c = \omega S c$ with $A_{ij}=\langle\psi|O_i^\dagger[H,O_j]|\psi\rangle$ and $S_{ij}=\langle\psi|O_i^\dagger O_j|\psi\rangle$.
+  * Handles the generally **non-Hermitian** reduced problem by selecting **positive, real-dominant** roots
+    using `imag_tol` and `omega_eps` filtering.
+  * Uses a Hamiltonian-driven Pauli pool (plus identity) with overlap filtering for numerical stability.
+  * Designed explicitly as **noiseless-only** (statevector reference), consistent with the current post-VQE workflow.
+
+* **EOM spectrum plotting utilities**:
+
+  * `vqe.visualize.plot_eom_vqe_spectrum(...)`
+  * `vqe.visualize.plot_eom_qse_spectrum(...)`
+  * Mirrors the LR-VQE plotting conventions: exact spectrum vs post-VQE roots matched by nearest exact level index,
+    with per-root $|\Delta E|$ annotations and molecule pretty titles (subscripts) while keeping filenames ASCII-safe.
+
+* **New EOM example notebooks** (pure package clients):
+
+  * `notebooks/vqe/H2/EOM_VQE.ipynb` — exact-spectrum benchmark + EOM-VQE excited energies vs nearest exact eigenvalues.
+  * `notebooks/vqe/H2/EOM_QSE.ipynb` — exact-spectrum benchmark + EOM-QSE roots (real-dominant selection) vs nearest exact eigenvalues.
+
+* **EOM CLI support** via `python -m vqe --eom-vqe` and `python -m vqe --eom-qse`:
+
+  * Runs EOM-VQE / EOM-QSE using the same molecule/ansatz/optimizer configuration flags as VQE.
+  * Optional plotting / saving of spectrum figures using the standard `--plot` / `--save` semantics.
+
+* **New minimal EOM tests**:
+
+  * End-to-end pytest coverage for EOM-VQE and EOM-QSE on H₂, including deterministic behavior given seed + forced recomputation,
+    sorted/finite roots, and presence/structure of diagnostics + configuration metadata.
+
+### Changed
+
+* **EOM caching prefixes made solver-specific (no legacy behavior):**
+
+  * EOM-VQE results now use the prefix token **`eom_vqe`** (previously ambiguous `eom`).
+  * EOM-QSE results now use the prefix token **`eom_qse`** (previously ambiguous `eom`).
+
+  This guarantees EOM-VQE and EOM-QSE caches cannot collide and ensures strict reproducibility.
+
+* **Documentation updates across the project**:
+
+  * `README.md` — EOM-VQE and EOM-QSE added to solver overview and project capabilities.
+  * `USAGE.md` — EOM-VQE and EOM-QSE documented alongside other post-VQE excited-state workflows (CLI + API).
+  * `THEORY.md` — excited-state discussion extended to include full-response tangent-space EOM-VQE and commutator EOM-QSE.
+  * `notebooks/README_notebooks.md` — EOM notebooks added alongside LR-VQE and QSE in the H₂ section.
+
+### Internal
+
+* EOM methods implemented **without introducing new infrastructure layers**:
+
+  * reuse the existing VQE engine for devices/ansatz/state QNodes,
+  * reuse `common` plotting/I/O conventions via existing utilities,
+  * maintain deterministic hashing and JSON-first run records consistent with the broader suite.
+
+---
+
 ## [0.3.3] – February 14, 2026
 
 ### Added

@@ -34,7 +34,7 @@ This installs four tightly integrated packages:
 
 | Package  | Purpose                                                       |
 | -------- | ------------------------------------------------------------- |
-| `vqe`    | Variational solvers (VQE, ADAPT-VQE, LR-VQE, QSE, SSVQE, VQD) |
+| `vqe`    | Variational solvers (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD) |
 | `qpe`    | Quantum Phase Estimation                                      |
 | `qite`   | Variational imaginary-time evolution (VarQITE)                |
 | `common` | Unified Hamiltonian, molecule registry, geometry, plotting    |
@@ -53,7 +53,7 @@ All runs are **automatically cached** and **fully reproducible**.
 
 ```
 ├── results/
-│   ├── vqe/            # VQE-family records (VQE, ADAPT-VQE, LR-VQE, QSE, SSVQE, VQD)
+│   ├── vqe/            # VQE-family records (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD)
 │   ├── qpe/            # QPE JSON records
 │   └── qite/           # VarQITE JSON records
 │
@@ -88,7 +88,7 @@ VQE supports:
 * Noise sweeps (single & multi-seed)
 * Excited states:
 
-  * **post-VQE**: LR-VQE, QSE
+  * **post-VQE**: LR-VQE, EOM-VQE, QSE, EOM-QSE
   * **variational**: SSVQE, VQD
 
 Supported molecule presets:
@@ -158,7 +158,9 @@ This project supports two classes of excited-state workflows:
 * **Post-VQE** (no additional variational optimization):
 
   * **LR-VQE** (tangent-space TDA generalized EVP)
+  * **EOM-VQE** (tangent-space full-response EOM)
   * **QSE** (operator subspace expansion generalized EVP)
+  * **EOM-QSE** (commutator EOM in an operator manifold; generally non-Hermitian)
 
 * **Variational excited-state solvers**:
 
@@ -216,6 +218,58 @@ print(res["eigenvalues"])   # E0 + ω_i
 
 ---
 
+### ▶ Equation-of-Motion VQE (EOM-VQE)
+
+EOM-VQE computes excitation energies by solving the **full-response** tangent-space
+EOM problem around a converged **noiseless VQE reference state**.
+
+Stage-1 implementation:
+
+* Full-response tangent-space solve (positive-root selection)
+* Finite-difference parameter derivatives
+* Overlap filtering / rank truncation (same stabilization philosophy as LR-VQE)
+* **Noiseless-only** (statevector reference)
+
+#### ▶ EOM-VQE via CLI
+
+```bash
+# Run EOM-VQE (no plot)
+vqe -m H2 --eom-vqe --eom-k 4
+
+# Plot spectrum (exact vs EOM-VQE matched by nearest exact level index)
+vqe -m H2 --eom-vqe --eom-k 4 --plot
+
+# Save the plot to images/vqe/ (and show it)
+vqe -m H2 --eom-vqe --eom-k 4 --save
+
+# Control tangent numerics
+vqe -m H2 --eom-vqe --eom-k 4 --eom-fd-eps 1e-3 --eom-eps 1e-10 --eom-omega-eps 1e-12
+```
+
+#### ▶ EOM-VQE via Python API
+
+```python
+from vqe.eom_vqe import run_eom_vqe
+
+res = run_eom_vqe(
+    molecule="H2",
+    k=3,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=80,
+    stepsize=0.2,
+    mapping="jordan_wigner",
+    fd_eps=1e-3,
+    eps=1e-10,
+    omega_eps=1e-12,
+)
+
+print(res["excitations"])   # ω_i
+print(res["eigenvalues"])   # E0 + ω_i
+```
+
+---
+
 ### ▶ Quantum Subspace Expansion (QSE)
 
 QSE computes approximate excited-state energies by expanding a small operator
@@ -242,6 +296,54 @@ res = run_qse(
     mapping="jordan_wigner",
 )
 print(res["eigenvalues"])
+```
+
+---
+
+### ▶ Equation-of-Motion QSE (EOM-QSE)
+
+EOM-QSE computes excitation energies using the **commutator equation of motion**
+in an operator manifold around a converged **noiseless VQE reference state**.
+
+Key properties:
+
+* Generalized EVP: \(A c = \omega S c\) with \(A_{ij}=\langle\psi|O_i^\dagger[H,O_j]|\psi\rangle\)
+* The reduced problem is generally **non-Hermitian**, so eigenvalues may be complex
+* This implementation returns **positive, real-dominant** roots (via `imag_tol` and `omega_eps`)
+* **Noiseless-only** (statevector reference)
+
+#### ▶ EOM-QSE via CLI
+
+```bash
+# Basic EOM-QSE run (Hamiltonian-driven Pauli pool)
+vqe -m H2 --eom-qse --eom-qse-k 4 --eom-qse-max-ops 24 --eom-qse-eps 1e-10
+
+# Control eigenvalue filtering
+vqe -m H2 --eom-qse --eom-qse-k 4 --eom-qse-imag-tol 1e-10 --eom-qse-omega-eps 1e-12
+```
+
+#### ▶ EOM-QSE via Python API
+
+```python
+from vqe.eom_qse import run_eom_qse
+
+res = run_eom_qse(
+    molecule="H2",
+    k=3,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=80,
+    stepsize=0.2,
+    mapping="jordan_wigner",
+    pool="hamiltonian_topk",
+    max_ops=24,
+    eps=1e-10,
+    imag_tol=1e-10,
+    omega_eps=1e-12,
+)
+
+print(res["excitations"])   # ω_i
+print(res["eigenvalues"])   # E0 + ω_i
 ```
 
 ---
@@ -450,7 +552,7 @@ pytest -q
 Covers:
 
 * Hamiltonian registry & geometry
-* VQE / ADAPT-VQE / LR-VQE / QSE / QPE / QITE minimal runs
+* VQE / ADAPT-VQE / LR-VQE / EOM-VQE / QSE / EOM-QSE / QPE / QITE minimal runs
 * Noise handling
 * CLI entrypoints
 * Matrix consistency across stacks

@@ -32,6 +32,8 @@ import numpy as np
 from vqe import (
     plot_convergence,
     run_adapt_vqe,
+    run_eom_qse,
+    run_eom_vqe,
     run_lr_vqe,
     run_qse,
     run_ssvqe,
@@ -138,6 +140,81 @@ def handle_special_modes(args) -> bool:
             print(f"  ω{i}: {float(w):+.10f} Ha")
 
         print("LR-VQE excited energies E0 + ω (lowest first):")
+        for i, e in enumerate(res["eigenvalues"]):
+            print(f"  E{i}: {float(e):+.10f} Ha")
+        return True
+
+    # ---------------------------
+    #  EOM-VQE (post-VQE excited states; tangent full response)
+    # ---------------------------
+    if args.eom_vqe:
+        if args.noisy:
+            raise ValueError(
+                "EOM-VQE is noiseless-only (statevector reference). Remove --noisy."
+            )
+
+        print("🔹 Running EOM-VQE (post-VQE tangent-space full response)...")
+
+        res = run_eom_vqe(
+            molecule=args.molecule,
+            k=int(args.eom_k),
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            mapping=str(args.mapping),
+            fd_eps=float(args.eom_fd_eps),
+            eps=float(args.eom_eps),
+            omega_eps=float(args.eom_omega_eps),
+            force=bool(args.force),
+            plot=bool(args.plot or args.save),
+            show=bool(args.plot or args.save),
+            save=bool(args.save),
+        )
+
+        print("EOM-VQE excitations ω (lowest first):")
+        for i, w in enumerate(res["excitations"]):
+            print(f"  ω{i}: {float(w):+.10f} Ha")
+
+        print("EOM-VQE excited energies E0 + ω (lowest first):")
+        for i, e in enumerate(res["eigenvalues"]):
+            print(f"  E{i}: {float(e):+.10f} Ha")
+        return True
+
+    # ---------------------------
+    #  EOM-QSE (post-VQE commutator EOM in operator manifold)
+    # ---------------------------
+    if args.eom_qse:
+        if args.noisy:
+            raise ValueError(
+                "EOM-QSE is noiseless-only (statevector reference). Remove --noisy."
+            )
+
+        print("🔹 Running EOM-QSE (post-VQE operator-manifold commutator EOM)...")
+
+        res = run_eom_qse(
+            molecule=args.molecule,
+            k=int(args.eom_qse_k),
+            ansatz_name=args.ansatz,
+            optimizer_name=args.optimizer,
+            steps=int(args.steps),
+            stepsize=float(args.stepsize),
+            seed=int(args.seed),
+            mapping=str(args.mapping),
+            pool=str(args.eom_qse_pool),
+            max_ops=int(args.eom_qse_max_ops),
+            eps=float(args.eom_qse_eps),
+            imag_tol=float(args.eom_qse_imag_tol),
+            omega_eps=float(args.eom_qse_omega_eps),
+            force=bool(args.force),
+        )
+
+        print("EOM-QSE excitations ω (lowest first):")
+        for i, w in enumerate(res["excitations"]):
+            print(f"  ω{i}: {float(w):+.10f} Ha")
+
+        print("EOM-QSE excited energies E0 + ω (lowest first):")
         for i, e in enumerate(res["eigenvalues"]):
             print(f"  E{i}: {float(e):+.10f} Ha")
         return True
@@ -480,6 +557,16 @@ def main() -> None:
         action="store_true",
         help="Run LR-VQE (post-VQE tangent-space linear response; TDA, noiseless-only)",
     )
+    excited.add_argument(
+        "--eom-vqe",
+        action="store_true",
+        help="Run EOM-VQE (post-VQE tangent-space full response; noiseless-only)",
+    )
+    excited.add_argument(
+        "--eom-qse",
+        action="store_true",
+        help="Run EOM-QSE (post-VQE commutator EOM in an operator manifold; noiseless-only)",
+    )
 
     special.add_argument(
         "--num-states",
@@ -606,6 +693,71 @@ def main() -> None:
         help="Save plots (in addition to showing them).",
     )
 
+    # EOM-VQE-specific knobs
+    special.add_argument(
+        "--eom-k",
+        type=int,
+        default=3,
+        help="Number of EOM-VQE excitation energies to return (lowest-k positive ω).",
+    )
+    special.add_argument(
+        "--eom-fd-eps",
+        type=float,
+        default=1e-3,
+        help="Finite-difference step for tangent vectors (δ).",
+    )
+    special.add_argument(
+        "--eom-eps",
+        type=float,
+        default=1e-10,
+        help="Overlap eigenvalue cutoff for EOM-VQE (S filtering).",
+    )
+    special.add_argument(
+        "--eom-omega-eps",
+        type=float,
+        default=1e-12,
+        help="Minimum ω to treat as a physical positive excitation.",
+    )
+
+    # EOM-QSE-specific knobs
+    special.add_argument(
+        "--eom-qse-k",
+        type=int,
+        default=3,
+        help="Number of EOM-QSE excitation energies to return (lowest-k positive real-ish ω).",
+    )
+    special.add_argument(
+        "--eom-qse-pool",
+        type=str,
+        default="hamiltonian_topk",
+        choices=["hamiltonian_topk"],
+        help="EOM-QSE operator pool strategy.",
+    )
+    special.add_argument(
+        "--eom-qse-max-ops",
+        type=int,
+        default=24,
+        help="Max operators in the EOM-QSE pool (includes identity).",
+    )
+    special.add_argument(
+        "--eom-qse-eps",
+        type=float,
+        default=1e-8,
+        help="Overlap eigenvalue cutoff for EOM-QSE (S filtering).",
+    )
+    special.add_argument(
+        "--eom-qse-imag-tol",
+        type=float,
+        default=1e-10,
+        help="Imaginary-part tolerance for accepting ω as real-ish.",
+    )
+    special.add_argument(
+        "--eom-qse-omega-eps",
+        type=float,
+        default=1e-12,
+        help="Require Re(ω) > omega_eps for acceptance.",
+    )
+
     # ------------------------------------------------------------------
     # Misc
     # ------------------------------------------------------------------
@@ -647,6 +799,15 @@ def main() -> None:
     elif args.lr_vqe:
         print(
             f"• Mode:       LR-VQE (k={args.lr_k}, fd_eps={args.lr_fd_eps}, eps={args.lr_eps})"
+        )
+    elif args.eom_vqe:
+        print(
+            f"• Mode:       EOM-VQE (k={args.eom_k}, fd_eps={args.eom_fd_eps}, eps={args.eom_eps}, omega_eps={args.eom_omega_eps})"
+        )
+    elif args.eom_qse:
+        print(
+            f"• Mode:       EOM-QSE (k={args.eom_qse_k}, pool={args.eom_qse_pool}, max_ops={args.eom_qse_max_ops}, "
+            f"eps={args.eom_qse_eps}, imag_tol={args.eom_qse_imag_tol}, omega_eps={args.eom_qse_omega_eps})"
         )
 
     # Try special modes first

@@ -14,7 +14,9 @@ This document provides a detailed explanation of the **Variational Quantum Eigen
    - [Fermion-to-Qubit Mappings](#fermion-to-qubit-mappings)
    - [Excited-State Methods](#excited-state-methods)
       - [Quantum Subspace Expansion](#quantum-subspace-expansion)
+      - [Equation-of-Motion QSE](#equation-of-motion-qse)
       - [Linear-Response VQE](#linear-response-vqe)
+      - [Equation-of-Motion VQE](#equation-of-motion-vqe)
       - [Subspace-Search VQE](#subspace-search-vqe)
       - [Variational Quantum Deflation](#variational-quantum-deflation)
   - [ADAPT-VQE](#adapt-vqe)
@@ -238,6 +240,34 @@ Quantum Subspace Expansion (QSE) is a **post-VQE** method: it starts from a **co
 (noiseless) VQE reference state** $|\psi\rangle$ and builds a small linear subspace around it
 using a chosen operator set $\{O_i\}$.
 
+#### Equation-of-Motion QSE
+
+Equation-of-Motion QSE (EOM-QSE) is a **post-VQE** excited-state method that uses an
+**operator manifold** but replaces the projection-QSE eigenproblem with a
+**commutator equation of motion**.
+
+Given a (noiseless) VQE reference state $ |\psi\rangle $, and an operator set $ \{O_i\} $,
+define
+
+$$
+A_{ij} = \langle \psi| O_i^\dagger [H, O_j] |\psi\rangle, \qquad
+S_{ij} = \langle \psi| O_i^\dagger O_j |\psi\rangle.
+$$
+
+EOM-QSE estimates excitation energies $ \omega $ by solving the generalized eigenvalue problem
+
+$$
+A c = \omega\, S c.
+$$
+
+**Practical notes.**
+- In general, $A$ is **non-Hermitian**, so eigenvalues can be complex.
+- This project selects **physical** roots using simple heuristics: keep “real-dominant”
+  eigenvalues (small imaginary part) with $ \Re(\omega) > 0 $.
+- As with QSE, the method is **noiseless-only** in this implementation (statevector reference).
+- Accuracy depends strongly on the chosen operator manifold; this project uses a
+  Hamiltonian-driven Pauli pool with overlap filtering.
+
 ##### Subspace construction
 
 Define the (generally non-orthonormal) basis states:
@@ -281,6 +311,40 @@ $$A c = \omega\, S c.$$
 The corresponding excited-state energy estimates are
 
 $$E_k \approx E_0 + \omega_k.$$
+
+#### Equation-of-Motion VQE
+
+Equation-of-Motion VQE (EOM-VQE) generalizes LR-VQE by solving the **full-response**
+tangent-space eigenproblem rather than the Tamm–Dancoff approximation (TDA).
+
+Using the same tangent vectors $ |\partial_i\psi\rangle $ at the converged reference
+$ |\psi_0\rangle = |\psi(\theta^\*)\rangle $, define the overlap metric
+
+$$
+S_{ij}=\langle \partial_i\psi | \partial_j\psi\rangle,
+$$
+
+and tangent-space blocks
+
+$$
+A_{ij}=\langle \partial_i\psi | (H-E_0) | \partial_j\psi\rangle, \qquad
+B_{ij}=\langle \partial_i\psi | (H-E_0) | \partial_j\psi\rangle^\* \ \text{(coupling block)}.
+$$
+
+In the ideal full-response formulation, the spectrum is obtained from an
+indefinite-metric eigenproblem that yields paired roots $ \pm \omega $.
+Physical excitation energies are taken as the **positive roots** $ \omega > 0 $, with
+
+$$
+E_k \approx E_0 + \omega_k.
+$$
+
+**Practical notes.**
+- EOM-VQE can capture response physics beyond TDA but may be more sensitive to
+  reference quality (insufficient VQE convergence can yield instabilities).
+- This project stabilizes the solve using overlap-eigenvalue filtering on $S$,
+  basis orthonormalization, and explicit symmetrization/Hermitianization steps.
+- This implementation is **noiseless-only**, as it requires statevector tangents.
 
 ##### Tamm–Dancoff approximation (TDA)
 
@@ -435,7 +499,9 @@ the energy landscape is sufficiently explored.
 | Method | Type | Optimization | Orthogonality / subspace mechanism | Noise support | Scaling |
 |------|------|-------------|-------------------------------------|---------------|---------|
 | **LR-VQE (TDA)** | Post-VQE | None (linear algebra) | Tangent-space EVP: $A c = \omega S c$ | Noiseless-only (statevector tangents) | Parameter-count-limited tangent subspace |
-| **QSE** | Post-VQE | None (linear algebra) | EVP in $\{O_i|\psi\rangle\}$ subspace | Noiseless-only (statevector reference) | Pool-limited operator subspace |
+| **EOM-VQE (full response)** | Post-VQE | None (linear algebra) | Full-response tangent-space EOM (± paired roots; keep $ \omega>0 $) | Noiseless-only (statevector tangents) | Parameter-count-limited tangent subspace |
+| **QSE** | Post-VQE | None (linear algebra) | Projection EVP in $ \{O_i|\psi\rangle\} $: $Hc = ESc$ | Noiseless-only (statevector reference) | Pool-limited operator subspace |
+| **EOM-QSE** | Post-VQE | None (linear algebra) | Commutator EOM in operator manifold: $A c = \omega S c$ (non-Hermitian) | Noiseless-only (statevector reference) | Pool-limited operator subspace |
 | **SSVQE** | Variational | Simultaneous | Orthogonal reference inputs + shared $U(\theta)$ | Supported | Harder with many states |
 | **VQD** | Variational | Sequential | Deflation against previously found states | Supported | Naturally $k$-state |
 
@@ -826,8 +892,8 @@ These metrics quantify the robustness of each **ansatz** and **optimizer** again
   https://docs.pennylane.ai/en/stable/introduction/interfaces.html  
 
 **Linear Response / EOM-style excited states**
-- Parrish et al., *Quantum Computation of Electronic Transitions using a Variational Quantum Eigensolver* (EOM-VQE / LR-style excited states).
-- Higgott et al., *Variational Quantum Computation of Excited States* (VQD/SSVQE context and excited-state variational strategies).
+- Parrish et al., *Quantum Computation of Electronic Transitions using a Variational Quantum Eigensolver* (LR/EOM-VQE).
+- Extensions and related post-VQE excited-state strategies (QSE/EOM-QSE/VQD/SSVQE): see e.g. Higgott et al., *Variational Quantum Computation of Excited States*.
 
 ---
 

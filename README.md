@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE + ADAPT-VQE + LR-VQE + QSE + SSVQE + VQD + QPE + QITE (PennyLane)
+# Quantum Simulation Suite — VQE + ADAPT-VQE + LR-VQE + EOM-VQE + QSE + EOM-QSE + SSVQE + VQD + QPE + QITE (PennyLane)
 
 <p align="center">
 
@@ -24,7 +24,9 @@ A modern, modular, and fully reproducible **quantum-chemistry simulation suite**
 
 - **Variational Quantum Eigensolver (VQE)** (ground state)
 - **Linear-Response VQE (LR-VQE)** (post-VQE tangent-space excited states via TDA)
+- **Equation-of-Motion VQE (EOM-VQE)** (post-VQE tangent-space full-response excited states)
 - **Quantum Subspace Expansion (QSE)** (post-VQE operator-subspace spectrum around a reference state)
+- **Equation-of-Motion QSE (EOM-QSE)** (post-VQE commutator EOM in an operator manifold)
 - **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
 - **Variational Quantum Deflation (VQD)** (excited states via deflation)
 - **Adaptive Derivative-Assembled Pseudo-Trotter VQE (ADAPT-VQE)** (adaptive ansatz growth)
@@ -68,7 +70,9 @@ Variational_Quantum_Eigensolver/
 │   ├── io_utils.py          # JSON caching, run signatures
 │   ├── visualize.py         # Convergence, scans, noise plots
 │   ├── lr_vqe.py            # LR-VQE (tangent-space linear response / TDA)
+│   ├── eom_vqe.py           # EOM-VQE (tangent-space full-response EOM)
 │   ├── qse.py               # QSE (post-VQE operator-subspace expansion)
+│   ├── eom_qse.py           # EOM-QSE (commutator EOM in operator manifold)
 │   ├── vqd.py               # VQD (excited states)
 │   └── ssvqe.py             # SSVQE (excited states)
 │
@@ -160,7 +164,7 @@ The following modules ensure full consistency between solvers:
 ### Capabilities
 
 * Ground-state VQE
-* Excited-state tooling via **LR-VQE**, **QSE**, **SSVQE**, and **VQD**
+* Excited-state tooling via **LR-VQE**, **EOM-VQE**, **QSE**, **EOM-QSE**, **SSVQE**, and **VQD**
 * ADAPT-VQE (adaptive operator selection from an excitation pool)
 * Geometry scans and mapping comparisons
 * Optional noise models (depolarizing / amplitude damping and custom noise callables)
@@ -184,7 +188,7 @@ For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a 
 
 This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
 
-### Operator-Subspace Methods (Post-VQE)
+### Post-VQE Excited-State Methods
 
 #### QSE overview
 
@@ -219,6 +223,57 @@ $$Eᵢ = E₀ + \omega_i$$
 
 This implementation uses a **Tamm–Dancoff approximation (TDA)**, which is numerically stable,
 noise-resistant, and sufficient for small-molecule benchmarks.
+
+#### EOM-VQE overview
+
+Equation-of-Motion VQE (EOM-VQE) generalizes LR-VQE by solving the **full-response**
+tangent-space eigenproblem rather than the Tamm–Dancoff approximation.
+
+The method constructs coupled tangent-space blocks
+
+• $ A $ — Hamiltonian projections within the tangent manifold  
+• $ B $ — Couplings between tangent and conjugate-tangent directions  
+• $ S $ — Tangent-space overlap metric  
+
+and solves the indefinite-metric eigenproblem associated with linearized
+time-dependent variational dynamics.
+
+Excitation energies are obtained from the **positive roots** of the full-response
+spectrum, with excited energies
+
+$ E_i = E_0 + \omega_i $
+
+Compared to LR-VQE (TDA):
+
+• Captures additional response physics  
+• May exhibit reference instabilities if VQE is insufficiently converged  
+• Numerically stabilized via overlap filtering and Hermitianization  
+
+This implementation is **noiseless-only (statevector reference)**.
+
+#### EOM-QSE overview
+
+Equation-of-Motion QSE (EOM-QSE) formulates excited states via the
+**commutator equation of motion**
+
+$ A c = \omega S c $
+
+where
+
+• $ A_{ij} = \langle \psi | O_i^\dagger [H, O_j] | \psi \rangle $  
+• $ S_{ij} = \langle \psi | O_i^\dagger O_j | \psi \rangle $
+
+Unlike projection QSE:
+
+• The reduced eigenproblem is generally **non-Hermitian**  
+• Eigenvalues may be complex  
+• Physical excitations correspond to positive, real-dominant roots  
+
+EOM-QSE does **not** inherit variational guarantees and accuracy depends strongly
+on the operator manifold.
+
+This implementation uses a Hamiltonian-driven Pauli pool with overlap filtering
+and explicit real-root selection heuristics.
 
 ### SSVQE (excited-state) overview
 

@@ -73,6 +73,8 @@ from .ssvqe import run_ssvqe  # noqa: E402
 from .vqd import run_vqd  # noqa: E402
 from .qse import run_qse  # noqa: E402
 from .lr_vqe import run_lr_vqe
+from .eom_vqe import run_eom_vqe
+from .eom_qse import run_eom_qse
 
 __all__ = [
     # Package metadata
@@ -90,6 +92,8 @@ __all__ = [
     "run_vqd",
     "run_lr_vqe",
     "run_qse",
+    "run_eom_vqe",
+    "run_eom_qse",
     # Ansatz / optimizer registries
     "ANSATZES",
     "get_ansatz",

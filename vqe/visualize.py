@@ -134,6 +134,225 @@ def plot_lr_vqe_spectrum(
         _plt.close()
 
 
+def plot_eom_vqe_spectrum(
+    exact_evals,
+    eom_result: dict,
+    *,
+    molecule_label: str,
+    show: bool = True,
+    save: bool = False,
+    title: str | None = None,
+):
+    import matplotlib.pyplot as _plt
+    import numpy as _np
+
+    exact_evals = _np.asarray(exact_evals, dtype=float).ravel()
+    E0 = float(eom_result["reference_energy"])
+    eom_energies = _np.asarray(eom_result["eigenvalues"], dtype=float).ravel()
+
+    ref = (eom_result.get("diagnostics", {}) or {}).get("reference", {}) or {}
+    ansatz = ref.get("ansatz", None)
+    optimizer = ref.get("optimizer", None)
+    seed = ref.get("seed", None)
+
+    nearest_idx, nearest_E, nearest_err = [], [], []
+    for E in eom_energies:
+        diffs = _np.abs(exact_evals - float(E))
+        j = int(_np.argmin(diffs))
+        nearest_idx.append(j)
+        nearest_E.append(float(exact_evals[j]))
+        nearest_err.append(float(diffs[j]))
+
+    nearest_idx = _np.asarray(nearest_idx, dtype=int)
+    nearest_E = _np.asarray(nearest_E, dtype=float)
+    nearest_err = _np.asarray(nearest_err, dtype=float)
+
+    max_j = int(nearest_idx.max()) if nearest_idx.size else 0
+    m_show = int(max(10, max_j + 6))
+    exact_show = _np.asarray(exact_evals[:m_show], dtype=float)
+
+    _plt.figure(figsize=(10, 4.2))
+
+    x_exact = _np.arange(exact_show.size)
+    _plt.vlines(
+        x_exact,
+        ymin=float(exact_show.min()),
+        ymax=exact_show,
+        linewidth=2,
+        label="Exact eigenvalues",
+    )
+
+    _plt.axhline(E0, linestyle="--", linewidth=1.5, label="VQE reference E0")
+
+    if eom_energies.size:
+        x_eom = nearest_idx.astype(float)
+        _plt.scatter(
+            x_eom,
+            eom_energies,
+            s=70,
+            marker="x",
+            color="red",
+            label="EOM-VQE: E0 + ω",
+        )
+
+        for x, E_eom, E_ex in zip(x_eom, eom_energies, nearest_E):
+            _plt.plot([x, x], [E_ex, E_eom], linewidth=1)
+
+        for x, E_eom, dE in zip(x_eom, eom_energies, nearest_err):
+            _plt.annotate(
+                f"|ΔE|={float(dE):.1e}",
+                (float(x), float(E_eom)),
+                textcoords="offset points",
+                xytext=(0, 8),
+                ha="center",
+                fontsize=8,
+            )
+
+    molecule_title = format_molecule_title(molecule_label)
+
+    if title is None:
+        suffix = None
+        if ansatz is not None or optimizer is not None:
+            suffix = f"{optimizer}, {ansatz}" if optimizer is not None else f"{ansatz}"
+        title = _safe_title(f"{molecule_title} spectrum: exact vs EOM-VQE", suffix)
+
+    _plt.title(title)
+    _plt.xlabel("Eigenvalue level index")
+    _plt.ylabel("Energy (Ha)")
+    _plt.grid(True, alpha=0.3)
+    _plt.xlim(-0.8, exact_show.size - 0.2)
+    _plt.legend()
+    _plt.tight_layout()
+
+    if save:
+        fname = build_filename(
+            topic="eom_vqe_spectrum",
+            ansatz=ansatz,
+            optimizer=optimizer,
+            seed=seed,
+            multi_seed=False,
+        )
+        save_plot(fname, kind="vqe", molecule=molecule_label, show=(show or save))
+
+    if show or save:
+        _plt.show()
+    else:
+        _plt.close()
+
+
+def plot_eom_qse_spectrum(
+    exact_evals,
+    eom_qse_result: dict,
+    *,
+    molecule_label: str,
+    show: bool = True,
+    save: bool = False,
+    title: str | None = None,
+):
+    import matplotlib.pyplot as _plt
+    import numpy as _np
+
+    exact_evals = _np.asarray(exact_evals, dtype=float).ravel()
+    E0 = float(eom_qse_result["reference_energy"])
+    eom_energies = _np.asarray(eom_qse_result["eigenvalues"], dtype=float).ravel()
+
+    ref = (eom_qse_result.get("diagnostics", {}) or {}).get("reference", {}) or {}
+    # EOM-QSE currently stores reference details in config, not diagnostics; keep consistent fallback.
+    if not ref:
+        cfg_ref = (eom_qse_result.get("config", {}) or {}).get(
+            "vqe_reference", {}
+        ) or {}
+        ref = cfg_ref
+
+    ansatz = ref.get("ansatz", None)
+    optimizer = ref.get("optimizer", None)
+    seed = ref.get("seed", None)
+
+    nearest_idx, nearest_E, nearest_err = [], [], []
+    for E in eom_energies:
+        diffs = _np.abs(exact_evals - float(E))
+        j = int(_np.argmin(diffs))
+        nearest_idx.append(j)
+        nearest_E.append(float(exact_evals[j]))
+        nearest_err.append(float(diffs[j]))
+
+    nearest_idx = _np.asarray(nearest_idx, dtype=int)
+    nearest_E = _np.asarray(nearest_E, dtype=float)
+    nearest_err = _np.asarray(nearest_err, dtype=float)
+
+    max_j = int(nearest_idx.max()) if nearest_idx.size else 0
+    m_show = int(max(10, max_j + 6))
+    exact_show = _np.asarray(exact_evals[:m_show], dtype=float)
+
+    _plt.figure(figsize=(10, 4.2))
+
+    x_exact = _np.arange(exact_show.size)
+    _plt.vlines(
+        x_exact,
+        ymin=float(exact_show.min()),
+        ymax=exact_show,
+        linewidth=2,
+        label="Exact eigenvalues",
+    )
+
+    _plt.axhline(E0, linestyle="--", linewidth=1.5, label="VQE reference E0")
+
+    if eom_energies.size:
+        x_eom = nearest_idx.astype(float)
+        _plt.scatter(
+            x_eom,
+            eom_energies,
+            s=70,
+            marker="x",
+            color="red",
+            label="EOM-QSE: E0 + ω",
+        )
+
+        for x, E_eom, E_ex in zip(x_eom, eom_energies, nearest_E):
+            _plt.plot([x, x], [E_ex, E_eom], linewidth=1)
+
+        for x, E_eom, dE in zip(x_eom, eom_energies, nearest_err):
+            _plt.annotate(
+                f"|ΔE|={float(dE):.1e}",
+                (float(x), float(E_eom)),
+                textcoords="offset points",
+                xytext=(0, 8),
+                ha="center",
+                fontsize=8,
+            )
+
+    molecule_title = format_molecule_title(molecule_label)
+
+    if title is None:
+        suffix = None
+        if ansatz is not None or optimizer is not None:
+            suffix = f"{optimizer}, {ansatz}" if optimizer is not None else f"{ansatz}"
+        title = _safe_title(f"{molecule_title} spectrum: exact vs EOM-QSE", suffix)
+
+    _plt.title(title)
+    _plt.xlabel("Eigenvalue level index")
+    _plt.ylabel("Energy (Ha)")
+    _plt.grid(True, alpha=0.3)
+    _plt.xlim(-0.8, exact_show.size - 0.2)
+    _plt.legend()
+    _plt.tight_layout()
+
+    if save:
+        fname = build_filename(
+            topic="eom_qse_spectrum",
+            ansatz=ansatz,
+            optimizer=optimizer,
+            seed=seed,
+            multi_seed=False,
+        )
+        save_plot(fname, kind="vqe", molecule=molecule_label, show=(show or save))
+
+    if show or save:
+        _plt.show()
+    else:
+        _plt.close()
+
+
 def plot_convergence(
     energies_noiseless,
     molecule: str,

@@ -173,11 +173,20 @@ def make_filename_prefix(
     algo_tok: Optional[str] = None
     if algo is not None:
         a = str(algo).strip().lower()
-        if a not in {"vqe", "ssvqe", "vqd", "qse", "lr", "eom"}:
+        if a not in {
+            "vqe",
+            "ssvqe",
+            "vqd",
+            "qse",
+            "lr",
+            "eom_vqe",
+            "eom_qse",
+        }:
             raise ValueError(
-                "algo must be one of: 'vqe', 'ssvqe', 'vqd', 'qse', 'lr', 'eom'"
+                "algo must be one of: "
+                "'vqe', 'ssvqe', 'vqd', 'qse', 'lr', 'eom_vqe', 'eom_qse'"
             )
-        if a in {"ssvqe", "vqd", "qse", "lr", "eom"}:
+        if a in {"ssvqe", "vqd", "qse", "lr", "eom_vqe", "eom_qse"}:
             algo_tok = a
 
     parts: list[str] = [
