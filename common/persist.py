@@ -73,3 +73,32 @@ def atomic_write_json(path: Path, payload: Dict[str, Any]) -> None:
 def read_json(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def canonical_noise(
+    *,
+    noisy: bool,
+    p_dep: float = 0.0,
+    p_amp: float = 0.0,
+    model: str | None = None,
+) -> Dict[str, Any]:
+    if not bool(noisy):
+        return {}
+    p_dep = float(p_dep or 0.0)
+    p_amp = float(p_amp or 0.0)
+    m = None if model is None else str(model).strip()
+    if (p_dep == 0.0) and (p_amp == 0.0) and (m in {None, ""}):
+        return {}
+    return {
+        "p_dep": p_dep,
+        "p_amp": p_amp,
+        "model": (None if (m in {None, ""}) else m),
+    }
+
+
+def canonical_geometry(coordinates: Any, ndigits: int = 8) -> Any:
+    return round_floats(to_serializable(coordinates), ndigits=ndigits)
+
+
+def stable_hash_cfg(cfg: Dict[str, Any], *, ndigits: int = 8, n_hex: int = 12) -> str:
+    return stable_hash_dict(cfg, ndigits=ndigits, n_hex=n_hex)

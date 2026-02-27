@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 import pennylane as qml
 from pennylane import numpy as np
 
-from qpe.io_utils import normalize_noise
+from common.persist import canonical_noise
 from qpe.noise import apply_noise_all
 
 
@@ -220,7 +220,12 @@ def run_qpe(
     shots_i = int(shots)
 
     # 2) Noise: collapse None, {}, and {"p_dep":0,"p_amp":0} to "no noise"
-    norm_noise = normalize_noise(noise_params)
+    norm_noise = canonical_noise(
+        noisy=True,
+        p_dep=float((noise_params or {}).get("p_dep", 0.0)),
+        p_amp=float((noise_params or {}).get("p_amp", 0.0)),
+        model=None,
+    )
 
     # -------------------------
     # Cache lookup
@@ -249,9 +254,7 @@ def run_qpe(
     ancilla_wires = list(range(n_ancilla))
     system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
 
-    dev_name = (
-        "default.mixed" if (norm_noise and len(norm_noise) > 0) else "default.qubit"
-    )
+    dev_name = "default.mixed" if bool(norm_noise) else "default.qubit"
     dev = qml.device(dev_name, wires=n_ancilla + num_qubits, shots=shots_i)
 
     # Remap Hamiltonian wires to system register indices

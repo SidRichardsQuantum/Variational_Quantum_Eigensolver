@@ -46,7 +46,6 @@ from .hamiltonian import build_hamiltonian  # noqa: E402
 
 from .io_utils import (  # noqa: E402
     ensure_dirs,
-    is_effectively_noisy,
     make_filename_prefix,
     make_run_config_dict,
     run_signature,
@@ -81,7 +80,6 @@ __all__ = [
     "run_signature",
     "save_run_record",
     "make_filename_prefix",
-    "is_effectively_noisy",
     # Plotting
     "plot_convergence",
     "plot_noise_statistics",

@@ -18,9 +18,10 @@ from typing import Any, Dict, Optional
 from common.paths import results_dir
 from common.persist import (
     atomic_write_json,
+    canonical_geometry,
+    canonical_noise,
     read_json,
-    round_floats,
-    stable_hash_dict,
+    stable_hash_cfg,
 )
 
 RESULTS_DIR: Path = results_dir("vqe")
@@ -53,37 +54,35 @@ def make_run_config_dict(
     - Callers may append extra keys (e.g. beta schedules, num_states, noise_model name).
     - We round geometry floats to stabilize hashing.
     """
-    # Canonicalise noise: if not noisy, do not allow nonzero noise params to pollute cache keys / filenames.
-    if not bool(noisy):
-        depolarizing_prob = 0.0
-        amplitude_damping_prob = 0.0
+    noise = canonical_noise(
+        noisy=bool(noisy),
+        p_dep=float(depolarizing_prob),
+        p_amp=float(amplitude_damping_prob),
+        model=None,
+    )
 
     cfg: Dict[str, Any] = {
+        "molecule": (None if molecule_label is None else str(molecule_label)),
         "symbols": list(symbols),
-        "geometry": round_floats(coordinates, 8),
-        "basis": str(basis).lower(),
+        "geometry": canonical_geometry(coordinates, ndigits=8),
+        "basis": str(basis).strip().lower(),
+        "mapping": str(mapping).strip().lower(),
+        "seed": int(seed),
+        "noisy": bool(bool(noise)),
+        "noise": noise,
         "ansatz": str(ansatz_desc),
         "optimizer": {
             "name": str(optimizer_name),
             "stepsize": float(stepsize),
             "iterations_planned": int(max_iterations),
         },
-        "optimizer_name": str(optimizer_name),
-        "seed": int(seed),
-        "noisy": bool(noisy),
-        "depolarizing_prob": float(depolarizing_prob),
-        "amplitude_damping_prob": float(amplitude_damping_prob),
-        "mapping": str(mapping).lower(),
     }
-
-    if molecule_label is not None:
-        cfg["molecule"] = str(molecule_label)
 
     return cfg
 
 
 def run_signature(cfg: Dict[str, Any]) -> str:
-    return stable_hash_dict(cfg, ndigits=8, n_hex=12)
+    return stable_hash_cfg(cfg, ndigits=8, n_hex=12)
 
 
 def load_run_record(prefix: str) -> Dict[str, Any] | None:
@@ -105,21 +104,6 @@ def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     return str(path)
 
 
-def is_effectively_noisy(
-    noisy: bool,
-    depolarizing_prob: float,
-    amplitude_damping_prob: float,
-    noise_model=None,
-) -> bool:
-    if not bool(noisy):
-        return False
-    return (
-        float(depolarizing_prob) != 0.0
-        or float(amplitude_damping_prob) != 0.0
-        or (noise_model is not None)
-    )
-
-
 def make_filename_prefix(
     cfg: dict,
     *,
@@ -131,43 +115,25 @@ def make_filename_prefix(
     from common.naming import format_molecule_name
     from common.plotting import slug_token
 
-    mol = str(cfg.get("molecule", "MOL")).strip()
+    mol = str(cfg.get("molecule") or "MOL").strip()
     ans = str(cfg.get("ansatz", "ANSATZ")).strip()
 
     opt = "OPT"
     if isinstance(cfg.get("optimizer"), dict) and "name" in cfg["optimizer"]:
         opt = str(cfg["optimizer"]["name"]).strip()
 
-    def _slug_general(x: str) -> str:
-        s = str(x).strip().lower()
-        s = s.replace("+", "plus")
-        s = s.replace(" ", "_")
-        s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
-        while "__" in s:
-            s = s.replace("__", "_")
-        return s.strip("_") or "x"
-
-    def _slug_molecule_label(mol: str) -> str:
-        s = str(mol).strip()
-        s = s.replace("+", "plus")
-        s = s.replace(" ", "_")
-        s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
-        while "__" in s:
-            s = s.replace("__", "_")
-        return s.strip("_") or "MOL"
-
-    def _noise_tokens(dep: float, amp: float) -> list[str]:
+    def _noise_tokens(noise: dict) -> list[str]:
         toks: list[str] = []
-        dep_f = float(dep or 0.0)
-        amp_f = float(amp or 0.0)
+        p_dep = float((noise or {}).get("p_dep", 0.0))
+        p_amp = float((noise or {}).get("p_amp", 0.0))
 
         def _pct(p: float) -> str:
             return f"{int(round(p * 100)):02d}"
 
-        if dep_f > 0.0:
-            toks.append(f"dep{_pct(dep_f)}")
-        if amp_f > 0.0:
-            toks.append(f"amp{_pct(amp_f)}")
+        if p_dep > 0.0:
+            toks.append(f"dep{_pct(p_dep)}")
+        if p_amp > 0.0:
+            toks.append(f"amp{_pct(p_amp)}")
         return toks
 
     algo_tok: Optional[str] = None
@@ -198,14 +164,9 @@ def make_filename_prefix(
     if algo_tok is not None:
         parts.append(algo_tok)
 
-    parts.append("noisy" if bool(noisy) else "noiseless")
-
-    parts.extend(
-        _noise_tokens(
-            float(cfg.get("depolarizing_prob", 0.0)),
-            float(cfg.get("amplitude_damping_prob", 0.0)),
-        )
-    )
+    noise = cfg.get("noise", {}) or {}
+    parts.append("noisy" if bool(noise) else "noiseless")
+    parts.extend(_noise_tokens(noise))
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())

@@ -18,7 +18,12 @@ from typing import Any, Dict, Optional
 
 from common.naming import format_molecule_name, format_token
 from common.paths import results_dir
-from common.persist import atomic_write_json, read_json, stable_hash_dict
+from common.persist import (
+    atomic_write_json,
+    canonical_noise,
+    read_json,
+    stable_hash_cfg,
+)
 from common.plotting import save_plot
 
 RESULTS_DIR: Path = results_dir("qpe")
@@ -41,7 +46,12 @@ def signature_hash(
     trotter_steps: int = 1,
 ) -> str:
     # Canonicalise "no noise" consistently (None / {} / zeros => {})
-    nz = normalize_noise(noise)
+    nz = canonical_noise(
+        noisy=True,
+        p_dep=float((noise or {}).get("p_dep", 0.0)),
+        p_amp=float((noise or {}).get("p_amp", 0.0)),
+        model=None,
+    )
 
     cfg = {
         "molecule": format_molecule_name(molecule),
@@ -54,7 +64,7 @@ def signature_hash(
         "mapping": str(mapping).strip().lower(),
         "unit": str(unit).strip().lower(),
     }
-    return stable_hash_dict(cfg, ndigits=10, n_hex=12)
+    return stable_hash_cfg(cfg, ndigits=10, n_hex=12)
 
 
 def cache_path(
@@ -71,8 +81,14 @@ def cache_path(
     ensure_dirs()
     mol = format_molecule_name(molecule)
 
-    p_dep = float((noise or {}).get("p_dep", 0.0))
-    p_amp = float((noise or {}).get("p_amp", 0.0))
+    nz = canonical_noise(
+        noisy=True,
+        p_dep=float((noise or {}).get("p_dep", 0.0)),
+        p_amp=float((noise or {}).get("p_amp", 0.0)),
+        model=None,
+    )
+    p_dep = float(nz.get("p_dep", 0.0))
+    p_amp = float(nz.get("p_amp", 0.0))
 
     toks = [
         mol,
@@ -120,7 +136,6 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
 
     atomic_write_json(path, result)
 
-    print(f"💾 Saved QPE result → {path}")
     return str(path)
 
 

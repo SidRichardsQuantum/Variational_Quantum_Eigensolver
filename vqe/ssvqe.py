@@ -22,7 +22,6 @@ from .hamiltonian import build_hamiltonian
 from .io_utils import (
     RESULTS_DIR,
     ensure_dirs,
-    is_effectively_noisy,
     make_filename_prefix,
     make_run_config_dict,
     run_signature,
@@ -327,12 +326,15 @@ def run_ssvqe(
         raise ValueError("weights must be strictly positive")
 
     # 5) Device + diff method
-    effective_noisy = is_effectively_noisy(
+    from common.persist import canonical_noise
+
+    noise = canonical_noise(
         noisy=bool(noisy),
-        depolarizing_prob=float(depolarizing_prob),
-        amplitude_damping_prob=float(amplitude_damping_prob),
-        noise_model=noise_model,
+        p_dep=float(depolarizing_prob),
+        p_amp=float(amplitude_damping_prob),
+        model=(None if noise_model is None else "custom"),
     )
+    effective_noisy = bool(noise)
     dev = make_device(int(num_wires), noisy=bool(effective_noisy))
     diff_method = "finite-diff" if effective_noisy else "parameter-shift"
 

@@ -33,7 +33,6 @@ from .hamiltonian import (
 )
 from .io_utils import (
     ensure_dirs,
-    is_effectively_noisy,
     load_run_record,
     make_filename_prefix,
     make_run_config_dict,
@@ -137,19 +136,6 @@ def run_vqe(
 
     basis_out = str(basis_out).strip().lower()
 
-    # Decide effective noisiness (canonical: affects device/filenames/caching)
-    effective_noisy = is_effectively_noisy(
-        bool(noisy),
-        float(depolarizing_prob),
-        float(amplitude_damping_prob),
-        noise_model=None,
-    )
-
-    # Canonicalise: if noise is not effectively enabled, do not carry nonzero dep/amp into caching or filenames.
-    if not bool(effective_noisy):
-        depolarizing_prob = 0.0
-        amplitude_damping_prob = 0.0
-
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
         symbols=symbols_out,
@@ -161,7 +147,7 @@ def run_vqe(
         max_iterations=int(steps),
         seed=int(seed),
         mapping=mapping_norm,
-        noisy=bool(effective_noisy),
+        noisy=bool(noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
         molecule_label=molecule_label,
@@ -170,7 +156,7 @@ def run_vqe(
     sig = run_signature(cfg)
     prefix = make_filename_prefix(
         cfg,
-        noisy=bool(effective_noisy),
+        noisy=bool(cfg.get("noise")),
         seed=int(seed),
         hash_str=sig,
         algo="vqe",
@@ -182,7 +168,7 @@ def run_vqe(
             return record["result"]
 
     # --- Device, ansatz, optim, QNodes ---
-    dev = make_device(int(qubits), noisy=bool(effective_noisy))
+    dev = make_device(int(qubits), noisy=bool(cfg.get("noise")))
 
     ansatz_fn, params0 = engine_build_ansatz(
         str(ansatz_name),
@@ -198,7 +184,7 @@ def run_vqe(
         dev,
         ansatz_fn,
         int(qubits),
-        noisy=bool(effective_noisy),
+        noisy=bool(cfg.get("noise")),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
         symbols=symbols_out,
@@ -210,7 +196,7 @@ def run_vqe(
         dev,
         ansatz_fn,
         int(qubits),
-        noisy=bool(effective_noisy),
+        noisy=bool(cfg.get("noise")),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
         symbols=symbols_out,

@@ -34,7 +34,6 @@ from qite.engine import (
 from qite.hamiltonian import build_hamiltonian
 from qite.io_utils import (
     ensure_dirs,
-    is_effectively_noisy,
     load_run_record,
     make_filename_prefix,
     make_run_config_dict,
@@ -112,14 +111,12 @@ def run_qite(
     ensure_dirs()
     np.random.seed(int(seed))
 
-    # Decide effective noisiness (canonical: affects device/filenames/caching)
-    effective_noisy = is_effectively_noisy(
-        bool(noisy),
-        float(depolarizing_prob),
-        float(amplitude_damping_prob),
-        noise_model=noise_model,
-    )
-    if effective_noisy:
+    if (
+        bool(noisy)
+        or (float(depolarizing_prob) != 0.0)
+        or (float(amplitude_damping_prob) != 0.0)
+        or (noise_model is not None)
+    ):
         raise ValueError(
             "VarQITE requires a pure statevector and is not supported with "
             "noisy/mixed-state simulation. Use the CLI's eval-noise mode for "

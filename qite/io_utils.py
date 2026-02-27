@@ -15,10 +15,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
-import numpy as np
-
 from common.paths import results_dir
-from common.persist import atomic_write_json, read_json, stable_hash_dict
+from common.persist import (
+    atomic_write_json,
+    canonical_geometry,
+    canonical_noise,
+    read_json,
+    stable_hash_cfg,
+)
 
 RESULTS_DIR: Path = results_dir("qite")
 
@@ -60,7 +64,6 @@ def make_run_config_dict(
     - We ignore unknown fields so qite.core can evolve without breaking caching.
     - VarQITE numerics are included when provided so they participate in caching.
     """
-    # Resolve ansatz label with a simple priority order
     ansatz_label = (
         ansatz_name
         if ansatz_name is not None
@@ -71,19 +74,22 @@ def make_run_config_dict(
         )
     )
 
+    noise = canonical_noise(
+        noisy=bool(noisy),
+        p_dep=float(depolarizing_prob),
+        p_amp=float(amplitude_damping_prob),
+        model=noise_model_name,
+    )
+
     cfg = {
         "molecule": str(molecule_label),
         "symbols": list(symbols),
-        "coordinates": np.asarray(coordinates, dtype=float).tolist(),
-        "basis": str(basis),
+        "geometry": canonical_geometry(coordinates, ndigits=8),
+        "basis": str(basis).strip().lower(),
+        "mapping": str(mapping).strip().lower(),
         "seed": int(seed),
-        "mapping": str(mapping),
-        "noisy": bool(noisy),
-        "depolarizing_prob": float(depolarizing_prob),
-        "amplitude_damping_prob": float(amplitude_damping_prob),
-        "noise_model_name": (
-            None if noise_model_name is None else str(noise_model_name)
-        ),
+        "noisy": bool(bool(noise)),
+        "noise": noise,
         "dtau": float(dtau),
         "steps": int(steps),
         "ansatz": str(ansatz_label),
@@ -103,7 +109,7 @@ def make_run_config_dict(
 
 
 def run_signature(cfg: Dict[str, Any]) -> str:
-    return stable_hash_dict(cfg, ndigits=8, n_hex=12)
+    return stable_hash_cfg(cfg, ndigits=8, n_hex=12)
 
 
 def load_run_record(prefix: str) -> Dict[str, Any] | None:
@@ -125,21 +131,6 @@ def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     return str(path)
 
 
-def is_effectively_noisy(
-    noisy: bool,
-    depolarizing_prob: float,
-    amplitude_damping_prob: float,
-    noise_model=None,
-) -> bool:
-    if not bool(noisy):
-        return False
-    return (
-        float(depolarizing_prob) != 0.0
-        or float(amplitude_damping_prob) != 0.0
-        or (noise_model is not None)
-    )
-
-
 def make_filename_prefix(
     cfg: dict,
     *,
@@ -157,6 +148,7 @@ def make_filename_prefix(
     Accepts extra kwargs so qite.core can evolve without breaking I/O.
     """
     from common.naming import format_molecule_name, format_token
+    from common.plotting import slug_token
 
     mol = str(cfg.get("molecule", cfg.get("molecule_label", "UNK")))
 
@@ -169,10 +161,26 @@ def make_filename_prefix(
     dtau = float(cfg.get("dtau", 0.0))
 
     algo_tag = str(algo).strip().lower() if algo else "qite"
-    noise_tag = "noisy" if bool(noisy) else "noiseless"
     dtau_tok = format_token(dtau)
 
-    return (
-        f"{algo_tag}__{mol_fs}__{ansatz}__{mapping}__"
-        f"{noise_tag}__steps{steps}__dtau{dtau_tok}__s{int(seed)}__{hash_str}"
-    )
+    noise = cfg.get("noise", {}) or {}
+    p_dep = float(noise.get("p_dep", 0.0))
+    p_amp = float(noise.get("p_amp", 0.0))
+
+    parts: list[str] = [
+        algo_tag,
+        mol_fs,
+        slug_token(ansatz),
+        slug_token(mapping),
+        "noisy" if bool(noise) else "noiseless",
+        f"steps{steps}",
+        f"dtau{dtau_tok}",
+    ]
+    if p_dep > 0.0:
+        parts.append(f"dep{int(round(p_dep * 100)):02d}")
+    if p_amp > 0.0:
+        parts.append(f"amp{int(round(p_amp * 100)):02d}")
+
+    parts.append(f"s{int(seed)}")
+    parts.append(str(hash_str).strip())
+    return "_".join(parts)

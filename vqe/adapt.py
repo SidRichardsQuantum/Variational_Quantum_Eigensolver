@@ -29,7 +29,6 @@ from .engine import apply_optional_noise, build_optimizer, make_device
 from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
-    is_effectively_noisy,
     load_run_record,
     make_filename_prefix,
     make_run_config_dict,
@@ -214,12 +213,15 @@ def run_adapt_vqe(
     if len(hf_state_pool) != int(num_wires):
         hf_state = np.array(hf_state_meta, dtype=int)
 
-    effective_noisy = is_effectively_noisy(
-        bool(noisy),
-        float(depolarizing_prob),
-        float(amplitude_damping_prob),
-        noise_model=noise_model,
+    from common.persist import canonical_noise
+
+    noise = canonical_noise(
+        noisy=bool(noisy),
+        p_dep=float(depolarizing_prob),
+        p_amp=float(amplitude_damping_prob),
+        model=(None if noise_model is None else "custom"),
     )
+    effective_noisy = bool(noise)
 
     if not bool(effective_noisy):
         depolarizing_prob = 0.0
