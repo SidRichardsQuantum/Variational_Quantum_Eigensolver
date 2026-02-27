@@ -50,6 +50,13 @@ docs = [
   "furo",
 ]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+  "error::pennylane.exceptions.PennyLaneDeprecationWarning",
+  "error::DeprecationWarning",
+  "error::SyntaxWarning",
+]
+
 [project.scripts]
 vqe = "vqe.__main__:main"
 qpe = "qpe.__main__:main"

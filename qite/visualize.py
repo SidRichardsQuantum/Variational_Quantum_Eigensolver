@@ -18,6 +18,7 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
+from common.naming import format_token
 from common.plotting import (
     build_filename,
     format_molecule_title,
@@ -257,7 +258,7 @@ def plot_diagnostics(
         return
 
     fname = build_filename(
-        topic=str(tag).strip().lower().replace(" ", "_"),
+        topic=format_token(tag),
         ansatz=ansatz,
         seed=seed,
         multi_seed=False,

@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from common.naming import format_molecule_name
+from common.naming import format_molecule_name, format_token
 from common.plotting import (
     build_filename,
     format_molecule_title,
@@ -184,7 +184,7 @@ def plot_qpe_sweep(
             amp=p_amp if p_amp > 0 else None,
             noise_scan=is_noise_scan,
             noise_type=noise_type,
-            tag=(title.lower().replace(" ", "_").replace("(", "").replace(")", "")),
+            tag=format_token(title),
             multi_seed=False,
         )
         save_plot(fname, kind="qpe", molecule=molecule, show=show)
