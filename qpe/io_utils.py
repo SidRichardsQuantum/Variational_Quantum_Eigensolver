@@ -16,7 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from common.naming import format_molecule_name, format_token
+from common.naming import format_molecule_name
 from common.paths import results_dir
 from common.persist import (
     atomic_write_json,
@@ -24,7 +24,7 @@ from common.persist import (
     read_json,
     stable_hash_cfg,
 )
-from common.plotting import save_plot
+from common.plotting import build_filename, save_plot
 
 RESULTS_DIR: Path = results_dir("qpe")
 
@@ -45,7 +45,6 @@ def signature_hash(
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
 ) -> str:
-    # Canonicalise "no noise" consistently (None / {} / zeros => {})
     nz = canonical_noise(
         noisy=True,
         p_dep=float((noise or {}).get("p_dep", 0.0)),
@@ -90,19 +89,20 @@ def cache_path(
     p_dep = float(nz.get("p_dep", 0.0))
     p_amp = float(nz.get("p_amp", 0.0))
 
-    toks = [
-        mol,
-        f"{int(n_ancilla)}ancilla",
-        f"t{format_token(float(t))}",
-        f"s{int(seed)}",
-    ]
-    if p_dep > 0:
-        toks.append(f"dep{int(round(p_dep * 100)):02d}")
-    if p_amp > 0:
-        toks.append(f"amp{int(round(p_amp * 100)):02d}")
+    fname = build_filename(
+        topic="qpe",
+        ancilla=int(n_ancilla),
+        t=float(t),
+        dep=(p_dep if p_dep > 0.0 else None),
+        amp=(p_amp if p_amp > 0.0 else None),
+        noise_scan=False,
+        multi_seed=False,
+        seed=int(seed),
+        tag=str(key).strip(),
+    )
 
-    toks.append(key)
-    return RESULTS_DIR / ("_".join(toks) + ".json")
+    fname = fname.removesuffix(".png") + ".json"
+    return RESULTS_DIR / f"{mol}_{fname}"
 
 
 def save_qpe_result(result: Dict[str, Any]) -> str:
@@ -135,7 +135,6 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
     )
 
     atomic_write_json(path, result)
-
     return str(path)
 
 

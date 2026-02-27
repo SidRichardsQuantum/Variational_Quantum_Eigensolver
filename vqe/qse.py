@@ -448,8 +448,7 @@ def run_qse(
     else:
         if pool_norm != "hamiltonian_topk":
             raise ValueError(
-                "Unsupported QSE pool. Supported: 'hamiltonian_topk' "
-                f"(got {pool!r})."
+                f"Unsupported QSE pool. Supported: 'hamiltonian_topk' (got {pool!r})."
             )
         op_specs = _build_hamiltonian_topk_pool(
             H,

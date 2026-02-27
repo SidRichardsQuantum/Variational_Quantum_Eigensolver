@@ -167,7 +167,28 @@ def test_qpe_cache_roundtrip(tmp_path, monkeypatch) -> None:
         from common.paths import results_dir
         from common.naming import format_molecule_name
 
-        path = results_dir("qpe") / f"{format_molecule_name('H2')}_{key}.json"
+        from common.plotting import build_filename
+
+        n_ancilla = int(payload["n_ancilla"])
+        t = float(payload["t"])
+        seed = int(payload["seed"])
+        noise = payload.get("noise", {}) or {}
+        p_dep = float(noise.get("p_dep", 0.0))
+        p_amp = float(noise.get("p_amp", 0.0))
+
+        fname = build_filename(
+            topic="qpe",
+            ancilla=int(n_ancilla),
+            t=float(t),
+            dep=(p_dep if p_dep > 0.0 else None),
+            amp=(p_amp if p_amp > 0.0 else None),
+            noise_scan=False,
+            multi_seed=False,
+            seed=int(seed),
+            tag=str(key).strip(),
+        )
+        fname = fname.removesuffix(".png") + ".json"
+        path = results_dir("qpe") / f"{format_molecule_name('H2')}_{fname}"
 
     atomic_write_json(path, payload)
     loaded = read_json(path)

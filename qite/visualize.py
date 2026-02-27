@@ -18,24 +18,17 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
-from common.plotting import build_filename, format_molecule_title, save_plot
+from common.plotting import (
+    build_filename,
+    format_molecule_title,
+    infer_noise_type,
+    save_plot,
+)
 
 
 def _safe_title(*parts: object) -> str:
     items = [str(p) for p in parts if p is not None and str(p).strip() != ""]
     return " — ".join(items)
-
-
-def _infer_noise_type(dep_prob: float, amp_prob: float) -> Optional[str]:
-    p_dep = float(dep_prob)
-    p_amp = float(amp_prob)
-    if p_dep > 0.0 and p_amp > 0.0:
-        return "combined"
-    if p_dep > 0.0 and p_amp == 0.0:
-        return "depolarizing"
-    if p_dep == 0.0 and p_amp > 0.0:
-        return "amplitude"
-    return None
 
 
 # -----------------------------------------------------------------------------
@@ -95,7 +88,7 @@ def plot_convergence(
             plt.close()
         return
 
-    nt = noise_type if noise_type is not None else _infer_noise_type(dep_prob, amp_prob)
+    nt = noise_type if noise_type is not None else infer_noise_type(dep_prob, amp_prob)
 
     fname = build_filename(
         topic="convergence",

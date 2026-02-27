@@ -184,7 +184,7 @@ def run_qpe(
     t: float = 1.0,
     trotter_steps: int = 1,
     noise_params: Optional[Dict[str, float]] = None,
-    shots: int = 5000,
+    shots: Optional[int] = 1000,
     molecule_name: str = "molecule",
     system_qubits: Optional[int] = None,
     mapping: str = "jordan_wigner",
@@ -255,7 +255,7 @@ def run_qpe(
     system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
 
     dev_name = "default.mixed" if bool(norm_noise) else "default.qubit"
-    dev = qml.device(dev_name, wires=n_ancilla + num_qubits, shots=shots_i)
+    dev = qml.device(dev_name, wires=n_ancilla + num_qubits)
 
     # Remap Hamiltonian wires to system register indices
     wire_map = {i: system_wires[i] for i in range(num_qubits)}
@@ -282,6 +282,9 @@ def run_qpe(
 
         inverse_qft(ancilla_wires)
         return qml.sample(wires=ancilla_wires)
+
+    if shots_i is not None:
+        circuit = qml.set_shots(shots_i)(circuit)
 
     samples = np.array(circuit(), dtype=int)
     samples = np.atleast_2d(samples)

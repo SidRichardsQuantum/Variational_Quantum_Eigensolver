@@ -1,11 +1,13 @@
-# common/naming.py
+"""
+common/naming.py
+"""
 
 from __future__ import annotations
 
 
 def format_molecule_name(mol: str) -> str:
     s = str(mol).strip()
-    s = s.replace("+", "plus").replace(" ", "_")
+    s = s.replace("+", "plus").replace("-", "minus").replace(" ", "_")
     s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)
     while "__" in s:
         s = s.replace("__", "_")
@@ -37,5 +39,5 @@ def format_token(val: object) -> str:
         return s
 
     s = str(val).strip()
-    s = s.replace(" ", "_").replace("+", "plus")
+    s = s.replace(" ", "_").replace("+", "plus").replace("-", "minus")
     return s

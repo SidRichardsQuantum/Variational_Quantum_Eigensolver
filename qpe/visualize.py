@@ -11,7 +11,12 @@ from typing import Any, Dict, Optional, Sequence
 import matplotlib.pyplot as plt
 
 from common.naming import format_molecule_name
-from common.plotting import build_filename, format_molecule_title, save_plot
+from common.plotting import (
+    build_filename,
+    format_molecule_title,
+    infer_noise_type,
+    save_plot,
+)
 
 
 def _ket(bits: str) -> str:
@@ -41,16 +46,6 @@ def _sort_items(
     if order == "binary_desc":
         return sorted(items, key=lambda kv: -_bitstring_key(kv[0]))
     raise ValueError(f"Unknown order={order!r}")
-
-
-def _infer_noise_type(p_dep: float, p_amp: float) -> Optional[str]:
-    if p_dep > 0 and p_amp > 0:
-        return "combined"
-    if p_dep > 0 and p_amp == 0:
-        return "depolarizing"
-    if p_dep == 0 and p_amp > 0:
-        return "amplitude"
-    return None
 
 
 def _extract_t(result: Dict[str, Any]) -> Optional[float]:
@@ -117,7 +112,7 @@ def plot_qpe_distribution(
             dep=p_dep if p_dep > 0 else None,
             amp=p_amp if p_amp > 0 else None,
             noise_scan=False,
-            noise_type=_infer_noise_type(p_dep, p_amp),
+            noise_type=infer_noise_type(p_dep, p_amp),
             multi_seed=False,
         )
         save_plot(fname, kind="qpe", molecule=molecule, show=show)
@@ -178,7 +173,7 @@ def plot_qpe_sweep(
     plt.tight_layout()
 
     is_noise_scan = (p_dep > 0.0) or (p_amp > 0.0)
-    noise_type = _infer_noise_type(p_dep, p_amp) if is_noise_scan else None
+    noise_type = infer_noise_type(p_dep, p_amp) if is_noise_scan else None
 
     if save:
         fname = build_filename(

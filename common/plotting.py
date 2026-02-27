@@ -74,6 +74,27 @@ def _fmt_float_token(x: float) -> str:
     return s.replace("-", "m").replace(".", "p")
 
 
+def infer_noise_type(dep: Optional[float], amp: Optional[float]) -> Optional[str]:
+    """
+    Infer canonical noise type from dep/amp probabilities.
+
+    Returns
+    -------
+    str | None
+        "depolarizing", "amplitude", "combined", or None if both are zero.
+    """
+    p_dep = float(dep or 0.0)
+    p_amp = float(amp or 0.0)
+
+    if p_dep > 0.0 and p_amp > 0.0:
+        return "combined"
+    if p_dep > 0.0 and p_amp == 0.0:
+        return "depolarizing"
+    if p_dep == 0.0 and p_amp > 0.0:
+        return "amplitude"
+    return None
+
+
 def _noise_tokens(
     *,
     dep: Optional[float],

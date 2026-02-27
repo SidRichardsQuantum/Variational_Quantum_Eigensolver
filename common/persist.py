@@ -26,7 +26,7 @@ def round_floats(x: Any, ndigits: int = 8) -> Any:
         return round_floats(x.tolist(), ndigits)
 
     if isinstance(x, (list, tuple)):
-        return type(x)(round_floats(v, ndigits) for v in x)
+        return [round_floats(v, ndigits) for v in x]
 
     if isinstance(x, dict):
         return {k: round_floats(v, ndigits) for k, v in x.items()}

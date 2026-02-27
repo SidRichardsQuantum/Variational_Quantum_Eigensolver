@@ -176,10 +176,18 @@ def make_filename_prefix(
         f"steps{steps}",
         f"dtau{dtau_tok}",
     ]
-    if p_dep > 0.0:
-        parts.append(f"dep{int(round(p_dep * 100)):02d}")
-    if p_amp > 0.0:
-        parts.append(f"amp{int(round(p_amp * 100)):02d}")
+    from common.plotting import build_filename
+
+    noise_png = build_filename(
+        topic="x",
+        dep=(p_dep if p_dep > 0.0 else None),
+        amp=(p_amp if p_amp > 0.0 else None),
+        noise_scan=False,
+        multi_seed=False,
+    )
+    noise_mid = noise_png.removesuffix(".png")
+    if noise_mid != "x":
+        parts.append(noise_mid.replace("x_", "", 1))
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())

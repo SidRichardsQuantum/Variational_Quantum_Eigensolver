@@ -18,11 +18,11 @@ def data_root() -> Path:
     override = os.environ.get("VQE_PENNYLANE_DATA_DIR", "").strip()
     if override:
         p = Path(override).expanduser().resolve()
-        p.mkdir(parents=True, exist_ok=True)
-        if not p.is_dir():
+        if p.exists() and (not p.is_dir()):
             raise ValueError(
                 f"VQE_PENNYLANE_DATA_DIR must point to a directory (got {str(p)!r})"
             )
+        p.mkdir(parents=True, exist_ok=True)
         return p
     return project_root()
 

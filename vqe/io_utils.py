@@ -113,7 +113,7 @@ def make_filename_prefix(
     algo: Optional[str] = None,
 ) -> str:
     from common.naming import format_molecule_name
-    from common.plotting import slug_token
+    from common.plotting import build_filename, slug_token
 
     mol = str(cfg.get("molecule") or "MOL").strip()
     ans = str(cfg.get("ansatz", "ANSATZ")).strip()
@@ -121,20 +121,6 @@ def make_filename_prefix(
     opt = "OPT"
     if isinstance(cfg.get("optimizer"), dict) and "name" in cfg["optimizer"]:
         opt = str(cfg["optimizer"]["name"]).strip()
-
-    def _noise_tokens(noise: dict) -> list[str]:
-        toks: list[str] = []
-        p_dep = float((noise or {}).get("p_dep", 0.0))
-        p_amp = float((noise or {}).get("p_amp", 0.0))
-
-        def _pct(p: float) -> str:
-            return f"{int(round(p * 100)):02d}"
-
-        if p_dep > 0.0:
-            toks.append(f"dep{_pct(p_dep)}")
-        if p_amp > 0.0:
-            toks.append(f"amp{_pct(p_amp)}")
-        return toks
 
     algo_tok: Optional[str] = None
     if algo is not None:
@@ -155,6 +141,10 @@ def make_filename_prefix(
         if a in {"ssvqe", "vqd", "qse", "lr", "eom_vqe", "eom_qse"}:
             algo_tok = a
 
+    noise = cfg.get("noise", {}) or {}
+    p_dep = float((noise or {}).get("p_dep", 0.0))
+    p_amp = float((noise or {}).get("p_amp", 0.0))
+
     parts: list[str] = [
         format_molecule_name(mol),
         slug_token(ans),
@@ -164,11 +154,20 @@ def make_filename_prefix(
     if algo_tok is not None:
         parts.append(algo_tok)
 
-    noise = cfg.get("noise", {}) or {}
-    parts.append("noisy" if bool(noise) else "noiseless")
-    parts.extend(_noise_tokens(noise))
+    parts.append("noisy" if (p_dep > 0.0 or p_amp > 0.0) else "noiseless")
+
+    noise_png = build_filename(
+        topic="x",
+        dep=(p_dep if p_dep > 0.0 else None),
+        amp=(p_amp if p_amp > 0.0 else None),
+        noise_scan=False,
+        multi_seed=False,
+    )
+    noise_mid = noise_png.removesuffix(".png")
+    if noise_mid != "x":
+        parts.append(noise_mid.replace("x_", "", 1))
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())
 
-    return "_".join(parts)
+    return "_".join([p for p in parts if str(p).strip() != ""])

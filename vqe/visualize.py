@@ -383,7 +383,7 @@ def plot_convergence(
         title = _safe_title(
             f"{molecule_title}",
             f"VQE Convergence ({optimizer}, {ansatz})",
-            f"Noise: dep={dep_prob}, amp={amp_prob}",
+            f"noise(p_dep={float(dep_prob):g}, p_amp={float(amp_prob):g})",
         )
     else:
         title = _safe_title(
@@ -588,7 +588,10 @@ def plot_multi_state_convergence(
     plt.xlabel("Iteration")
     plt.ylabel("Energy (Ha)")
     plt.title(
-        f"{molecule_title} {method_name} ({n_states} states) – {ansatz}, {optimizer}"
+        _safe_title(
+            f"{molecule_title} {method_name} ({n_states} states)",
+            f"{ansatz}, {optimizer}",
+        )
     )
     plt.grid(True, alpha=0.3)
     plt.legend()
