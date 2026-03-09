@@ -284,7 +284,7 @@ def run_qpe(
         return qml.sample(wires=ancilla_wires)
 
     if shots_i is not None:
-        circuit = qml.set_shots(shots_i)(circuit)
+        circuit = qml.set_shots(circuit, shots=shots_i)
 
     samples = np.array(circuit(), dtype=int)
     samples = np.atleast_2d(samples)
