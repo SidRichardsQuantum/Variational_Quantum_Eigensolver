@@ -165,7 +165,7 @@ def make_filename_prefix(
     )
     noise_mid = noise_png.removesuffix(".png")
     if noise_mid != "x":
-        parts.append(noise_mid.replace("x_", "", 1))
+        parts.append(noise_mid)
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())

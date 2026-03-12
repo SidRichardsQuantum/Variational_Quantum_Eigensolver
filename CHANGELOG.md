@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.5] – March 12, 2026
+
+### Changed
+
+* **Comprehensive documentation refresh** across the project:
+
+  * `README.md` reorganized for clearer separation between project overview, solver capabilities, and package structure.
+  * `USAGE.md` expanded and clarified to document all CLI workflows (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD, QPE, QITE) with consistent CLI/API examples.
+  * `THEORY.md` substantially expanded and reorganized:
+
+    * clearer background section connecting quantum chemistry to VQE/QPE/QITE,
+    * structured explanation of excited-state methods,
+    * improved comparison of post-VQE vs variational excited-state approaches,
+    * additional discussion of mappings, ansatz design, and imaginary-time evolution.
+
+* **Documentation structure made consistent across the repository**:
+
+  * Theory, usage, and architecture content now separated cleanly between
+    `README.md`, `USAGE.md`, and `THEORY.md`.
+  * Table-of-contents anchors and section hierarchy aligned across documents.
+
+### Fixed
+
+* Corrected outdated or inconsistent documentation references after the introduction of
+  LR-VQE, EOM-VQE, QSE, and EOM-QSE.
+* Fixed stale table-of-contents anchors and section names in `THEORY.md`.
+
+### Internal
+
+* **Repository hygiene improvements**:
+
+  * `.gitignore` simplified and standardized for Python packaging, notebooks, and generated artifacts.
+  * Ensured generated outputs (`results/`, `images/`, build artifacts) remain excluded from version control.
+
+* Minor consistency improvements across documentation and project metadata in preparation for the **0.3.5 release**.
+
+---
+
 ## [0.3.4] – February 26, 2026
 
 ### Added

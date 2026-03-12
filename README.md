@@ -1,124 +1,137 @@
-# Quantum Simulation Suite — VQE + ADAPT-VQE + LR-VQE + EOM-VQE + QSE + EOM-QSE + SSVQE + VQD + QPE + QITE (PennyLane)
+# Quantum Simulation Suite — VQE, Excited-State Methods, QPE, and VarQITE (PennyLane)
 
 <p align="center">
 
-  <a href="https://pypi.org/project/vqe-pennylane/">
-    <img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version">
-  </a>
+<a href="https://pypi.org/project/vqe-pennylane/">
+<img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version">
+</a>
 
-  <a href="https://pypi.org/project/vqe-pennylane/">
-    <img src="https://img.shields.io/pypi/dm/vqe-pennylane?style=flat-square" alt="PyPI Downloads">
-  </a>
+<a href="https://pypi.org/project/vqe-pennylane/">
+<img src="https://img.shields.io/pypi/dm/vqe-pennylane?style=flat-square" alt="PyPI Downloads">
+</a>
 
-  <a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions/workflows/tests.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
-  </a>
+<a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions/workflows/tests.yml">
+<img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
+</a>
 
-  <img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions">
+<img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions">
 
-  <img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
+<img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
 
 </p>
 
-A modern, modular, and fully reproducible **quantum-chemistry simulation suite** built on **PennyLane**, featuring:
+A **modular quantum-chemistry simulation suite** built on **PennyLane**, combining:
 
-- **Variational Quantum Eigensolver (VQE)** (ground state)
-- **Linear-Response VQE (LR-VQE)** (post-VQE tangent-space excited states via TDA)
-- **Equation-of-Motion VQE (EOM-VQE)** (post-VQE tangent-space full-response excited states)
-- **Quantum Subspace Expansion (QSE)** (post-VQE operator-subspace spectrum around a reference state)
-- **Equation-of-Motion QSE (EOM-QSE)** (post-VQE commutator EOM in an operator manifold)
-- **Subspace-Search VQE (SSVQE)** (multiple low-lying states, subspace objective)
-- **Variational Quantum Deflation (VQD)** (excited states via deflation)
-- **Adaptive Derivative-Assembled Pseudo-Trotter VQE (ADAPT-VQE)** (adaptive ansatz growth)
-- **Quantum Phase Estimation (QPE)** (phase-based energy estimation)
-- **Quantum Imaginary Time Evolution (QITE / VarQITE)** (imaginary-time ground-state filtering via McLachlan updates)
-- **Unified molecule registry, geometry generators, and plotting tools**
-- **Consistent caching and reproducibility across all solvers**
+- **Variational quantum algorithms** (VQE and excited-state extensions)
+- **Phase-estimation algorithms** (QPE)
+- **Imaginary-time evolution** (VarQITE)
 
-This project refactors all previous notebooks into a clean, versioned Python package with a shared `common/` layer for Hamiltonians, molecules, geometry, plotting, paths, and persistence.
+The project provides a **reproducible research framework** with:
 
-## How to get started
+- unified molecule and Hamiltonian infrastructure
+- consistent caching and run signatures
+- shared plotting and output conventions
+- CLI workflows and Python APIs
+- curated notebooks for benchmarking and demonstrations
 
-- For the background and derivations: see [THEORY.md](THEORY.md)
-- For CLI usage and automation: see [USAGE.md](USAGE.md)
-- For example notebooks: see [notebooks/README_notebooks.md](notebooks/README_notebooks.md)
-
-These documents complement this `README.md` and provide the theoretical foundation and hands-on execution details.
+The repository consolidates many earlier exploratory notebooks into a **clean, versioned Python package** with a shared `common/` layer used by all solvers.
 
 ---
 
-## Project Structure
+## Implemented Algorithms
+
+### Variational methods
+
+- **VQE** — ground-state variational eigensolver  
+- **ADAPT-VQE** — adaptive ansatz growth using gradient-selected operators  
+
+### Post-VQE excited-state methods
+
+- **LR-VQE** — tangent-space linear response (Tamm–Dancoff approximation)
+- **EOM-VQE** — full-response tangent-space equation of motion
+- **QSE** — operator-subspace expansion
+- **EOM-QSE** — commutator equation-of-motion formulation
+
+### Variational excited-state solvers
+
+- **SSVQE** — multi-state optimization in a shared unitary
+- **VQD** — sequential excited-state deflation
+
+### Non-variational algorithms
+
+- **QPE** — phase-estimation energy extraction
+- **QITE / VarQITE** — imaginary-time ground-state filtering
+
+---
+
+## Feature Overview
+
+| Method | Category | Optimization | Noise Support |
+|------|------|------|------|
+| **VQE** | Variational | Classical optimizer | Yes |
+| **ADAPT-VQE** | Variational | Adaptive + classical | Yes |
+| **LR-VQE** | Post-VQE | Linear algebra | No (statevector only) |
+| **EOM-VQE** | Post-VQE | Linear algebra | No (statevector only) |
+| **QSE** | Post-VQE | Linear algebra | No (statevector only) |
+| **EOM-QSE** | Post-VQE | Linear algebra | No (statevector only) |
+| **SSVQE** | Variational | Simultaneous | Yes |
+| **VQD** | Variational | Sequential | Yes |
+| **QPE** | Phase estimation | None | Yes |
+| **QITE / VarQITE** | Imaginary time | McLachlan updates | Noisy evaluation only |
+
+---
+
+## Documentation
+
+The repository documentation is split across several files:
+
+| File | Purpose |
+|-----|------|
+| **README.md** | Overview and quickstart |
+| **USAGE.md** | CLI and Python usage guide |
+| **THEORY.md** | Algorithms and methodology |
+| **notebooks/README_notebooks.md** | Notebook index and workflow guide |
+
+Start here if you are new to the project:
+
+- 📘 **Algorithms and derivations:** [`THEORY.md`](THEORY.md)  
+- ⚙️ **Command-line usage:** [`USAGE.md`](USAGE.md)  
+- 📓 **Example notebooks:** [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md)
+
+---
+
+## Repository Structure
 
 ```
-
 Variational_Quantum_Eigensolver/
 ├── README.md
 ├── THEORY.md
 ├── USAGE.md
-├── LICENSE
-├── requirements.txt
 ├── pyproject.toml
 │
-├── vqe/                     # VQE package
-│   ├── __main__.py          # CLI: python -m vqe
-│   ├── core.py              # VQE orchestration (runs, scans, sweeps)
-│   ├── engine.py            # Devices, noise, ansatz/optimizer plumbing
-│   ├── ansatz.py            # UCCSD, RY-CZ, HEA, minimal ansatz
-│   ├── adapt.py             # ADAPT-VQE (adaptive ansatz growth)
-│   ├── optimizer.py         # Adam, GD, Momentum, SPSA, etc.
-│   ├── hamiltonian.py       # VQE wrapper → uses common.hamiltonian
-│   ├── io_utils.py          # JSON caching, run signatures
-│   ├── visualize.py         # Convergence, scans, noise plots
-│   ├── lr_vqe.py            # LR-VQE (tangent-space linear response / TDA)
-│   ├── eom_vqe.py           # EOM-VQE (tangent-space full-response EOM)
-│   ├── qse.py               # QSE (post-VQE operator-subspace expansion)
-│   ├── eom_qse.py           # EOM-QSE (commutator EOM in operator manifold)
-│   ├── vqd.py               # VQD (excited states)
-│   └── ssvqe.py             # SSVQE (excited states)
+├── vqe/        # Variational solvers (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD)
+├── qpe/        # Quantum Phase Estimation
+├── qite/       # Variational imaginary-time evolution (VarQITE)
 │
-├── qpe/                     # QPE package
-│   ├── __main__.py          # CLI: python -m qpe
-│   ├── core.py              # Controlled-U, trotterized dynamics, iQFT
-│   ├── hamiltonian.py       # QPE wrapper → uses common.hamiltonian
-│   ├── io_utils.py          # JSON caching, run signatures
-│   ├── noise.py             # Depolarizing + amplitude damping channels
-│   └── visualize.py         # Phase histograms + sweep plots
+├── common/     # Shared infrastructure
+│   ├── molecules.py
+│   ├── geometry.py
+│   ├── hamiltonian.py
+│   ├── plotting.py
+│   ├── paths.py
+│   └── persist.py
 │
-├── qite/                    # QITE / VarQITE package
-│   ├── __main__.py          # CLI: python -m qite  (subcommands: run, eval-noise)
-│   ├── core.py              # VarQITE orchestration (cached runs)
-│   ├── engine.py            # Ansatz plumbing + energy/state QNodes for noiseless/noisy evaluation
-│   ├── hamiltonian.py       # QITE wrapper → uses common.hamiltonian
-│   ├── io_utils.py          # Run config hashing + JSON run records
-│   └── visualize.py         # Convergence + diagnostics/noise plots
+├── notebooks/  # Demonstrations and benchmarks
 │
-├── common/                  # Shared logic for VQE + QPE + QITE
-│   ├── geometry.py          # Bond/angle geometry generators
-│   ├── hamiltonian.py       # Unified Hamiltonian builder
-│   ├── molecules.py         # Molecule registry
-│   ├── naming.py            # Stable filename / token formatting
-│   ├── paths.py             # Results/images root resolution
-│   ├── persist.py           # Atomic JSON read/write
-│   ├── plotting.py          # Unified plotting + filename builders
-│   └── molecule_viz.py      # Molecule visualization helpers
-│
-├── images/                  # Saved png files. In .gitignore
-├── results/                 # JSON outputs.    In .gitignore
-│
-└── notebooks/
-    ├── README_notebooks.md  # Notebook index
-    ├── getting_started/     # Intro notebook implementing VQE and QPE from scratch
-    ├── vqe/                 # Package-client notebooks for VQE/SSVQE/VQD
-    └── qpe/                 # Package-client notebooks for QPE
-
+├── results/    # Cached run records (ignored in Git)
+└── images/     # Generated plots (ignored in Git)
 ```
 
-This structure ensures:
-
-- **VQE, QPE, and QITE share the same chemistry** (`common/`)
-- **All results are cached consistently** (`results/`)
-- **All plots use one naming system** (`common/plotting.py`)
-- **CLI tools are production-ready** (`python -m vqe`, `python -m qpe`)
+Design goals:
+- Shared chemistry layer across all algorithms (`common/`)
+- Deterministic caching and run signatures
+- Unified plotting and output conventions
+- CLI and Python APIs built on the same internal engines
 
 ---
 
@@ -130,7 +143,7 @@ This structure ensures:
 pip install vqe-pennylane
 ```
 
-### Install from source (development mode)
+### Install from source
 
 ```bash
 git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
@@ -138,10 +151,10 @@ cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-### Confirm installation
+### Verify installation
 
 ```bash
-python -c "import vqe, qpe, qite, common; print('All stacks imported successfully!')"
+python -c "import vqe, qpe, qite, common; print('Quantum stacks imported successfully')"
 ```
 
 ---
@@ -159,189 +172,94 @@ The following modules ensure full consistency between solvers:
 
 ---
 
-## VQE package
+## VQE Package
+
+The `vqe` module implements ground-state VQE together with multiple
+excited-state workflows.
 
 ### Capabilities
 
-* Ground-state VQE
-* Excited-state tooling via **LR-VQE**, **EOM-VQE**, **QSE**, **EOM-QSE**, **SSVQE**, and **VQD**
-* ADAPT-VQE (adaptive operator selection from an excitation pool)
-* Geometry scans and mapping comparisons
-* Optional noise models (depolarizing / amplitude damping and custom noise callables)
-* Result caching (hash-based signatures) and unified plot naming
+- Ground-state **VQE**
+- **ADAPT-VQE** adaptive ansatz construction
+- Excited-state methods:
 
-### VQE example
+  - **LR-VQE**
+  - **EOM-VQE**
+  - **QSE**
+  - **EOM-QSE**
+  - **SSVQE**
+  - **VQD**
+
+- Geometry scans and mapping comparisons
+- Optional noise models
+- Deterministic caching and reproducible run signatures
+
+### Minimal example
 
 ```python
 from vqe.core import run_vqe
 
-result = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", steps=50)
-print(result["energy"])
+res = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", steps=50)
+print(res["energy"])
 ```
 
-### Energy ordering policy (important)
-
-For excited-state workflows (`SSVQE`, `VQD`), the package reports energies in a consistent way:
-
-* `energies_per_state[k]` is the trajectory for the *k-th reported energy*.
-* **Final energies are ordered ascending (lowest → highest)** for stable reporting in notebooks/tables.
-
-This avoids “state swap” confusion when a particular optimization run lands in a different eigenstate ordering.
-
-### Post-VQE Excited-State Methods
-
-#### QSE overview
-
-Quantum Subspace Expansion (QSE) is a **post-processing** method built on top of a converged VQE reference state $|\psi\rangle$.
-
-Given an operator pool $\{O_i\}$ (default: Hamiltonian-driven top-$k$ Pauli terms), QSE forms the subspace matrices
-
-$$H_{ij}=\langle\psi|O_i^\dagger H O_j|\psi\rangle,\qquad
-S_{ij}=\langle\psi|O_i^\dagger O_j|\psi\rangle$$
-
-and solves the generalized eigenvalue problem
-
-$$Hc = ESc$$
-
-#### LR-VQE overview
-
-Linear-Response VQE (LR-VQE) extracts excited-state information from a **converged VQE reference state** by analysing the **ansatz tangent space**.
-
-Rather than expanding a discrete operator pool (as in QSE), LR-VQE constructs the generalized eigenvalue problem
-
-$$Ac = \omega Sc$$
-
-where
-
-• $S$ encodes overlaps between parameter-derivative (tangent) states  
-• $A$ encodes Hamiltonian projections in the same tangent space  
-• $\omega$ are excitation energies relative to the VQE reference energy $E₀$
-
-Excited energies are then
-
-$$Eᵢ = E₀ + \omega_i$$
-
-This implementation uses a **Tamm–Dancoff approximation (TDA)**, which is numerically stable,
-noise-resistant, and sufficient for small-molecule benchmarks.
-
-#### EOM-VQE overview
-
-Equation-of-Motion VQE (EOM-VQE) generalizes LR-VQE by solving the **full-response**
-tangent-space eigenproblem rather than the Tamm–Dancoff approximation.
-
-The method constructs coupled tangent-space blocks
-
-• $ A $ — Hamiltonian projections within the tangent manifold  
-• $ B $ — Couplings between tangent and conjugate-tangent directions  
-• $ S $ — Tangent-space overlap metric  
-
-and solves the indefinite-metric eigenproblem associated with linearized
-time-dependent variational dynamics.
-
-Excitation energies are obtained from the **positive roots** of the full-response
-spectrum, with excited energies
-
-$ E_i = E_0 + \omega_i $
-
-Compared to LR-VQE (TDA):
-
-• Captures additional response physics  
-• May exhibit reference instabilities if VQE is insufficiently converged  
-• Numerically stabilized via overlap filtering and Hermitianization  
-
-This implementation is **noiseless-only (statevector reference)**.
-
-#### EOM-QSE overview
-
-Equation-of-Motion QSE (EOM-QSE) formulates excited states via the
-**commutator equation of motion**
-
-$ A c = \omega S c $
-
-where
-
-• $ A_{ij} = \langle \psi | O_i^\dagger [H, O_j] | \psi \rangle $  
-• $ S_{ij} = \langle \psi | O_i^\dagger O_j | \psi \rangle $
-
-Unlike projection QSE:
-
-• The reduced eigenproblem is generally **non-Hermitian**  
-• Eigenvalues may be complex  
-• Physical excitations correspond to positive, real-dominant roots  
-
-EOM-QSE does **not** inherit variational guarantees and accuracy depends strongly
-on the operator manifold.
-
-This implementation uses a Hamiltonian-driven Pauli pool with overlap filtering
-and explicit real-root selection heuristics.
-
-### SSVQE (excited-state) overview
-
-SSVQE targets multiple low-lying states in a single shared-parameter optimization:
-
-* Choose orthogonal computational-basis reference states (|\phi_k\rangle)
-* Apply a shared parameterized unitary (U(\theta)) to each reference:
-  $$|\psi_k(\theta)\rangle = U(\theta)\,|\phi_k\rangle$$
-* Minimize a weighted sum of energies:
-  $$\mathcal{L}(\theta) = \sum_k w_k \langle \psi_k(\theta)|H|\psi_k(\theta)\rangle$$
-  Orthogonality is enforced by the orthogonality of the inputs (|\phi_k\rangle), not by overlap penalties.
-
-### VQD (excited-state) overview
-
-VQD computes excited states sequentially:
-
-* First optimize a ground state $|\psi_0(\theta_0)\rangle$
-* Then optimize an excited state $|\psi_1(\theta_1)\rangle$ using a deflation term:
-  $$\mathcal{L}(\theta_1) = E(\theta_1) + \beta \cdot \text{Overlap}(\psi_0,\psi_1)$$
-  In the noiseless case, overlap approximates $|\langle \psi_0|\psi_1\rangle|^2$; with noise it can be implemented using a density-matrix similarity proxy.
-
-### ADAPT-VQE overview
-
-ADAPT-VQE (adaptive ansatz) constructs the variational ansatz **on the fly**, rather than fixing it in advance.
-
-The workflow alternates between two loops:
-
-* **Inner loop:** optimize the parameters of the current ansatz using standard VQE.
-* **Outer loop:** evaluate the energy gradient that would result from appending each candidate operator from a predefined pool (e.g. UCC singles/doubles), and **append the operator with the largest gradient magnitude**.
-
-This procedure continues until the maximum gradient falls below a tolerance or a maximum operator budget is reached.
-
-Key features of this implementation:
-
-* Chemistry-motivated operator pools (**UCC-S / UCC-D / UCCSD**)
-* Hartree–Fock reference state
-* Deterministic operator selection via $|\partial E / \partial \theta|$ at $\theta=0$
-* Fully compatible with the existing VQE engine, noise handling, caching, and plotting infrastructure
+Excited-state workflows and CLI usage are documented in [USAGE.md](USAGE.md).
 
 ---
 
-## QPE package
+## QPE Package
 
-### Capabilities
+The `qpe` module implements **Quantum Phase Estimation** using the same
+molecular Hamiltonians as the VQE stack.
 
-* Noiseless and noisy QPE
-* Trotterized $e^{-iHt}$
-* Inverse QFT
-* Noise channels
-* Cached results
+Features:
 
-### Example
+- noiseless and noisy QPE
+- Trotterized time evolution
+- inverse quantum Fourier transform
+- cached runs and reproducible plots
+
+Example:
 
 ```python
 from common.hamiltonian import build_hamiltonian
 from qpe.core import run_qpe
 
-H, n_qubits, hf_state = build_hamiltonian(
-    molecule="H2",
-    mapping="jordan_wigner",
-    unit="angstrom",
-)
-result = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
+H, n_qubits, hf_state = build_hamiltonian("H2")
+
+res = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
+print(res["energy"])
 ```
 
 ---
 
-## QITE / VarQITE package
+## QITE / VarQITE Package
+
+The `qite` module implements **variational imaginary-time evolution**
+using the **McLachlan variational principle**.
+
+Capabilities:
+
+- parameter-update imaginary-time evolution (noiseless)
+- cached trajectories and convergence diagnostics
+- noisy evaluation of converged parameters
+
+Example:
+
+```python
+from qite.core import run_qite
+
+res = run_qite(
+    molecule="H2",
+    ansatz_name="UCCSD",
+    steps=50,
+    dtau=0.2,
+)
+
+print(res["energy"])
+```
+
+---
 
 ### Capabilities
 
@@ -369,9 +287,9 @@ print(res["energy"])
 
 ---
 
-## CLI usage
+## Command-Line Interface
 
-All CLIs are installed as entrypoints (`vqe`, `qpe`, `qite`) or can be invoked via `python -m`.
+All algorithms can be executed via CLI entrypoints or via `python -m`.
 
 ### VQE
 
@@ -388,21 +306,16 @@ python -m qpe --molecule H2 --ancillas 4 --shots 2000
 ### QITE / VarQITE
 
 ```bash
-# Noiseless VarQITE run (cached)
-python -m qite run --molecule H2 --steps 50 --dtau 0.2 --seed 0
-
-# Noisy evaluation of cached parameters
-python -m qite eval-noise --molecule H2 --steps 50 --seed 0 --dep 0.02 --amp 0.0 --pretty
-
-# Depolarizing sweep averaged across seeds
-python -m qite eval-noise --molecule H2 --steps 50 --sweep-dep 0,0.02,0.04 --seeds 0,1,2 --pretty
+python -m qite run --molecule H2 --steps 50 --dtau 0.2
 ```
 
-For full CLI coverage (including excited-state workflows), see [USAGE.md](USAGE.md).
+For the full set of CLI workflows (including excited-state methods), see [USAGE.md](USAGE.md).
 
 ---
 
-## Tests
+## Testing
+
+Run the full test suite:
 
 ```bash
 pytest -v
@@ -410,8 +323,7 @@ pytest -v
 
 ---
 
-Author: Sid Richards (SidRichardsQuantum)
-
+**Author:** Sid Richards (SidRichardsQuantum)
 LinkedIn: [https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Licensed under the **MIT License** — see [LICENSE](LICENSE).
