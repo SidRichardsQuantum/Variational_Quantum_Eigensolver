@@ -13,7 +13,11 @@ This document summarizes the main algorithms, physical assumptions, and implemen
 - noise models
 
 For practical usage and CLI examples, see [`USAGE.md`](USAGE.md).  
-For a project overview and quickstart, see [`README.md`](README.md).
+For a project overview and quickstart, see [`README.md`](README.md).  
+For implementation-level VQE reference material, see:
+
+- [`docs/vqe/ansatzes.md`](docs/vqe/ansatzes.md)
+- [`docs/vqe/optimizers.md`](docs/vqe/optimizers.md)
 
 ---
 
@@ -116,9 +120,9 @@ $$
 
 In a qubit encoding, this becomes an occupation-number bitstring indicating which spin-orbitals are occupied. For example, in a minimal-basis LiH setup with 4 electrons in 12 spin-orbitals, the Hartree-Fock occupation pattern is
 
-```text
+```
 |111100000000⟩
-````
+```
 
 In this repository, the Hartree-Fock reference is used in several ways:
 
@@ -153,7 +157,7 @@ At a high level:
 
 ```
 VQE WORKFLOW
-============
+
 
    Classical Optimizer                Quantum Circuit
    -------------------                ----------------
@@ -227,39 +231,32 @@ For very small educational examples, a deliberately simple ansatz can be useful.
 
 Such ansätze are not intended to be generally competitive, but they help illustrate how VQE behaves.
 
+> 📘 **Detailed ansatz definitions, parameter conventions, initialization rules, and implementation notes are documented in:**  
+> [`docs/vqe/ansatzes.md`](docs/vqe/ansatzes.md)
 ---
 
 ## Optimizers
 
-The optimizer updates the circuit parameters in response to measured energy values and gradients or gradient estimates.
+Classical optimizers update the variational parameters $\theta$ to minimize the VQE energy
 
-### Adam
+$$
+E(\theta) = \langle \psi(\theta) | H | \psi(\theta) \rangle.
+$$
 
-Adam combines momentum and adaptive per-parameter learning rates. In practice it is often the default because it is:
+In this repository, optimizers are implemented via a unified interface
+(`vqe.optimizer` / `engine.build_optimizer`) and include:
 
-* robust
-* easy to tune
-* effective on irregular objective landscapes
+- Adam
+- Gradient Descent
+- Momentum / Nesterov Momentum
+- RMSProp
+- Adagrad
 
-### Gradient Descent
+These methods differ in how they use gradient information, momentum, and
+adaptive learning rates to update parameters.
 
-A straightforward baseline method that updates directly along the negative gradient direction. It is useful for:
-
-* pedagogical comparisons
-* simple baselines
-* testing sensitivity to step size
-
-### Momentum and Nesterov Momentum
-
-Momentum-based methods smooth updates and can help navigate shallow valleys or oscillatory directions. Nesterov momentum adds a look-ahead component that can improve convergence in smooth regimes.
-
-### Adagrad
-
-Adagrad adapts the learning rate using accumulated gradient history. It can help when different parameters evolve on very different scales, though it can become overly conservative over long runs.
-
-### SPSA
-
-**Simultaneous Perturbation Stochastic Approximation** is especially relevant for noisy settings because it estimates gradient information using very few function evaluations. It is useful when exact gradients are expensive or unstable.
+> 📘 **Detailed update rules, definitions, and practical behaviour are documented in:**  
+> [`docs/vqe/optimizers.md`](docs/vqe/optimizers.md)
 
 ---
 
@@ -433,7 +430,6 @@ Define tangent vectors
 
 $$
 |\partial_i \psi\rangle
-=======================
 
 \left.\frac{\partial}{\partial \theta_i} |\psi(\theta)\rangle\right|_{\theta=\theta^*}.
 $$
@@ -512,7 +508,6 @@ Then optimize a weighted multi-state objective:
 
 $$
 \mathcal{L}(\theta)
-===================
 
 \sum_k w_k \langle \psi_k(\theta)|H|\psi_k(\theta)\rangle .
 $$
@@ -529,7 +524,6 @@ A limitation is that the optimization can become more difficult as the number of
 
 ```
 SSVQE IDEA
-==========
 
 Choose orthogonal inputs:
    |φ0⟩, |φ1⟩, ...
@@ -557,7 +551,6 @@ For the (n)-th state, the objective has the form
 
 $$
 \mathcal{L}_n(\theta_n)
-=======================
 
 \langle \psi(\theta_n)|H|\psi(\theta_n)\rangle
 +
@@ -640,7 +633,6 @@ A simplified view of the workflow is:
 
 ```
 ADAPT-VQE WORKFLOW
-==================
 
 Initialize:
    |ψ0⟩ = |HF⟩
@@ -655,7 +647,7 @@ Repeat:
 Stop when:
    max gradient < grad_tol
    or
-   number of operators == max_ops
+   number of operators = max_ops
 ```
 
 Relative to fixed-ansatz VQE, ADAPT-VQE can provide:
@@ -708,7 +700,6 @@ The basic flow is:
 
 ```
 QPE OVERVIEW
-============
 
 Ancilla register:  |0⟩...|0⟩  --H-- controlled-U^{2^k} -- IQFT -- measure
 System register:   |HF⟩   ----------------------------------------------
@@ -749,7 +740,6 @@ then
 
 $$
 e^{-H\tau}|\psi(0)\rangle
-=========================
 
 \sum_k c_k e^{-E_k \tau}|E_k\rangle.
 $$
@@ -817,7 +807,6 @@ Noise handling is algorithm-dependent:
 
 ```
 NOISE IN SIMULATIONS
-====================
 
 ideal gates
    ↓
@@ -836,7 +825,6 @@ Depolarizing noise drives a qubit toward a mixed state with probability (p_{\mat
 
 $$
 \mathcal{E}_{\mathrm{dep}}(\rho)
-================================
 
 (1-p_{\mathrm{dep}})\rho
 +
@@ -854,7 +842,6 @@ Amplitude damping models relaxation toward ( |0\rangle ) with probability (p_{\m
 
 $$
 \mathcal{E}_{\mathrm{amp}}(\rho)
-================================
 
 E_0 \rho E_0^\dagger + E_1 \rho E_1^\dagger,
 $$

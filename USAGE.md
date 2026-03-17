@@ -11,6 +11,8 @@ It complements:
 
 - **`README.md`** — overview and quickstart
 - **`THEORY.md`** — algorithms and methodology
+- **`docs/vqe/ansatzes.md`** — VQE ansatz reference
+- **`docs/vqe/optimizers.md`** — VQE optimizer reference
 
 ---
 
@@ -175,6 +177,89 @@ vqe -m H2 -a UCCSD -o Adam
 vqe -m H2 -a RY-CZ -o GradientDescent
 vqe -m H2 -a StronglyEntanglingLayers -o Momentum
 ```
+
+### Ansatz guidance
+
+The best ansatz depends on whether your priority is chemistry structure,
+hardware efficiency, or simple debugging.
+
+Practical recommendations for this repository:
+
+- **UCCSD (default)**
+  - best starting point for small-molecule quantum chemistry
+  - chemistry-informed and Hartree–Fock based
+  - usually the most physically meaningful default choice
+
+- **UCC-S / UCC-D**
+  - useful for ablations or smaller chemistry-inspired tests
+  - `UCC-S` is simpler but less expressive
+  - `UCC-D` often captures more correlation than singles-only
+
+- **RY-CZ**
+  - simple hardware-efficient baseline
+  - useful for optimizer comparisons and trainability studies
+  - lighter-weight than UCC-style ansatzes
+
+- **TwoQubit-RY-CNOT**
+  - structured toy/scalable baseline
+  - useful for small experiments and debugging
+
+- **StronglyEntanglingLayers**
+  - more expressive hardware-efficient template
+  - useful for general variational experiments
+  - can be harder to optimize cleanly
+
+- **Minimal**
+  - pedagogical/debugging ansatz only
+  - useful for very small demonstrations, not realistic chemistry studies
+
+General tips:
+
+- start with `UCCSD` for chemistry-oriented VQE
+- start with `RY-CZ` for lightweight optimizer comparisons
+- use `Minimal` or `TwoQubit-RY-CNOT` for debugging and sanity checks
+- prefer simpler ansatzes when diagnosing optimizer or noise behaviour
+
+For full ansatz definitions, parameter conventions, and initialization details, see:
+
+→ `docs/vqe/ansatzes.md`
+
+### Optimizer guidance
+
+The choice of optimizer can significantly affect VQE convergence speed and stability.
+
+Practical recommendations for this repository:
+
+- **Adam (default)**
+  - good general-purpose choice
+  - robust across most molecules and ansätze
+  - typical stepsize: `0.1 – 0.3`
+
+- **GradientDescent**
+  - useful baseline for comparison
+  - requires smaller stepsizes (e.g. `0.01 – 0.1`)
+  - may converge slowly or oscillate
+
+- **Momentum / Nesterov**
+  - can accelerate convergence relative to GradientDescent
+  - useful for smoother energy landscapes
+  - still sensitive to stepsize
+
+- **RMSProp / Adagrad**
+  - adaptive per-parameter scaling
+  - can help when parameters evolve on different scales
+  - Adagrad may become overly conservative over long runs
+
+General tips:
+
+- if convergence is unstable → reduce `--stepsize`
+- if convergence is too slow → increase `--stepsize` slightly
+- for small molecules (e.g. `H2`), moderately larger stepsizes often work well
+- for larger systems or deeper ansätze, smaller stepsizes are usually safer
+
+For full mathematical definitions and update rules, see:
+
+→ `docs/vqe/optimizers.md`
 
 ### Geometry scans
 
