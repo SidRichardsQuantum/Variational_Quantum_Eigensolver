@@ -127,10 +127,10 @@ H, n_qubits, hf_state = build_hamiltonian(...)
 
 Responsibilities:
 
-* construct qubit Hamiltonian
-* apply mapping (JW / BK / parity)
-* provide Hartree–Fock reference state
-* handle backend fallbacks (PennyLane / OpenFermion)
+- construct qubit Hamiltonian
+- apply mapping (JW / BK / parity)
+- provide Hartree–Fock reference state
+- handle backend fallbacks (PennyLane / OpenFermion)
 
 This is the **core shared interface** across all stacks.
 
@@ -144,9 +144,9 @@ common/
 ├── persist.py
 ```
 
-* deterministic caching (JSON records)
-* plot generation with consistent naming
-* stable hashing of configurations
+- deterministic caching (JSON records)
+- plot generation with consistent naming
+- stable hashing of configurations
 
 ---
 
@@ -156,9 +156,9 @@ common/
 
 Implements:
 
-* ground-state VQE
-* ADAPT-VQE
-* excited-state methods (QSE, LR-VQE, etc.)
+- ground-state VQE
+- ADAPT-VQE
+- excited-state methods (QSE, LR-VQE, etc.)
 
 ---
 
@@ -172,15 +172,15 @@ vqe/engine.py
 
 Responsibilities:
 
-* device creation (`default.qubit` / `default.mixed`)
-* ansatz construction
-* optimizer creation
-* QNode construction:
+- device creation (`default.qubit` / `default.mixed`)
+- ansatz construction
+- optimizer creation
+- QNode construction:
 
-  * energy
-  * state
-  * overlaps
-* noise application
+  - energy
+  - state
+  - overlaps
+- noise application
 
 This is the **core execution layer**.
 
@@ -202,9 +202,9 @@ vqe/
 
 Each module:
 
-* builds on the engine
-* implements its own objective or eigenproblem
-* returns structured results (JSON-compatible)
+- builds on the engine
+- implements its own objective or eigenproblem
+- returns structured results (JSON-compatible)
 
 ---
 
@@ -215,8 +215,8 @@ vqe/ansatz.py
 vqe/optimizer.py
 ```
 
-* ansatz factory + parameter initialization
-* optimizer factory (PennyLane wrappers)
+- ansatz factory + parameter initialization
+- optimizer factory (PennyLane wrappers)
 
 ---
 
@@ -234,9 +234,9 @@ build_hamiltonian → prepare HF state → controlled evolution → phase estima
 
 Key characteristics:
 
-* uses Trotterized time evolution
-* supports noisy and noiseless simulation
-* independent of variational optimization
+- uses Trotterized time evolution
+- supports noisy and noiseless simulation
+- independent of variational optimization
 
 ---
 
@@ -255,8 +255,8 @@ Split into two phases:
 
 This avoids:
 
-* instability from noisy linear solves
-* contamination of cached parameter trajectories
+- instability from noisy linear solves
+- contamination of cached parameter trajectories
 
 ---
 
@@ -292,9 +292,9 @@ ansatz → noise → measurement
 
 Features:
 
-* legacy CLI interface
-* extensible `noise_model(wires)`
-* consistent across all VQE-family methods
+- legacy CLI interface
+- extensible `noise_model(wires)`
+- consistent across all VQE-family methods
 
 ---
 
@@ -304,18 +304,18 @@ Features:
 
 All runs are:
 
-* hashed deterministically
-* stored as JSON records
-* reproducible via configuration
+- hashed deterministically
+- stored as JSON records
+- reproducible via configuration
 
 ### Key properties
 
-* identical configs → identical cache keys
-* parameter rounding for stability
-* separation of:
+- identical configs → identical cache keys
+- parameter rounding for stability
+- separation of:
 
-  * compute
-  * visualization
+  - compute
+  - visualization
 
 ---
 
@@ -346,15 +346,15 @@ Both interfaces share the same underlying implementation.
 
 ### 1. Single source of truth
 
-* Hamiltonians built once (`common`)
-* reused everywhere
+- Hamiltonians built once (`common`)
+- reused everywhere
 
 ---
 
 ### 2. Thin algorithm layers
 
-* algorithms do not rebuild infrastructure
-* rely on engine + common modules
+- algorithms do not rebuild infrastructure
+- rely on engine + common modules
 
 ---
 
@@ -371,16 +371,16 @@ Both interfaces share the same underlying implementation.
 
 ### 4. Backwards compatibility
 
-* legacy interfaces preserved (noise, mappings)
-* graceful fallbacks (Hamiltonian construction)
+- legacy interfaces preserved (noise, mappings)
+- graceful fallbacks (Hamiltonian construction)
 
 ---
 
 ### 5. Deterministic outputs
 
-* stable hashing
-* consistent directory structure
-* JSON-first results
+- stable hashing
+- consistent directory structure
+- JSON-first results
 
 ---
 
@@ -388,25 +388,25 @@ Both interfaces share the same underlying implementation.
 
 ### Add a new ansatz
 
-* implement in `vqe/ansatz.py`
-* ensure compatible signature
+- implement in `vqe/ansatz.py`
+- ensure compatible signature
 
 ---
 
 ### Add a new optimizer
 
-* register in `vqe/optimizer.py`
+- register in `vqe/optimizer.py`
 
 ---
 
 ### Add a new algorithm
 
-* create new module in `vqe/`
-* use:
+- create new module in `vqe/`
+- use:
 
-  * `build_hamiltonian`
-  * engine QNodes
-* return structured result dict
+  - `build_hamiltonian`
+  - engine QNodes
+- return structured result dict
 
 ---
 
@@ -416,11 +416,11 @@ This repository is structured around a **shared physical layer** (`common`) and 
 
 Key strengths:
 
-* unified Hamiltonian construction
-* modular execution engine
-* consistent noise and device handling
-* reproducible outputs
-* extensible architecture
+- unified Hamiltonian construction
+- modular execution engine
+- consistent noise and device handling
+- reproducible outputs
+- extensible architecture
 
 ---
 

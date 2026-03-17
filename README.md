@@ -263,9 +263,9 @@ print(res["energy"])
 
 ### Capabilities
 
-* **VarQITE (McLachlan)** imaginary-time parameter updates (noiseless, pure-state)
-* Cached run records under `results/qite/` and convergence plots under `images/qite/`
-* Explicit separation between optimization (`qite run`) and noisy evaluation (`qite eval-noise`)
+- **VarQITE (McLachlan)** imaginary-time parameter updates (noiseless, pure-state)
+- Cached run records under `results/qite/` and convergence plots under `images/qite/`
+- Explicit separation between optimization (`qite run`) and noisy evaluation (`qite eval-noise`)
 
 ### Example
 

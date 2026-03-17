@@ -126,19 +126,19 @@ In a qubit encoding, this becomes an occupation-number bitstring indicating whic
 
 In this repository, the Hartree-Fock reference is used in several ways:
 
-* as the starting determinant for chemistry-inspired VQE ansätze
-* as the initial reference state for ADAPT-VQE
-* as a practical approximate eigenstate input for QPE
-* as a natural initial state for some imaginary-time workflows
+- as the starting determinant for chemistry-inspired VQE ansätze
+- as the initial reference state for ADAPT-VQE
+- as a practical approximate eigenstate input for QPE
+- as a natural initial state for some imaginary-time workflows
 
 ### From classical chemistry to quantum algorithms
 
 The algorithms in this project differ mainly in how they use the qubit Hamiltonian once it has been constructed:
 
-* **VQE** minimizes the energy expectation value variationally
-* **post-VQE excited-state methods** extract excitations from a converged VQE reference
-* **QPE** estimates eigenvalues from phase information in time evolution
-* **VarQITE** approximates imaginary-time ground-state filtering
+- **VQE** minimizes the energy expectation value variationally
+- **post-VQE excited-state methods** extract excitations from a converged VQE reference
+- **QPE** estimates eigenvalues from phase information in time evolution
+- **VarQITE** approximates imaginary-time ground-state filtering
 
 Because all of these methods share the same molecule registry, geometry generation, and Hamiltonian builder, differences between results can be interpreted as algorithmic differences rather than inconsistencies in the chemistry setup.
 
@@ -175,9 +175,9 @@ VQE WORKFLOW
 
 The quality of VQE depends on three main ingredients:
 
-* the ansatz family
-* the optimizer
-* the qubit encoding of the molecular Hamiltonian
+- the ansatz family
+- the optimizer
+- the qubit encoding of the molecular Hamiltonian
 
 ---
 
@@ -205,9 +205,9 @@ where (T_1) contains single excitations and (T_2) contains double excitations.
 
 In this repository, UCCSD is used because it:
 
-* incorporates chemically meaningful excitation structure
-* performs strongly on small molecules in minimal bases
-* provides a natural reference point for comparing more hardware-oriented circuits
+- incorporates chemically meaningful excitation structure
+- performs strongly on small molecules in minimal bases
+- provides a natural reference point for comparing more hardware-oriented circuits
 
 ### RY-CZ Ansatz
 
@@ -215,19 +215,19 @@ This is a hardware-efficient ansatz built from layers of single-qubit (R_Y) rota
 
 Typical motivations:
 
-* shallow, simple structure
-* tunable depth
-* useful for optimizer and trainability studies
-* more hardware-oriented than UCC-style circuits
+- shallow, simple structure
+- tunable depth
+- useful for optimizer and trainability studies
+- more hardware-oriented than UCC-style circuits
 
 ### Minimal / One-Parameter Ansatz
 
 For very small educational examples, a deliberately simple ansatz can be useful. A one-parameter ansatz provides:
 
-* shallow circuits
-* intuitive energy landscapes
-* easy visualization of optimization behaviour
-* a useful pedagogical baseline
+- shallow circuits
+- intuitive energy landscapes
+- easy visualization of optimization behaviour
+- a useful pedagogical baseline
 
 Such ansätze are not intended to be generally competitive, but they help illustrate how VQE behaves.
 
@@ -268,28 +268,28 @@ This repository includes studies using three common mappings:
 
 ### Jordan-Wigner
 
-* direct occupation-based encoding
-* simple and explicit
-* can produce long Pauli strings
+- direct occupation-based encoding
+- simple and explicit
+- can produce long Pauli strings
 
 ### Bravyi-Kitaev
 
-* balances occupation and parity information
-* often reduces average Pauli-string length relative to Jordan-Wigner
-* can improve circuit structure in some settings
+- balances occupation and parity information
+- often reduces average Pauli-string length relative to Jordan-Wigner
+- can improve circuit structure in some settings
 
 ### Parity Mapping
 
-* encodes parity structure rather than direct occupation
-* can reduce depth or expose useful symmetries
-* may alter optimization behaviour and operator structure
+- encodes parity structure rather than direct occupation
+- can reduce depth or expose useful symmetries
+- may alter optimization behaviour and operator structure
 
 These mappings change the qubit Hamiltonian representation and therefore can affect:
 
-* circuit depth
-* measurement structure
-* optimization stability
-* gradient magnitudes
+- circuit depth
+- measurement structure
+- optimization stability
+- gradient magnitudes
 
 ---
 
@@ -307,9 +307,9 @@ $$
 
 This directly targets the ground state, but not higher-energy eigenstates. To access excitations, one typically needs one of the following strategies:
 
-* construct a reduced subspace around a converged ground-state reference
-* impose orthogonality or deflation constraints
-* optimize several states simultaneously
+- construct a reduced subspace around a converged ground-state reference
+- impose orthogonality or deflation constraints
+- optimize several states simultaneously
 
 ### Two Families of Excited-State Methods in This Repository
 
@@ -319,10 +319,10 @@ This repository contains two broad classes of excited-state methods.
 
 These start from a converged **noiseless VQE reference state** and then solve a reduced eigenvalue problem:
 
-* **QSE**
-* **EOM-QSE**
-* **LR-VQE**
-* **EOM-VQE**
+- **QSE**
+- **EOM-QSE**
+- **LR-VQE**
+- **EOM-VQE**
 
 These methods do not perform a second variational optimization over excited states. Instead, they extract excitations from a local subspace or tangent-space construction around the reference state.
 
@@ -330,8 +330,8 @@ These methods do not perform a second variational optimization over excited stat
 
 These solve excited states directly through variational objectives:
 
-* **SSVQE**
-* **VQD**
+- **SSVQE**
+- **VQD**
 
 These approaches are more flexible in noisy settings, but they involve additional optimization effort.
 
@@ -363,20 +363,20 @@ $$
 
 Interpretation:
 
-* (S) is the overlap matrix of the generated subspace
-* (H) is the Hamiltonian projected into that subspace
-* the resulting eigenvalues approximate low-lying energies accessible within the chosen manifold
+- (S) is the overlap matrix of the generated subspace
+- (H) is the Hamiltonian projected into that subspace
+- the resulting eigenvalues approximate low-lying energies accessible within the chosen manifold
 
 In this repository, QSE is:
 
-* a **post-VQE** workflow
-* **noiseless-only**
-* typically driven by a Hamiltonian-informed operator pool
+- a **post-VQE** workflow
+- **noiseless-only**
+- typically driven by a Hamiltonian-informed operator pool
 
 Its performance depends strongly on the quality of both:
 
-* the VQE reference state
-* the selected operator manifold
+- the VQE reference state
+- the selected operator manifold
 
 ---
 
@@ -400,15 +400,15 @@ $$
 
 Key differences relative to projection-QSE:
 
-* the reduced problem is generally **non-Hermitian**
-* eigenvalues may be complex
-* physical roots are typically selected from **positive, real-dominant** solutions
+- the reduced problem is generally **non-Hermitian**
+- eigenvalues may be complex
+- physical roots are typically selected from **positive, real-dominant** solutions
 
 In this implementation:
 
-* the method is **noiseless-only**
-* the operator pool is Hamiltonian-driven
-* overlap filtering and simple root-selection heuristics are used to stabilize the result
+- the method is **noiseless-only**
+- the operator pool is Hamiltonian-driven
+- overlap filtering and simple root-selection heuristics are used to stabilize the result
 
 EOM-QSE does not inherit a variational upper-bound property, so the usefulness of the extracted roots depends strongly on the chosen operator manifold and the quality of the reference state.
 
@@ -416,7 +416,7 @@ EOM-QSE does not inherit a variational upper-bound property, so the usefulness o
 
 ## LR-VQE
 
-**Linear-Response VQE (LR-VQE)** is a post-VQE excited-state method based on the **tangent space of the variational manifold** at a converged ground-state point ( \theta^* ).
+**Linear-Response VQE (LR-VQE)** is a post-VQE excited-state method based on the **tangent space of the variational manifold** at a converged ground-state point ( \theta^- ).
 
 Let
 
@@ -456,10 +456,10 @@ $$
 
 In this repository, LR-VQE corresponds to a **Tamm-Dancoff approximation (TDA)** style tangent-space treatment. Practical implementation details include:
 
-* finite-difference state derivatives
-* explicit symmetrization / Hermitianization
-* overlap filtering and rank truncation
-* **noiseless-only** support because the method requires statevector tangents
+- finite-difference state derivatives
+- explicit symmetrization / Hermitianization
+- overlap filtering and rank truncation
+- **noiseless-only** support because the method requires statevector tangents
 
 This makes LR-VQE a numerically practical small-system excited-state tool, especially for benchmarking tangent-space ideas without introducing the full-response structure of EOM-VQE.
 
@@ -478,17 +478,17 @@ $$
 
 Relative to LR-VQE, EOM-VQE can capture additional response physics but is typically:
 
-* more sensitive to the quality of the converged VQE reference
-* more sensitive to ill-conditioning in the tangent-space metric
-* numerically more delicate
+- more sensitive to the quality of the converged VQE reference
+- more sensitive to ill-conditioning in the tangent-space metric
+- numerically more delicate
 
 In this repository, EOM-VQE is implemented using:
 
-* a converged **noiseless** VQE reference
-* finite-difference tangent construction
-* overlap filtering / rank truncation
-* stabilization via orthonormalization and Hermitianization steps
-* positive-root selection from the reduced response spectrum
+- a converged **noiseless** VQE reference
+- finite-difference tangent construction
+- overlap filtering / rank truncation
+- stabilization via orthonormalization and Hermitianization steps
+- positive-root selection from the reduced response spectrum
 
 Because the workflow depends on statevector tangents, it is currently **noiseless-only**.
 
@@ -516,9 +516,9 @@ The key idea is that orthogonality is enforced structurally by the choice of ort
 
 Practical features:
 
-* simultaneous multi-state optimization
-* natural for small numbers of low-lying states
-* compatible with noisy simulation in this repository
+- simultaneous multi-state optimization
+- natural for small numbers of low-lying states
+- compatible with noisy simulation in this repository
 
 A limitation is that the optimization can become more difficult as the number of targeted states increases.
 
@@ -559,8 +559,8 @@ $$
 
 where:
 
-* ( \beta ) controls the strength of deflation
-* ( \mathcal{O} ) is an overlap penalty term
+- ( \beta ) controls the strength of deflation
+- ( \mathcal{O} ) is an overlap penalty term
 
 Typical overlap models in this repository:
 
@@ -576,9 +576,9 @@ $$
 
 VQD is attractive because it scales naturally from state to state and remains usable in noisy settings, but its performance depends on:
 
-* appropriate deflation strength
-* stable optimization
-* good convergence of lower states before moving upward
+- appropriate deflation strength
+- stable optimization
+- good convergence of lower states before moving upward
 
 This repository also includes optional **beta schedules** to ramp deflation strength gradually during optimization.
 
@@ -607,8 +607,8 @@ Instead of choosing a large ansatz such as UCCSD up front, the method starts fro
 
 This repository uses a chemistry-oriented ADAPT-VQE setup with:
 
-* Hartree-Fock reference state
-* excitation-operator pools based on UCC-style singles, doubles, or both
+- Hartree-Fock reference state
+- excitation-operator pools based on UCC-style singles, doubles, or both
 
 Let the adaptive ansatz after (k) selections be
 
@@ -652,9 +652,9 @@ Stop when:
 
 Relative to fixed-ansatz VQE, ADAPT-VQE can provide:
 
-* shallower circuits for a target accuracy
-* more interpretable operator selections
-* a built-in convergence diagnostic through the gradient history
+- shallower circuits for a target accuracy
+- more interpretable operator selections
+- a built-in convergence diagnostic through the gradient history
 
 In this repository, ADAPT-VQE inherits the same caching, noise-handling, and output conventions as the broader VQE stack.
 
@@ -686,8 +686,8 @@ $$
 
 QPE uses two registers:
 
-* an **ancilla register** to encode the phase
-* a **system register** prepared in an approximate eigenstate
+- an **ancilla register** to encode the phase
+- a **system register** prepared in an approximate eigenstate
 
 The basic flow is:
 
@@ -707,16 +707,16 @@ System register:   |HF⟩   ----------------------------------------------
 
 In this repository:
 
-* QPE uses the same Hamiltonian pipeline as VQE
-* controlled evolution is implemented through **trotterized time evolution**
-* noisy and noiseless variants are both supported
+- QPE uses the same Hamiltonian pipeline as VQE
+- controlled evolution is implemented through **trotterized time evolution**
+- noisy and noiseless variants are both supported
 
 Key trade-offs include:
 
-* number of ancillas vs phase precision
-* evolution time (t) vs phase resolution / wrapping
-* Trotter error vs circuit cost
-* quality of the input state overlap with the target eigenstate
+- number of ancillas vs phase precision
+- evolution time (t) vs phase resolution / wrapping
+- Trotter error vs circuit cost
+- quality of the input state overlap with the target eigenstate
 
 Unlike VQE, QPE is not variational: it does not minimize an energy functional, but instead estimates eigenphases directly.
 
@@ -774,18 +774,18 @@ $$
 
 In this repository:
 
-* the parameter-update stage is **noiseless**
-* multiple numerical linear solvers are supported
-* optional regularization is available for ill-conditioned systems
-* noisy studies are handled as **post-evaluation** of converged parameters, not noisy imaginary-time optimization
+- the parameter-update stage is **noiseless**
+- multiple numerical linear solvers are supported
+- optional regularization is available for ill-conditioned systems
+- noisy studies are handled as **post-evaluation** of converged parameters, not noisy imaginary-time optimization
 
 ### Relationship to VQE and QPE
 
 The three main algorithm families in this repository differ conceptually as follows:
 
-* **VQE** — direct variational minimization of ( \langle \psi(\theta)|H|\psi(\theta)\rangle )
-* **VarQITE** — variational approximation to imaginary-time ground-state filtering
-* **QPE** — phase-based eigenvalue extraction from (e^{-iHt})
+- **VQE** — direct variational minimization of ( \langle \psi(\theta)|H|\psi(\theta)\rangle )
+- **VarQITE** — variational approximation to imaginary-time ground-state filtering
+- **QPE** — phase-based eigenvalue extraction from (e^{-iHt})
 
 All three share the same chemistry layer and therefore can be compared on a consistent footing.
 
@@ -795,15 +795,15 @@ All three share the same chemistry layer and therefore can be compared on a cons
 
 This repository studies two main noise channels using PennyLane's mixed-state backend:
 
-* **depolarizing noise**
-* **amplitude damping**
+- **depolarizing noise**
+- **amplitude damping**
 
 Noise handling is algorithm-dependent:
 
-* **VQE** — supported during circuit execution
-* **QPE** — supported during controlled-evolution workflows
-* **VarQITE** — parameter updates are noiseless; noise is applied only during post-evaluation
-* **SSVQE / VQD** — noisy overlap handling is supported via density-matrix inner products
+- **VQE** — supported during circuit execution
+- **QPE** — supported during controlled-evolution workflows
+- **VarQITE** — parameter updates are noiseless; noise is applied only during post-evaluation
+- **SSVQE / VQD** — noisy overlap handling is supported via density-matrix inner products
 
 ```
 NOISE IN SIMULATIONS
@@ -868,10 +868,10 @@ This is an asymmetric noise channel and tends to bias the system toward lower-en
 
 Noise studies in this repository commonly examine:
 
-* **energy error** relative to noiseless baselines
-* **fidelity-style overlap measures**
-* optimizer / ansatz robustness under increasing noise strength
-* sensitivity of phase-estimation distributions or imaginary-time post-evaluations
+- **energy error** relative to noiseless baselines
+- **fidelity-style overlap measures**
+- optimizer / ansatz robustness under increasing noise strength
+- sensitivity of phase-estimation distributions or imaginary-time post-evaluations
 
 ---
 
@@ -879,32 +879,32 @@ Noise studies in this repository commonly examine:
 
 ### Foundations and Reviews
 
-* Aspuru-Guzik et al., *Simulated Quantum Computation of Molecular Energies*.
-* McArdle et al., *Quantum Computational Chemistry*.
-* Kitaev, *Quantum Measurements and the Abelian Stabilizer Problem*.
+- Aspuru-Guzik et al., *Simulated Quantum Computation of Molecular Energies*.
+- McArdle et al., *Quantum Computational Chemistry*.
+- Kitaev, *Quantum Measurements and the Abelian Stabilizer Problem*.
 
 ### Excited-State Methods
 
-* Parrish et al., *Quantum Computation of Electronic Transitions using a Variational Quantum Eigensolver*.
-* Higgott et al., *Variational Quantum Computation of Excited States*.
+- Parrish et al., *Quantum Computation of Electronic Transitions using a Variational Quantum Eigensolver*.
+- Higgott et al., *Variational Quantum Computation of Excited States*.
 
 ### ADAPT-VQE
 
-* Grimsley et al., *An adaptive variational algorithm for exact molecular simulations on a quantum computer*.
+- Grimsley et al., *An adaptive variational algorithm for exact molecular simulations on a quantum computer*.
 
 ### Imaginary-Time / Variational Simulation
 
-* McLachlan, *A variational solution of the time-dependent Schrödinger equation*.
-* Yuan et al., *Theory of variational quantum simulation*.
+- McLachlan, *A variational solution of the time-dependent Schrödinger equation*.
+- Yuan et al., *Theory of variational quantum simulation*.
 
 ### Fermion-to-Qubit Mappings and Chemistry Background
 
-* Seeley et al., *The Bravyi-Kitaev transformation for quantum computation of electronic structure*.
-* Standard Hartree-Fock and electronic-structure references.
+- Seeley et al., *The Bravyi-Kitaev transformation for quantum computation of electronic structure*.
+- Standard Hartree-Fock and electronic-structure references.
 
 ### PennyLane Documentation
 
-* PennyLane documentation for templates, optimizers, and quantum chemistry tooling.
+- PennyLane documentation for templates, optimizers, and quantum chemistry tooling.
 
 ---
 

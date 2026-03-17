@@ -53,11 +53,11 @@ python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 
 All workflows share the same core conventions:
 
-* **Cached outputs** are written under `results/`
-* **Generated figures** are written under `images/`
-* **Run identity** is determined from the full physical and numerical configuration
-* **`--force`** bypasses cache and recomputes the run
-* CLI commands can be run either as installed entrypoints (`vqe`, `qpe`, `qite`) or via `python -m ...`
+- **Cached outputs** are written under `results/`
+- **Generated figures** are written under `images/`
+- **Run identity** is determined from the full physical and numerical configuration
+- **`--force`** bypasses cache and recomputes the run
+- CLI commands can be run either as installed entrypoints (`vqe`, `qpe`, `qite`) or via `python -m ...`
 
 Default output layout:
 
@@ -136,15 +136,15 @@ python -m vqe ...
 
 The `vqe` stack supports:
 
-* ground-state VQE
-* ADAPT-VQE
-* geometry scans
-* ansatz / optimizer / mapping comparisons
-* noise studies
-* excited-state workflows:
+- ground-state VQE
+- ADAPT-VQE
+- geometry scans
+- ansatz / optimizer / mapping comparisons
+- noise studies
+- excited-state workflows:
 
-  * **post-VQE:** LR-VQE, EOM-VQE, QSE, EOM-QSE
-  * **variational:** SSVQE, VQD
+  - **post-VQE:** LR-VQE, EOM-VQE, QSE, EOM-QSE
+  - **variational:** SSVQE, VQD
 
 Supported molecule presets:
 
@@ -160,15 +160,15 @@ vqe --molecule H2
 
 Default settings:
 
-* ansatz: `UCCSD`
-* optimizer: `Adam`
-* steps: `50`
-* mapping: `jordan_wigner`
+- ansatz: `UCCSD`
+- optimizer: `Adam`
+- steps: `50`
+- mapping: `jordan_wigner`
 
 Typical outputs:
 
-* `results/vqe/` — JSON record
-* `images/vqe/` — plot output when plotting/saving is enabled
+- `results/vqe/` — JSON record
+- `images/vqe/` — plot output when plotting/saving is enabled
 
 ### Choosing ansatz and optimizer
 
@@ -308,17 +308,17 @@ The repository supports two classes of excited-state methods.
 
 These operate on top of a converged **noiseless** VQE reference state:
 
-* **LR-VQE** — tangent-space linear response (TDA)
-* **EOM-VQE** — full-response tangent-space equation of motion
-* **QSE** — projection-based operator subspace expansion
-* **EOM-QSE** — commutator equation of motion in an operator manifold
+- **LR-VQE** — tangent-space linear response (TDA)
+- **EOM-VQE** — full-response tangent-space equation of motion
+- **QSE** — projection-based operator subspace expansion
+- **EOM-QSE** — commutator equation of motion in an operator manifold
 
 ### Variational excited-state methods
 
 These solve excited states directly:
 
-* **SSVQE** — simultaneous multi-state optimization
-* **VQD** — sequential deflation
+- **SSVQE** — simultaneous multi-state optimization
+- **VQD** — sequential deflation
 
 ---
 
@@ -329,10 +329,10 @@ LR-VQE constructs a tangent-space generalized eigenvalue problem around a conver
 
 Properties:
 
-* tangent-space Tamm–Dancoff approximation
-* finite-difference parameter derivatives
-* generalized EVP
-* **statevector-only**
+- tangent-space Tamm–Dancoff approximation
+- finite-difference parameter derivatives
+- generalized EVP
+- **statevector-only**
 
 ### CLI
 
@@ -380,10 +380,10 @@ converged **noiseless** VQE reference state.
 
 Properties:
 
-* full-response tangent-space solve
-* positive-root selection
-* overlap filtering / rank truncation
-* **statevector-only**
+- full-response tangent-space solve
+- positive-root selection
+- overlap filtering / rank truncation
+- **statevector-only**
 
 ### CLI
 
@@ -463,10 +463,10 @@ in an operator manifold around a converged **noiseless** VQE reference state.
 
 Properties:
 
-* generally **non-Hermitian**
-* eigenvalues may be complex
-* returns positive, real-dominant roots
-* **statevector-only**
+- generally **non-Hermitian**
+- eigenvalues may be complex
+- returns positive, real-dominant roots
+- **statevector-only**
 
 ### CLI
 
@@ -655,8 +655,8 @@ QITE uses the McLachlan variational principle to approximate imaginary-time evol
 
 The implementation is split into two explicit modes:
 
-* **`qite run`** — noiseless parameter evolution
-* **`qite eval-noise`** — noisy evaluation of converged parameters
+- **`qite run`** — noiseless parameter evolution
+- **`qite eval-noise`** — noisy evaluation of converged parameters
 
 ### Noiseless VarQITE run
 
@@ -666,10 +666,10 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 
 Properties:
 
-* pure-state evolution
-* cached parameter trajectories
-* convergence diagnostics and JSON outputs
-* `default.qubit` reference workflow
+- pure-state evolution
+- cached parameter trajectories
+- convergence diagnostics and JSON outputs
+- `default.qubit` reference workflow
 
 ### Noisy evaluation of converged parameters
 
@@ -679,10 +679,10 @@ qite eval-noise --molecule H2 --dep 0.02 --amp 0.0 --pretty
 
 Properties:
 
-* evaluates `Tr[ρH]` on `default.mixed`
-* reuses cached VarQITE parameters
-* does not re-optimize
-* supports sweeps and multi-seed summaries
+- evaluates `Tr[ρH]` on `default.mixed`
+- reuses cached VarQITE parameters
+- does not re-optimize
+- supports sweeps and multi-seed summaries
 
 ### Depolarizing sweep
 
@@ -715,18 +715,18 @@ print(res["energy"])
 
 VarQITE cache keys include:
 
-* molecule and geometry
-* mapping and unit
-* ansatz
-* seed
-* `dtau` and `steps`
-* numerical solver settings such as `fd_eps`, `reg`, `solver`, and `pinv_rcond`
+- molecule and geometry
+- mapping and unit
+- ansatz
+- seed
+- `dtau` and `steps`
+- numerical solver settings such as `fd_eps`, `reg`, `solver`, and `pinv_rcond`
 
 This ensures:
 
-* changes in numerics trigger recomputation
-* cached trajectories remain physically and numerically consistent
-* noisy evaluation does not pollute optimization caches
+- changes in numerics trigger recomputation
+- cached trajectories remain physically and numerically consistent
+- noisy evaluation does not pollute optimization caches
 
 ---
 
@@ -734,11 +734,11 @@ This ensures:
 
 All algorithm families share:
 
-* unified Hamiltonian construction via `common.hamiltonian`
-* deterministic run hashing
-* JSON-first records
-* seed-aware caching
-* plot regeneration without recomputing core runs
+- unified Hamiltonian construction via `common.hamiltonian`
+- deterministic run hashing
+- JSON-first records
+- seed-aware caching
+- plot regeneration without recomputing core runs
 
 Force recomputation with:
 
@@ -760,11 +760,11 @@ pytest -q
 
 Coverage includes:
 
-* Hamiltonian and molecule utilities
-* minimal VQE / ADAPT-VQE / LR-VQE / EOM-VQE / QSE / EOM-QSE / QPE / QITE runs
-* noise handling
-* CLI entrypoints
-* cross-stack consistency checks
+- Hamiltonian and molecule utilities
+- minimal VQE / ADAPT-VQE / LR-VQE / EOM-VQE / QSE / EOM-QSE / QPE / QITE runs
+- noise handling
+- CLI entrypoints
+- cross-stack consistency checks
 
 ---
 
