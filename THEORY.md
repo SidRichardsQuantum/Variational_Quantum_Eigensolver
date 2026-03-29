@@ -16,8 +16,8 @@ For practical usage and CLI examples, see [`USAGE.md`](USAGE.md).
 For a project overview and quickstart, see [`README.md`](README.md).  
 For implementation-level VQE reference material, see:
 
-- [`docs/vqe/ansatzes.md`](docs/vqe/ansatzes.md)
-- [`docs/vqe/optimizers.md`](docs/vqe/optimizers.md)
+- [`more_docs/vqe/ansatzes.md`](more_docs/vqe/ansatzes.md)
+- [`more_docs/vqe/optimizers.md`](more_docs/vqe/optimizers.md)
 
 ---
 
@@ -232,7 +232,7 @@ For very small educational examples, a deliberately simple ansatz can be useful.
 Such ansätze are not intended to be generally competitive, but they help illustrate how VQE behaves.
 
 > 📘 **Detailed ansatz definitions, parameter conventions, initialization rules, and implementation notes are documented in:**  
-> [`docs/vqe/ansatzes.md`](docs/vqe/ansatzes.md)
+> [`more_docs/vqe/ansatzes.md`](more_docs/vqe/ansatzes.md)
 ---
 
 ## Optimizers
@@ -256,7 +256,7 @@ These methods differ in how they use gradient information, momentum, and
 adaptive learning rates to update parameters.
 
 > 📘 **Detailed update rules, definitions, and practical behaviour are documented in:**  
-> [`docs/vqe/optimizers.md`](docs/vqe/optimizers.md)
+> [`more_docs/vqe/optimizers.md`](more_docs/vqe/optimizers.md)
 
 ---
 

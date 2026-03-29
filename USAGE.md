@@ -11,8 +11,8 @@ It complements:
 
 - **`README.md`** — overview and quickstart
 - **`THEORY.md`** — algorithms and methodology
-- **`docs/vqe/ansatzes.md`** — VQE ansatz reference
-- **`docs/vqe/optimizers.md`** — VQE optimizer reference
+- **`more_docs/vqe/ansatzes.md`** — VQE ansatz reference
+- **`more_docs/vqe/optimizers.md`** — VQE optimizer reference
 
 ---
 
@@ -222,7 +222,7 @@ General tips:
 
 For full ansatz definitions, parameter conventions, and initialization details, see:
 
-→ `docs/vqe/ansatzes.md`
+→ `more_docs/vqe/ansatzes.md`
 
 ### Optimizer guidance
 
@@ -259,7 +259,7 @@ General tips:
 
 For full mathematical definitions and update rules, see:
 
-→ `docs/vqe/optimizers.md`
+→ `more_docs/vqe/optimizers.md`
 
 ### Geometry scans
 
