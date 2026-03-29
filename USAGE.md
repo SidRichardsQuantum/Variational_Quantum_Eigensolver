@@ -1,25 +1,25 @@
 # Usage Guide
 
-This document covers **CLI workflows** and **Python APIs** for:
+Workflows and APIs for:
 
-- **VQE** — ground-state, ADAPT-VQE, excited states
-- **QPE** — Quantum Phase Estimation
+- **VQE** — ground state, ADAPT-VQE, excited states
+- **QPE** — quantum phase estimation
 - **QITE / VarQITE** — imaginary-time evolution
-- **common** — shared Hamiltonian, geometry, plotting, persistence
+- **common** — Hamiltonians, geometry, plotting, persistence
 
 ---
 
 ## Documentation Map
 
-| File | Purpose |
-|------|--------|
-| `README.md` | Overview and quickstart |
-| `USAGE.md` | Workflows and APIs (this file) |
-| `THEORY.md` | Algorithms and derivations |
-| `more_docs/architecture.md` | System design |
-| `more_docs/vqe/` | VQE internals |
-| `more_docs/qpe/` | QPE details |
-| `more_docs/qite/` | QITE details |
+| File                        | Purpose                        |
+| --------------------------- | ------------------------------ |
+| `README.md`                 | overview and quickstart        |
+| `USAGE.md`                  | workflows and APIs (this file) |
+| `THEORY.md`                 | algorithms and derivations     |
+| `more_docs/architecture.md` | system design                  |
+| `more_docs/vqe/`            | VQE internals                  |
+| `more_docs/qpe/`            | QPE details                    |
+| `more_docs/qite/`           | QITE details                   |
 
 ---
 
@@ -28,9 +28,7 @@ This document covers **CLI workflows** and **Python APIs** for:
 All stacks share the same pipeline:
 
 ```
-
 molecule → geometry → Hamiltonian → algorithm → results + cache
-
 ```
 
 Interface contract:
@@ -73,27 +71,36 @@ python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 
 ## General Conventions
 
-- results → `results/{vqe,qpe,qite}/`
-- plots → `images/{vqe,qpe,qite}/`
+Output structure:
+
+```
+results/{vqe,qpe,qite}/
+images/{vqe,qpe,qite}/
+```
+
+Execution behaviour:
+
 - deterministic hashing defines run identity
+- cached runs automatically reused
 - `--force` bypasses cache
+- identical Hamiltonians shared across algorithms
 
 ---
 
 ## Method Support Summary
 
-| Method    | Family              | VQE reference required | Noise     |
-| --------- | ------------------- | ---------------------: | --------- |
-| VQE       | Variational         |                     No | Yes       |
-| ADAPT-VQE | Variational         |                     No | Yes       |
-| LR-VQE    | Post-VQE            |                    Yes | No        |
-| EOM-VQE   | Post-VQE            |                    Yes | No        |
-| QSE       | Post-VQE            |                    Yes | No        |
-| EOM-QSE   | Post-VQE            |                    Yes | No        |
-| SSVQE     | Variational excited |                     No | Yes       |
-| VQD       | Variational excited |                     No | Yes       |
-| QPE       | Phase estimation    |                     No | Yes       |
-| QITE      | Imaginary time      |                     No | Eval-only |
+| Method    | Family              | VQE reference required | Noise support |
+| --------- | ------------------- | ---------------------: | ------------- |
+| VQE       | variational         |                     no | yes           |
+| ADAPT-VQE | variational         |                     no | yes           |
+| LR-VQE    | post-VQE            |                    yes | no            |
+| EOM-VQE   | post-VQE            |                    yes | no            |
+| QSE       | post-VQE            |                    yes | no            |
+| EOM-QSE   | post-VQE            |                    yes | no            |
+| SSVQE     | variational excited |                     no | yes           |
+| VQD       | variational excited |                     no | yes           |
+| QPE       | phase estimation    |                     no | yes           |
+| QITE      | imaginary time      |                     no | eval-only     |
 
 ---
 
@@ -101,8 +108,11 @@ python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 
 ```bash
 vqe --molecule H2
+
 vqe -m H2 --lr-vqe --lr-k 4
+
 qpe --molecule H2 --ancillas 4
+
 qite run --molecule H2 --steps 50 --dtau 0.2
 ```
 
@@ -112,11 +122,17 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 
 Supports:
 
-- ground-state VQE
-- ADAPT-VQE
+- ground-state optimisation
+- ADAPT-VQE ansatz growth
 - geometry scans
 - noise studies
-- excited states (post-VQE + variational)
+- excited-state solvers
+
+Canonical entrypoint:
+
+```python
+from vqe.core import run_vqe
+```
 
 ---
 
@@ -128,97 +144,156 @@ vqe --molecule H2
 
 Defaults:
 
-- ansatz: `UCCSD`
-- optimizer: `Adam`
-- steps: `50`
+- ansatz → `UCCSD`
+- optimizer → `Adam`
+- steps → `50`
+
+Equivalent Python:
+
+```python
+from vqe.core import run_vqe
+
+res = run_vqe(molecule="H2")
+
+print(res["energy"])
+```
 
 ---
 
 ## Ansatz selection
 
 ```bash
-vqe -m H2 -a UCCSD -o Adam
-vqe -m H2 -a RY-CZ -o GradientDescent
+vqe -m H2 -a UCCSD
+vqe -m H2 -a RY-CZ
+vqe -m H2 -a StronglyEntanglingLayers
 ```
 
 Guidance:
 
-- **UCCSD** → chemistry default
-- **RY-CZ** → lightweight baseline
-- **StronglyEntanglingLayers** → expressive but harder to train
+| Ansatz                   | Typical use                |
+| ------------------------ | -------------------------- |
+| UCCSD                    | chemistry baseline         |
+| RY-CZ                    | lightweight reference      |
+| StronglyEntanglingLayers | expressive hardware ansatz |
 
-See: `more_docs/vqe/ansatzes.md`
+See:
+
+```
+more_docs/vqe/ansatzes.md
+```
 
 ---
 
 ## Optimizer selection
 
-- **Adam** → default, robust
-- **GradientDescent** → baseline
-- **Momentum/Nesterov** → faster on smooth landscapes
+```bash
+vqe -m H2 -o Adam
+vqe -m H2 -o GradientDescent
+vqe -m H2 -o NesterovMomentum
+```
 
-See: `more_docs/vqe/optimizers.md`
+Guidance:
+
+| Optimizer        | Behaviour                               |
+| ---------------- | --------------------------------------- |
+| Adam             | robust default                          |
+| GradientDescent  | baseline                                |
+| NesterovMomentum | faster convergence on smooth landscapes |
+
+See:
+
+```
+more_docs/vqe/optimizers.md
+```
 
 ---
 
 ## Geometry scans
 
 ```bash
-vqe --scan-geometry H2_BOND --range 0.5 1.5 7
+vqe \
+  --scan-geometry H2_BOND \
+  --range 0.5 1.5 7
 ```
+
+Produces:
+
+- energy curves
+- cached intermediate Hamiltonians
+- reproducible scan identifiers
 
 ---
 
 ## Noise studies
 
 ```bash
-vqe -m H2 --multi-seed-noise --noise-type depolarizing
+vqe \
+  -m H2 \
+  --multi-seed-noise \
+  --noise-type depolarizing
 ```
+
+Noise options:
+
+- depolarizing
+- amplitude damping
+- combined channels
 
 ---
 
-## Python API
+# Excited-State Methods
 
-```python
-from vqe.core import run_vqe
-
-res = run_vqe(molecule="H2")
-print(res["energy"])
-```
+Two categories are supported.
 
 ---
 
-# Excited States
+## Post-VQE methods
 
-## Post-VQE
+Require a converged noiseless VQE reference.
 
 - LR-VQE
 - EOM-VQE
 - QSE
 - EOM-QSE
 
-Require:
+Example:
 
-- converged **noiseless** VQE reference
+```bash
+vqe -m H2 --lr-vqe --lr-k 4
+```
+
+Typical workflow:
+
+```
+VQE → response problem → excitation energies
+```
 
 ---
 
-## Variational
+## Variational excited states
+
+Optimised directly.
 
 - SSVQE
 - VQD
 
-Do not require reference states.
+Example:
 
----
-
-(Sections below unchanged except formatting tightened)
+```bash
+vqe -m H2 --vqd --k 3
+```
 
 ---
 
 # QPE
 
-QPE uses the same Hamiltonian pipeline with **non-variational phase estimation**.
+Quantum Phase Estimation using shared Hamiltonians.
+
+Canonical entrypoint:
+
+```python
+from qpe.core import run_qpe
+```
 
 ---
 
@@ -228,25 +303,7 @@ QPE uses the same Hamiltonian pipeline with **non-variational phase estimation**
 qpe --molecule H2 --ancillas 4
 ```
 
----
-
-## Noisy QPE
-
-```bash
-qpe --molecule H2 --noisy --p-dep 0.05
-```
-
----
-
-## Time evolution control
-
-```bash
-qpe --molecule H2 --t 2.0 --trotter-steps 4
-```
-
----
-
-## Python API
+Equivalent Python:
 
 ```python
 from common.hamiltonian import build_hamiltonian
@@ -254,15 +311,54 @@ from qpe.core import run_qpe
 
 H, _, hf_state = build_hamiltonian("H2")
 
-res = run_qpe(hamiltonian=H, hf_state=hf_state)
+res = run_qpe(
+    hamiltonian=H,
+    hf_state=hf_state,
+    n_ancilla=4,
+)
+
 print(res["energy"])
 ```
 
 ---
 
+## Noise
+
+```bash
+qpe \
+  --molecule H2 \
+  --noisy \
+  --p-dep 0.05
+```
+
+---
+
+## Time evolution controls
+
+```bash
+qpe \
+  --molecule H2 \
+  --t 2.0 \
+  --trotter-steps 4
+```
+
+Controls:
+
+- simulation time
+- Trotter depth
+- precision vs cost tradeoff
+
+---
+
 # QITE / VarQITE
 
-VarQITE approximates imaginary-time evolution via McLachlan updates.
+Imaginary-time evolution via McLachlan updates.
+
+Canonical entrypoint:
+
+```python
+from qite.core import run_qite
+```
 
 ---
 
@@ -272,13 +368,31 @@ VarQITE approximates imaginary-time evolution via McLachlan updates.
 | ------------ | ----------------------------- |
 | `run`        | noiseless parameter evolution |
 | `eval-noise` | noisy measurement             |
+| `sweep`      | multi-noise statistics        |
 
 ---
 
 ## Run
 
 ```bash
-qite run --molecule H2 --steps 50 --dtau 0.2
+qite run \
+  --molecule H2 \
+  --steps 50 \
+  --dtau 0.2
+```
+
+Equivalent Python:
+
+```python
+from qite.core import run_qite
+
+res = run_qite(
+    molecule="H2",
+    steps=50,
+    dtau=0.2,
+)
+
+print(res["energy"])
 ```
 
 ---
@@ -286,12 +400,14 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 ## Noisy evaluation
 
 ```bash
-qite eval-noise --molecule H2 --dep 0.02
+qite eval-noise \
+  --molecule H2 \
+  --dep 0.02
 ```
 
 ---
 
-## Sweep
+## Noise sweep
 
 ```bash
 qite eval-noise \
@@ -302,46 +418,39 @@ qite eval-noise \
 
 ---
 
-## Python API
-
-```python
-from qite.core import run_qite
-
-res = run_qite(molecule="H2", steps=50, dtau=0.2)
-print(res["energy"])
-```
-
----
-
-## Caching Semantics
+## Cache semantics
 
 VarQITE cache keys include:
 
-- molecule, geometry, mapping
-- ansatz, seed
+- molecule, geometry
+- ansatz
 - `steps`, `dtau`
-- solver settings (`fd_eps`, `reg`, etc.)
+- solver parameters
+- seed
 
 Ensures:
 
-- numerically consistent reuse
-- noise evaluation does not affect optimization cache
+- reproducible optimisation trajectories
+- noise evaluation does not invalidate optimisation cache
 
 ---
 
 # Reproducibility
 
-All stacks guarantee:
+All stacks provide:
 
 - deterministic hashing
 - JSON-first outputs
 - seed-aware execution
+- identical Hamiltonians across algorithms
 
-Force recompute:
+Force recomputation:
 
 ```bash
 vqe --force
+
 qpe --force
+
 qite run --force
 ```
 
@@ -357,9 +466,11 @@ pytest -q
 
 ## Citation
 
-> Sid Richards (2026). *Unified Variational and Phase-Estimation Quantum Simulation Suite.*
+Sid Richards (2026)
+
+Unified Variational and Phase-Estimation Quantum Simulation Suite
 
 ---
 
-**Author:** Sid Richards
-Licensed under the MIT License.
+Author: Sid Richards
+License: MIT

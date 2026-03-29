@@ -19,16 +19,16 @@
 
 </p>
 
-A **modular quantum simulation suite** built on **PennyLane**, combining:
+A **modular quantum simulation framework** built on **PennyLane**, combining:
 
-- Variational quantum algorithms (VQE + excited states)
-- Phase estimation (QPE)
-- Imaginary-time evolution (VarQITE)
+- variational eigensolvers (ground and excited states)
+- quantum phase estimation (QPE)
+- variational imaginary-time evolution (VarQITE)
 
-The project provides a **reproducible research framework** with:
+The project provides a **reproducible research environment** with:
 
 - unified molecule and Hamiltonian infrastructure
-- deterministic caching and run signatures
+- deterministic caching via run signatures
 - shared plotting and output conventions
 - CLI workflows and Python APIs
 - curated notebooks for benchmarking and demonstrations
@@ -39,8 +39,8 @@ The project provides a **reproducible research framework** with:
 
 ### Variational methods
 
-- **VQE** — ground-state eigensolver  
-- **ADAPT-VQE** — adaptive ansatz growth  
+- **VQE** — ground-state eigensolver
+- **ADAPT-VQE** — adaptive ansatz growth
 
 ### Post-VQE excited-state methods
 
@@ -63,47 +63,47 @@ The project provides a **reproducible research framework** with:
 
 ## Documentation
 
-Documentation is structured in **two layers**:
+Documentation is structured in **two layers**.
 
 ### Core (user-facing)
 
-| File | Purpose |
-|-----|------|
-| **README.md** | Overview and quickstart |
-| **USAGE.md** | CLI and Python workflows |
-| **THEORY.md** | Algorithms and derivations |
-| **notebooks/README_notebooks.md** | Notebook guide |
+| File                              | Purpose                    |
+| --------------------------------- | -------------------------- |
+| **README.md**                     | overview and quickstart    |
+| **USAGE.md**                      | CLI and Python workflows   |
+| **THEORY.md**                     | algorithms and derivations |
+| **notebooks/README_notebooks.md** | notebook guide             |
 
 Start here:
 
-- 📘 [`THEORY.md`](THEORY.md)  
-- ⚙️ [`USAGE.md`](USAGE.md)  
+- 📘 [`THEORY.md`](THEORY.md)
+- ⚙️ [`USAGE.md`](USAGE.md)
 - 📓 [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md)
 
 ---
 
 ### Extended documentation (`more_docs/`)
 
-The `more_docs/` directory contains **deeper technical and architectural material**:
+Deeper technical and architectural material.
 
-| Path | Purpose |
-|------|--------|
-| `more_docs/architecture.md` | System design and module interactions |
-| `more_docs/vqe/` | Detailed VQE workflows and internals |
-| `more_docs/qpe/` | QPE time evolution and phase estimation details |
-| `more_docs/qite/` | VarQITE derivations and implementation details |
+| Path                        | Purpose                                  |
+| --------------------------- | ---------------------------------------- |
+| `more_docs/architecture.md` | system design and module interactions    |
+| `more_docs/vqe/`            | VQE workflows and implementation details |
+| `more_docs/qpe/`            | time evolution and phase estimation      |
+| `more_docs/qite/`           | VarQITE derivations and internals        |
 
-These are intended for:
+Intended for:
+
 - contributors
 - advanced users
-- algorithm deep-dives beyond THEORY.md
+- algorithm deep dives beyond THEORY.md
 
 ---
 
 ## Repository Structure
 
 ```
-
 Variational_Quantum_Eigensolver/
 ├── README.md
 ├── THEORY.md
@@ -116,24 +116,24 @@ Variational_Quantum_Eigensolver/
 │   ├── qpe/
 │   └── qite/
 │
-├── vqe/        # Variational + excited-state solvers
-├── qpe/        # Phase estimation
-├── qite/       # Imaginary-time evolution
+├── vqe/        # variational + excited-state solvers
+├── qpe/        # quantum phase estimation
+├── qite/       # imaginary-time evolution
 │
-├── common/     # Shared chemistry + infrastructure
+├── common/     # shared chemistry + infrastructure
 │
-├── notebooks/  # Demonstrations and benchmarks
-├── results/    # Cached runs (gitignored)
-└── images/     # Generated plots (gitignored)
-
+├── notebooks/  # demonstrations and benchmarks
+├── results/    # cached runs (gitignored)
+└── images/     # generated plots (gitignored)
 ```
 
 ### Design principles
 
-- Shared chemistry + Hamiltonian layer (`common/`)
-- Identical run signatures across all solvers
-- Deterministic caching for reproducibility
-- CLI and Python APIs backed by the same core logic
+- shared chemistry + Hamiltonian layer (`common/`)
+- consistent run signatures across all solvers
+- deterministic caching for reproducibility
+- CLI and Python APIs backed by identical core logic
+- minimal configuration friction for common workflows
 
 ---
 
@@ -161,22 +161,30 @@ python -c "import vqe, qpe, qite, common; print('Quantum stacks imported success
 
 ---
 
-## Common Core
+## Core Infrastructure
 
-Shared modules used across all solvers:
+Shared modules used across all solvers.
 
 | Module                  | Purpose                         |
 | ----------------------- | ------------------------------- |
-| `common/molecules.py`   | Molecule definitions            |
-| `common/geometry.py`    | Coordinate generation           |
+| `common/molecules.py`   | molecule definitions            |
+| `common/geometry.py`    | coordinate generation           |
 | `common/hamiltonian.py` | Hamiltonian construction        |
-| `common/plotting.py`    | Plot + filename standardisation |
+| `common/plotting.py`    | plot + filename standardisation |
+| `common/persist.py`     | deterministic run hashing       |
+| `common/paths.py`       | output directory structure      |
+
+Provides:
+
+- consistent Hamiltonians across algorithms
+- reproducible experiment signatures
+- standardised output locations
 
 ---
 
 ## VQE Package
 
-Implements ground-state and excited-state workflows.
+Ground-state and excited-state workflows.
 
 ### Capabilities
 
@@ -184,15 +192,21 @@ Implements ground-state and excited-state workflows.
 - LR-VQE, EOM-VQE
 - QSE, EOM-QSE
 - SSVQE, VQD
-- Noise support
-- Geometry scans
+- noise support
+- geometry scans
 
-### Example
+### Canonical entrypoint
 
 ```python
 from vqe.core import run_vqe
 
-res = run_vqe("H2", ansatz_name="UCCSD", optimizer_name="Adam", steps=50)
+res = run_vqe(
+    molecule="H2",
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    steps=50,
+)
+
 print(res["energy"])
 ```
 
@@ -200,16 +214,16 @@ print(res["energy"])
 
 ## QPE Package
 
-Implements **Quantum Phase Estimation** with shared Hamiltonians.
+Quantum Phase Estimation using shared Hamiltonians.
 
 ### Features
 
 - Trotterized time evolution
-- Inverse QFT
-- Noisy + noiseless execution
-- Cached runs
+- inverse QFT
+- noisy and noiseless execution
+- cached runs
 
-### Example
+### Canonical entrypoint
 
 ```python
 from common.hamiltonian import build_hamiltonian
@@ -217,7 +231,12 @@ from qpe.core import run_qpe
 
 H, n_qubits, hf_state = build_hamiltonian("H2")
 
-res = run_qpe(hamiltonian=H, hf_state=hf_state, n_ancilla=4)
+res = run_qpe(
+    hamiltonian=H,
+    hf_state=hf_state,
+    n_ancilla=4,
+)
+
 print(res["energy"])
 ```
 
@@ -225,16 +244,16 @@ print(res["energy"])
 
 ## QITE / VarQITE Package
 
-Implements **imaginary-time evolution** via the McLachlan principle.
+Imaginary-time evolution via the McLachlan variational principle.
 
 ### Capabilities
 
-- Variational imaginary-time updates
-- Convergence tracking
-- Cached trajectories
-- Optional noisy evaluation
+- variational imaginary-time updates
+- convergence tracking
+- cached trajectories
+- optional noisy evaluation
 
-### Example
+### Canonical entrypoint
 
 ```python
 from qite.core import run_qite
@@ -271,7 +290,27 @@ python -m qpe --molecule H2 --ancillas 4 --shots 2000
 python -m qite run --molecule H2 --steps 50 --dtau 0.2
 ```
 
-See full workflows in [`USAGE.md`](USAGE.md).
+Full workflows:
+
+⚙️ [`USAGE.md`](USAGE.md)
+
+---
+
+## Reproducibility
+
+All solvers share:
+
+- deterministic configuration hashing
+- standardised result storage
+- consistent naming conventions
+- cached experiment reuse
+
+Outputs are stored under:
+
+```
+results/<module>/
+images/<module>/<MOLECULE>/
+```
 
 ---
 
@@ -281,12 +320,24 @@ See full workflows in [`USAGE.md`](USAGE.md).
 pytest -v
 ```
 
+Tests cover:
+
+- core algorithm execution
+- Hamiltonian construction
+- CLI workflows
+- smoke tests for packaged interfaces
+
 ---
 
 ## Author
 
 **Sid Richards**
-LinkedIn: [https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
+
+LinkedIn:
+[https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
+
+GitHub:
+[https://github.com/SidRichardsQuantum](https://github.com/SidRichardsQuantum)
 
 ---
 

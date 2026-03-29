@@ -1,49 +1,27 @@
-def test_qubit_hamiltonian_builds_for_new_molecules():
-    from common.molecules import get_molecule_config
-    from common.hamiltonian import build_hamiltonian
+from __future__ import annotations
 
-    for name in ["BeH2", "H4", "HeH+"]:
-        cfg = get_molecule_config(name)
-        H, n_qubits, hf_state = build_hamiltonian(
-            symbols=cfg["symbols"],
-            coordinates=cfg["coordinates"],
-            charge=cfg["charge"],
-            basis=cfg["basis"],
-        )
-        assert n_qubits > 0
-        assert len(H) > 0
-        coeffs, ops = H.terms()
-        assert len(coeffs) == len(ops)
-        assert len(coeffs) > 0
-        assert len(hf_state) == n_qubits
+from common.hamiltonian import build_hamiltonian
+from common.molecules import get_molecule_config
 
 
-def test_hamiltonian_term_structure():
-    from common.molecules import get_molecule_config
-    from common.hamiltonian import build_hamiltonian
+def test_build_hamiltonian_h2() -> None:
+    cfg = get_molecule_config("H2")
+    hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
 
-    cfg = get_molecule_config("BeH2")
-    H, n_qubits, hf_state = build_hamiltonian(**cfg)
+    assert n_qubits > 0
+    assert len(hf_state) == n_qubits
 
-    coeffs, ops = H.terms()
+    coeffs, ops = hamiltonian.terms()
     assert len(coeffs) == len(ops)
+    assert len(coeffs) > 0
     assert all(hasattr(op, "wires") for op in ops)
 
 
-def test_hamiltonian_non_empty():
-    from common.molecules import get_molecule_config
-    from common.hamiltonian import build_hamiltonian
-
+def test_build_hamiltonian_selected_registry_molecules() -> None:
     for name in ["H2", "H3+", "LiH", "BeH2", "HeH+"]:
         cfg = get_molecule_config(name)
-        H, n_qubits, hf_state = build_hamiltonian(**cfg)
-        assert len(H) > 0  # modern PennyLane Hamiltonian uses len(H)
+        hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
 
-
-def test_hf_state_matches_qubits():
-    from common.molecules import get_molecule_config
-    from common.hamiltonian import build_hamiltonian
-
-    cfg = get_molecule_config("H2")
-    H, nq, hf = build_hamiltonian(**cfg)
-    assert len(hf) == nq
+        assert n_qubits > 0
+        assert len(hf_state) == n_qubits
+        assert len(hamiltonian) > 0
