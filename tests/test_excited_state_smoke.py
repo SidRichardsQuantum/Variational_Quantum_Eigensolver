@@ -4,7 +4,8 @@ import math
 
 import numpy as np
 
-from vqe import get_exact_spectrum, run_qse
+from common.hamiltonian import get_exact_spectrum
+from vqe import run_qse
 from vqe.adapt import run_adapt_vqe
 from vqe.eom_qse import run_eom_qse
 from vqe.eom_vqe import run_eom_vqe

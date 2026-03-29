@@ -135,11 +135,9 @@ def hartree_fock_state(
     """
     Return the Hartree–Fock occupation bitstring for the molecule.
     """
-    H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
-        build_hamiltonian(
-            molecule=molecule,
-            mapping=mapping,
-            unit=unit,
-        )
+    _, _, hf_state, *_ = build_hamiltonian(
+        molecule=molecule,
+        mapping=mapping,
+        unit=unit,
     )
     return np.array(hf_state, dtype=int)

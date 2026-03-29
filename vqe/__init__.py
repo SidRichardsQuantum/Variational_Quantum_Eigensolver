@@ -36,7 +36,6 @@ from .core import (  # noqa: E402
     run_vqe_mapping_comparison,
     run_vqe_multi_seed_noise,
     run_vqe_optimizer_comparison,
-    get_exact_spectrum,
 )
 
 # ADAPT-VQE ----------------------------------------------------------------------
@@ -87,7 +86,6 @@ __all__ = [
     "run_vqe_geometry_scan",
     "run_vqe_mapping_comparison",
     # Excited-state methods
-    "get_exact_spectrum",
     "run_ssvqe",
     "run_vqd",
     "run_lr_vqe",

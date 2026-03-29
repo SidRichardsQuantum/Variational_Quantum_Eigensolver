@@ -21,6 +21,7 @@ _OPTIMIZERS = {
     "gd": qml.GradientDescentOptimizer,  # alias
     "Momentum": qml.MomentumOptimizer,
     "Nesterov": qml.NesterovMomentumOptimizer,
+    "NesterovMomentum": qml.NesterovMomentumOptimizer,
     "RMSProp": qml.RMSPropOptimizer,
     "Adagrad": qml.AdagradOptimizer,
 }

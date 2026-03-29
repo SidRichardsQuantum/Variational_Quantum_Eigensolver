@@ -407,3 +407,29 @@ def build_hamiltonian(
         int(chg),
         unit_norm,
     )
+
+
+def get_exact_spectrum(
+    molecule: str = "H2",
+    *,
+    k: int = 10,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
+) -> list[float]:
+    """
+    Return the lowest-k exact eigenvalues (Ha) for the qubit Hamiltonian of `molecule`.
+
+    This is a package-level helper so notebooks do not need to call build_hamiltonian/qml.matrix directly.
+    """
+    import numpy as _np
+    import pennylane as _qml
+
+    H, *_ = build_hamiltonian(
+        str(molecule),
+        mapping=str(mapping).strip().lower(),
+        unit=str(unit).strip().lower(),
+    )
+    Hmat = _qml.matrix(H)
+    evals = _np.sort(_np.linalg.eigvalsh(_np.asarray(Hmat, dtype=complex)))
+    k = int(max(1, k))
+    return [float(x) for x in evals[:k]]
