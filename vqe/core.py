@@ -290,6 +290,7 @@ def run_vqe_optimizer_comparison(
     reference: str = "per_seed_noiseless",
     force: bool = False,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     show: bool = True,
     plot: bool = True,
 ):
@@ -361,6 +362,7 @@ def run_vqe_optimizer_comparison(
                 amplitude_damping_prob=amplitude_damping_prob,
                 mapping=mapping,
                 force=force,
+                unit=unit,
                 seed=int(seed),
             )
             results[opt_name] = res["energies"]
@@ -470,6 +472,7 @@ def run_vqe_optimizer_comparison(
                 steps=steps,
                 stepsize=lr,
                 plot=False,
+                unit=unit,
                 ansatz_name=ansatz_name,
                 optimizer_name=opt_name,
                 noisy=False,
@@ -500,6 +503,7 @@ def run_vqe_optimizer_comparison(
                     molecule=molecule,
                     steps=steps,
                     stepsize=lr,
+                    unit=unit,
                     plot=False,
                     ansatz_name=ansatz_name,
                     optimizer_name=opt_name,
@@ -630,6 +634,7 @@ def run_vqe_ansatz_comparison(
     reference: str = "per_seed_noiseless",
     force: bool = False,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     show: bool = True,
     plot: bool = True,
 ):
@@ -672,6 +677,7 @@ def run_vqe_ansatz_comparison(
                 depolarizing_prob=float(depolarizing_prob),
                 amplitude_damping_prob=float(amplitude_damping_prob),
                 mapping=mapping,
+                unit=unit,
                 force=force,
                 seed=int(seed),
             )
@@ -781,6 +787,7 @@ def run_vqe_ansatz_comparison(
                 optimizer_name=optimizer_name,
                 noisy=False,
                 mapping=mapping,
+                unit=unit,
                 force=force,
                 seed=s_int,
             )
@@ -812,6 +819,7 @@ def run_vqe_ansatz_comparison(
                     depolarizing_prob=p_dep_f,
                     amplitude_damping_prob=p_amp_f,
                     mapping=mapping,
+                    unit=unit,
                     force=force,
                     seed=s_int,
                 )
@@ -923,6 +931,7 @@ def run_vqe_multi_seed_noise(
     amplitude_damping_probs=None,
     force=False,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     show: bool = True,
 ):
     """
@@ -963,6 +972,7 @@ def run_vqe_multi_seed_noise(
             optimizer_name=optimizer_name,
             noisy=False,
             mapping=mapping,
+            unit=unit,
             force=force,
             seed=int(s),
         )
@@ -995,6 +1005,7 @@ def run_vqe_multi_seed_noise(
                 depolarizing_prob=float(p_dep),
                 amplitude_damping_prob=float(p_amp),
                 mapping=mapping,
+                unit=unit,
                 force=force,
                 seed=int(s),
             )
@@ -1053,6 +1064,7 @@ def run_vqe_geometry_scan(
     seeds=None,
     force=False,
     mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
     show: bool = True,
 ):
     """
@@ -1083,7 +1095,7 @@ def run_vqe_geometry_scan(
 
     for val in param_values:
         print(f"\n⚙️ Geometry: {param_name} = {val:.3f}")
-        symbols, coordinates = generate_geometry(molecule, val)
+        symbols, coordinates = generate_geometry(molecule, val, unit=unit)
 
         energies_for_val = []
         for s in seeds:
@@ -1101,6 +1113,7 @@ def run_vqe_geometry_scan(
                 seed=int(s),
                 force=force,
                 mapping=mapping,
+                unit=unit,
             )
             energies_for_val.append(res["energy"])
 
@@ -1154,6 +1167,7 @@ def run_vqe_mapping_comparison(
     force=False,
     show=True,
     seed=0,
+    unit: str = "angstrom",
 ):
     """
     Compare different fermion-to-qubit mappings by:
@@ -1196,7 +1210,7 @@ def run_vqe_mapping_comparison(
 
         # Build Hamiltonian once to inspect complexity
         H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = (
-            build_hamiltonian(molecule, mapping=mapping)
+            build_hamiltonian(molecule, mapping=mapping, unit=unit)
         )
         basis = basis.lower()
 
@@ -1215,6 +1229,7 @@ def run_vqe_mapping_comparison(
             optimizer_name=optimizer_name,
             steps=steps,
             stepsize=stepsize,
+            unit=unit,
             noisy=noisy,
             depolarizing_prob=depolarizing_prob,
             amplitude_damping_prob=amplitude_damping_prob,
