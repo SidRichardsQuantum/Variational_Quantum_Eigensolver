@@ -129,9 +129,17 @@ def _inner_optimize(
     stepsize: float,
     steps: int,
 ) -> Tuple[np.ndarray, List[float]]:
+    theta = np.array(theta_init, requires_grad=True)
+
+    # Empty-ansatz case:
+    # the circuit contains no variational parameters, so the energy is
+    # independent of theta and there is nothing to optimize.
+    if len(theta) == 0:
+        e0 = float(energy_qnode(theta))
+        return theta, [e0]
+
     opt = build_optimizer(str(optimizer_name), stepsize=float(stepsize))
 
-    theta = np.array(theta_init, requires_grad=True)
     energies: List[float] = [float(energy_qnode(theta))]
 
     for _ in range(int(steps)):
