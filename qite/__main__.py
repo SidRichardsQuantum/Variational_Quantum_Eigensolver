@@ -49,6 +49,82 @@ def _parse_float_list(s: Optional[str]) -> Optional[list[float]]:
     return [float(x.strip()) for x in str(s).split(",") if x.strip()]
 
 
+def _parse_symbols(s: Optional[str]) -> Optional[list[str]]:
+    if s is None or str(s).strip() == "":
+        return None
+    return [tok.strip() for tok in str(s).split(",") if tok.strip()]
+
+
+def _parse_coordinates(s: Optional[str]) -> Optional[np.ndarray]:
+    """
+    Parse coordinates from a CLI string of the form:
+
+        "0,0,0; 0,0,0.74"
+        "0 0 0; 0 0 0.74"
+
+    Returns
+    -------
+    np.ndarray of shape (N, 3)
+    """
+    if s is None or str(s).strip() == "":
+        return None
+
+    rows: list[list[float]] = []
+    for chunk in str(s).split(";"):
+        part = chunk.strip()
+        if not part:
+            continue
+
+        if "," in part:
+            vals = [x.strip() for x in part.split(",") if x.strip()]
+        else:
+            vals = [x.strip() for x in part.split() if x.strip()]
+
+        if len(vals) != 3:
+            raise ValueError(
+                "Each coordinate row must contain exactly 3 values. "
+                "Example: --coordinates '0,0,0; 0,0,0.74'"
+            )
+
+        rows.append([float(v) for v in vals])
+
+    if not rows:
+        return None
+
+    arr = np.asarray(rows, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 3:
+        raise ValueError("Coordinates must parse to an array of shape (N, 3).")
+    return arr
+
+
+def _explicit_geometry_requested(args) -> bool:
+    return (
+        getattr(args, "symbols", None) is not None
+        or getattr(args, "coordinates", None) is not None
+    )
+
+
+def _validated_geometry_inputs(
+    args,
+) -> tuple[Optional[list[str]], Optional[np.ndarray]]:
+    symbols = _parse_symbols(getattr(args, "symbols", None))
+    coordinates = _parse_coordinates(getattr(args, "coordinates", None))
+
+    if (symbols is None) ^ (coordinates is None):
+        raise ValueError(
+            "Explicit geometry mode requires both --symbols and --coordinates."
+        )
+
+    if symbols is not None and coordinates is not None:
+        if len(symbols) != int(len(coordinates)):
+            raise ValueError(
+                f"Mismatch between symbols ({len(symbols)}) and coordinate rows "
+                f"({len(coordinates)})."
+            )
+
+    return symbols, coordinates
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="qite",
@@ -67,6 +143,22 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--steps", type=int, default=50)
     run_p.add_argument("--dtau", type=float, default=0.2)
     run_p.add_argument("--seed", type=int, default=0)
+
+    run_p.add_argument("--basis", type=str, default="sto-3g")
+    run_p.add_argument("--charge", type=int, default=0)
+    run_p.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated atomic symbols for explicit geometry mode, e.g. 'H,H'",
+    )
+    run_p.add_argument(
+        "--coordinates",
+        type=str,
+        default=None,
+        help="Semicolon-separated xyz rows for explicit geometry mode, e.g. '0,0,0; 0,0,0.74'",
+    )
+
     run_p.add_argument("--mapping", type=str, default="jordan_wigner")
     run_p.add_argument(
         "--unit",
@@ -106,6 +198,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ev_p.add_argument("--dtau", type=float, default=0.2)
     ev_p.add_argument("--seed", type=int, default=0)
+
+    ev_p.add_argument("--basis", type=str, default="sto-3g")
+    ev_p.add_argument("--charge", type=int, default=0)
+    ev_p.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated atomic symbols for explicit geometry mode, e.g. 'H,H'",
+    )
+    ev_p.add_argument(
+        "--coordinates",
+        type=str,
+        default=None,
+        help="Semicolon-separated xyz rows for explicit geometry mode, e.g. '0,0,0; 0,0,0.74'",
+    )
+
     ev_p.add_argument("--mapping", type=str, default="jordan_wigner")
     ev_p.add_argument(
         "--unit",
@@ -140,7 +248,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Force refresh of VarQITE caches for requested seeds.",
     )
 
-    # Output format: default to pretty, allow explicit JSON
     out_g = ev_p.add_mutually_exclusive_group(required=False)
     out_g.add_argument(
         "--pretty", action="store_true", help="Print a human-readable summary."
@@ -149,7 +256,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="Print machine-readable JSON output."
     )
 
-    # VarQITE numerics (must match cache keys)
     ev_p.add_argument("--fd-eps", type=float, default=1e-3)
     ev_p.add_argument("--reg", type=float, default=1e-6)
     ev_p.add_argument(
@@ -157,7 +263,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ev_p.add_argument("--pinv-rcond", type=float, default=1e-10)
 
-    # Default subcommand
     p.set_defaults(command="run")
     return p
 
@@ -180,8 +285,8 @@ def _resolve_plot_show(args):
 
 def _run_varqite(args) -> dict:
     plot, show = _resolve_plot_show(args)
+    symbols, coordinates = _validated_geometry_inputs(args)
 
-    # VarQITE run is noiseless by design.
     return run_qite(
         molecule=str(args.molecule),
         seed=int(args.seed),
@@ -189,6 +294,10 @@ def _run_varqite(args) -> dict:
         dtau=float(args.dtau),
         ansatz_name=str(args.ansatz),
         noisy=False,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=str(args.basis),
+        charge=int(args.charge),
         mapping=str(args.mapping),
         unit=str(args.unit),
         plot=bool(plot),
@@ -258,26 +367,39 @@ def _noisy_eval_energy_and_diag(
     return E_val, diag
 
 
-def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
+def _unpack_hamiltonian_metadata(
+    *,
+    molecule: str,
+    mapping: str,
+    unit: str,
+    symbols: Optional[list[str]] = None,
+    coordinates: Optional[np.ndarray] = None,
+    basis: Optional[str] = None,
+    charge: Optional[int] = None,
+):
     """
-    Unpack the outputs of qite.hamiltonian.build_hamiltonian in a robust way.
-
-    Supported return shapes
-    -----------------------
-    A) (H, n_qubits, hf_state)
-       -> NOT sufficient for eval-noise (needs metadata); raise.
-
-    B) (H, n_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)
-       -> legacy metadata (no mapping_out); mapping_out will be taken from the input.
-
-    C) (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
-       -> preferred/modern form (current qite.hamiltonian in your tree).
+    Build Hamiltonian metadata in either registry mode or explicit geometry mode.
 
     Returns
     -------
     (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
     """
-    out = build_hamiltonian(str(molecule), mapping=str(mapping), unit=str(unit))
+    if symbols is not None and coordinates is not None:
+        out = build_hamiltonian(
+            molecule=None,
+            symbols=list(symbols),
+            coordinates=np.array(coordinates, dtype=float),
+            charge=int(charge) if charge is not None else None,
+            basis=str(basis) if basis is not None else None,
+            mapping=str(mapping),
+            unit=str(unit),
+        )
+    else:
+        out = build_hamiltonian(
+            molecule=str(molecule),
+            mapping=str(mapping),
+            unit=str(unit),
+        )
 
     if not isinstance(out, (tuple, list)) or len(out) < 3:
         raise TypeError(
@@ -291,32 +413,39 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
             "Update qite.hamiltonian to forward metadata from common."
         )
 
-    # Legacy metadata shape: no mapping_out
     if len(out) == 8:
-        H, qubits, hf_state, symbols, coordinates, basis, charge, unit_out = out
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = out
         mapping_out = str(mapping).strip().lower()
         return (
             H,
             qubits,
             hf_state,
-            symbols,
-            coordinates,
-            basis,
-            charge,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
             mapping_out,
             unit_out,
         )
 
-    # Preferred shape: mapping_out + unit_out
     if len(out) >= 9:
         (
             H,
             qubits,
             hf_state,
-            symbols,
-            coordinates,
-            basis,
-            charge,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
             mapping_out,
             unit_out,
         ) = out[:9]
@@ -324,27 +453,31 @@ def _unpack_hamiltonian_metadata(*, molecule: str, mapping: str, unit: str):
             H,
             qubits,
             hf_state,
-            symbols,
-            coordinates,
-            basis,
-            charge,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
             mapping_out,
             unit_out,
         )
 
-    # Any other length (4..7) is an error
     raise TypeError(
         f"build_hamiltonian returned {len(out)} values; expected 3, 8, or >=9."
     )
 
 
 def eval_noise(args) -> dict:
-    # Single source of truth for Hamiltonian + HF + molecule metadata
+    symbols_in, coordinates_in = _validated_geometry_inputs(args)
+
     H, qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out = (
         _unpack_hamiltonian_metadata(
             molecule=str(args.molecule),
             mapping=str(args.mapping),
             unit=str(args.unit),
+            symbols=symbols_in,
+            coordinates=coordinates_in,
+            basis=str(args.basis),
+            charge=int(args.charge),
         )
     )
 
@@ -353,7 +486,6 @@ def eval_noise(args) -> dict:
     if seeds is None:
         seeds = list(range(5))
 
-    # Helper: run or load VarQITE result for a given seed (cached by run_qite)
     def _get_noiseless_record(seed: int) -> dict:
         return run_qite(
             molecule=str(args.molecule),
@@ -362,6 +494,10 @@ def eval_noise(args) -> dict:
             dtau=float(args.dtau),
             ansatz_name=str(args.ansatz),
             noisy=False,
+            symbols=symbols_in,
+            coordinates=coordinates_in,
+            basis=str(args.basis),
+            charge=int(args.charge),
             mapping=str(args.mapping),
             unit=str(args.unit),
             plot=False,
@@ -373,7 +509,6 @@ def eval_noise(args) -> dict:
             pinv_rcond=float(args.pinv_rcond),
         )
 
-    # Single evaluation (no sweep)
     if sweep_levels is None:
         res = _get_noiseless_record(int(args.seed))
 
@@ -396,12 +531,13 @@ def eval_noise(args) -> dict:
 
         return {
             "mode": "single",
-            "molecule": str(args.molecule),
+            "molecule": str(args.molecule).strip() or "molecule",
             "ansatz": str(args.ansatz),
             "seed": int(args.seed),
             "mapping": str(mapping_out),
             "unit": str(unit_out),
             "charge": int(charge),
+            "basis": str(basis),
             "varqite_energy_noiseless": float(res["energy"]),
             "noisy_energy": float(E_val),
             "dep": float(args.dep),
@@ -409,7 +545,6 @@ def eval_noise(args) -> dict:
             "diag": diag.tolist(),
         }
 
-    # Sweep depolarizing levels (mean/std across seeds)
     per_seed_noiseless: dict[int, dict] = {}
     for sd in seeds:
         per_seed_noiseless[int(sd)] = _get_noiseless_record(int(sd))
@@ -457,11 +592,12 @@ def eval_noise(args) -> dict:
 
     return {
         "mode": "sweep_dep",
-        "molecule": str(args.molecule),
+        "molecule": str(args.molecule).strip() or "molecule",
         "ansatz": str(args.ansatz),
         "mapping": str(mapping_out),
         "unit": str(unit_out),
         "charge": int(charge),
+        "basis": str(basis),
         "seeds": [int(s) for s in seeds],
         "amp": float(args.amp),
         "dep_levels": [float(x) for x in sweep_levels],
@@ -478,6 +614,8 @@ def _print_pretty_eval(out: dict) -> None:
     print(f"• Ansatz:   {out.get('ansatz')}")
     print(f"• Mapping:  {out.get('mapping')}")
     print(f"• Unit:     {out.get('unit')}")
+    print(f"• Basis:    {out.get('basis')}")
+    print(f"• Charge:   {out.get('charge')}")
 
     if mode == "single":
         print(f"• Seed:     {out.get('seed')}")
@@ -506,7 +644,6 @@ def main(argv: Optional[list[str]] = None) -> None:
         as_pretty = bool(getattr(args, "pretty", False))
 
         if as_json and as_pretty:
-            # Mutually exclusive group should prevent this, but keep it robust.
             raise ValueError("Choose only one of --json or --pretty.")
 
         if as_json:

@@ -24,6 +24,8 @@ from pennylane import numpy as np
 from common.persist import canonical_noise
 from qpe.noise import apply_noise_all
 
+from .hamiltonian import build_hamiltonian
+
 
 # ---------------------------------------------------------------------
 # Inverse Quantum Fourier Transform
@@ -176,71 +178,132 @@ def phase_to_energy_unwrapped(
 # QPE main runner (cached)
 # ---------------------------------------------------------------------
 def run_qpe(
-    *,
-    hamiltonian: qml.Hamiltonian,
-    hf_state: np.ndarray,
+    molecule: str = "H2",
     seed: int = 0,
     n_ancilla: int = 4,
     t: float = 1.0,
     trotter_steps: int = 1,
-    noise_params: Optional[Dict[str, float]] = None,
-    shots: Optional[int] = 1000,
-    molecule_name: str = "molecule",
-    system_qubits: Optional[int] = None,
-    mapping: str = "jordan_wigner",
-    unit: str = "angstrom",
+    shots: int | None = 1000,
+    plot: bool = True,
+    noisy: bool = False,
+    depolarizing_prob: float = 0.0,
+    amplitude_damping_prob: float = 0.0,
     force: bool = False,
+    symbols=None,
+    coordinates=None,
+    basis: str = "sto-3g",
+    charge: int = 0,
+    unit: str = "angstrom",
+    mapping: str = "jordan_wigner",
+    hamiltonian: qml.Hamiltonian | None = None,
+    hf_state: np.ndarray | None = None,
+    system_qubits: int | None = None,
 ) -> Dict[str, Any]:
     """
     Run a (noisy or noiseless) Quantum Phase Estimation simulation with caching.
 
-    Caching
-    -------
-    - force=False (default): return cached result if available; otherwise run and save.
-    - force=True: ignore cache, run and overwrite/save.
-
-    Notes
-    -----
-    Cache keys and filenames are managed by qpe.io_utils. In particular, qpe.io_utils
-    uses `noise or {}` in its signature hash, so we normalise "no noise" to {}.
+    High-level API mirrors run_vqe():
+    - registry mode via `molecule=...`
+    - explicit geometry mode via `symbols=..., coordinates=..., charge=..., basis=...`
+    - optional expert override via precomputed `hamiltonian` and `hf_state`
     """
     # Local import to keep qpe.core usable without I/O side effects at import time
-    from qpe.io_utils import (
-        ensure_dirs,
-        load_qpe_result,
-        save_qpe_result,
-    )
+    from qpe.io_utils import ensure_dirs, load_qpe_result, save_qpe_result
 
     ensure_dirs()
+    np.random.seed(int(seed))
+
+    mapping_norm = str(mapping).strip().lower()
+    basis_norm = str(basis).strip().lower()
+    unit_norm = str(unit).strip().lower()
+    charge_int = int(charge)
 
     # -------------------------
-    # Normalise inputs for stable caching
+    # Resolve Hamiltonian / HF state
     # -------------------------
-    # 1) Shots are part of the cache key; keep stable typing
-    shots_i = int(shots)
+    if hamiltonian is not None and hf_state is not None:
+        H = hamiltonian
+        hf_bits = np.array(hf_state, dtype=int)
+        molecule_label = str(molecule).strip() or "molecule"
+        symbols_out = list(symbols) if symbols is not None else []
+        coordinates_out = (
+            np.array(coordinates, dtype=float)
+            if coordinates is not None
+            else np.array([])
+        )
+        basis_out = basis_norm
+        charge_out = charge_int
+        unit_out = unit_norm
+        qubits = int(system_qubits) if system_qubits is not None else len(hf_bits)
 
-    # 2) Noise: collapse None, {}, and {"p_dep":0,"p_amp":0} to "no noise"
+    elif symbols is not None and coordinates is not None:
+        (
+            H,
+            qubits,
+            hf_bits,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=None,
+            symbols=list(symbols),
+            coordinates=np.array(coordinates, dtype=float),
+            charge=charge_int,
+            basis=basis_norm,
+            mapping=mapping_norm,
+            unit=unit_norm,
+        )
+        molecule_label = str(molecule).strip() or "molecule"
+
+    else:
+        (
+            H,
+            qubits,
+            hf_bits,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=str(molecule),
+            mapping=mapping_norm,
+            unit=unit_norm,
+        )
+        molecule_label = str(molecule).strip()
+
+    basis_out = str(basis_out).strip().lower()
+    unit_out = str(unit_out).strip().lower()
+    charge_out = int(charge_out)
+
+    # -------------------------
+    # Normalise noise
+    # -------------------------
     norm_noise = canonical_noise(
-        noisy=True,
-        p_dep=float((noise_params or {}).get("p_dep", 0.0)),
-        p_amp=float((noise_params or {}).get("p_amp", 0.0)),
+        noisy=bool(noisy),
+        p_dep=float(depolarizing_prob),
+        p_amp=float(amplitude_damping_prob),
         model=None,
     )
+
+    shots_i = None if shots is None else int(shots)
 
     # -------------------------
     # Cache lookup
     # -------------------------
     if not force:
         cached = load_qpe_result(
-            molecule=molecule_name,
+            molecule=molecule_label,
             n_ancilla=int(n_ancilla),
             t=float(t),
             seed=int(seed),
             shots=shots_i,
-            noise=(norm_noise or None),  # io_utils will treat None as {}
+            noise=(norm_noise or None),
             trotter_steps=int(trotter_steps),
-            mapping=str(mapping),
-            unit=str(unit),
+            mapping=mapping_norm,
+            unit=unit_out,
         )
         if cached is not None:
             return cached
@@ -248,35 +311,33 @@ def run_qpe(
     # -------------------------
     # Compute
     # -------------------------
-    num_qubits = len(hf_state)
-    np.random.seed(int(seed))
+    num_qubits = len(hf_bits)
 
-    ancilla_wires = list(range(n_ancilla))
-    system_wires = list(range(n_ancilla, n_ancilla + num_qubits))
+    ancilla_wires = list(range(int(n_ancilla)))
+    system_wires = list(range(int(n_ancilla), int(n_ancilla) + num_qubits))
 
     dev_name = "default.mixed" if bool(norm_noise) else "default.qubit"
-    dev = qml.device(dev_name, wires=n_ancilla + num_qubits)
+    dev = qml.device(dev_name, wires=int(n_ancilla) + num_qubits)
 
-    # Remap Hamiltonian wires to system register indices
     wire_map = {i: system_wires[i] for i in range(num_qubits)}
-    H_sys = hamiltonian.map_wires(wire_map)
+    H_sys = H.map_wires(wire_map)
 
     @qml.qnode(dev)
     def circuit():
-        qml.BasisState(np.array(hf_state, dtype=int), wires=system_wires)
+        qml.BasisState(np.array(hf_bits, dtype=int), wires=system_wires)
 
         for a in ancilla_wires:
             qml.Hadamard(wires=a)
 
         for k, a in enumerate(ancilla_wires):
-            power = n_ancilla - 1 - k
+            power = int(n_ancilla) - 1 - k
             controlled_powered_evolution(
                 hamiltonian=H_sys,
                 system_wires=system_wires,
                 control_wire=a,
-                t=t,
+                t=float(t),
                 power=power,
-                trotter_steps=trotter_steps,
+                trotter_steps=int(trotter_steps),
                 noise_params=(norm_noise or None),
             )
 
@@ -291,16 +352,16 @@ def run_qpe(
 
     bitstrings = ["".join(str(int(b)) for b in s) for s in samples]
     counts = dict(Counter(bitstrings))
-    probs = {b: c / shots_i for b, c in counts.items()}
+    probs = {b: c / len(bitstrings) for b, c in counts.items()}
 
-    E_hf = hartree_fock_energy(hamiltonian, hf_state)
+    E_hf = hartree_fock_energy(H, hf_bits)
 
     rows = []
     for b, c in counts.items():
         ph_m = bitstring_to_phase(b, msb_first=True)
         ph_l = bitstring_to_phase(b, msb_first=False)
-        e_m = phase_to_energy_unwrapped(ph_m, t, ref_energy=E_hf)
-        e_l = phase_to_energy_unwrapped(ph_l, t, ref_energy=E_hf)
+        e_m = phase_to_energy_unwrapped(ph_m, float(t), ref_energy=E_hf)
+        e_l = phase_to_energy_unwrapped(ph_l, float(t), ref_energy=E_hf)
         rows.append((b, c, ph_m, ph_l, e_m, e_l))
 
     if not rows:
@@ -314,7 +375,12 @@ def run_qpe(
     best_phase = best_row[2] if best_energy == best_row[4] else best_row[3]
 
     result: Dict[str, Any] = {
-        "molecule": molecule_name,
+        "molecule": molecule_label,
+        "symbols": list(symbols_out),
+        "geometry": np.array(coordinates_out, dtype=float).tolist(),
+        "basis": basis_out,
+        "charge": charge_out,
+        "unit": unit_out,
         "counts": counts,
         "probs": probs,
         "best_bitstring": best_b,
@@ -327,12 +393,15 @@ def run_qpe(
         "seed": int(seed),
         "noise": dict(norm_noise),
         "shots": shots_i,
-        "mapping": str(mapping),
-        "unit": str(unit),
+        "mapping": mapping_norm,
+        "num_qubits": int(qubits),
     }
 
-    if system_qubits is not None:
-        result["system_qubits"] = int(system_qubits)
+    if plot:
+        try:
+            plot_qpe_distribution(counts, title=f"QPE counts: {molecule_label}")
+        except NameError:
+            pass
 
     save_qpe_result(result)
     return result

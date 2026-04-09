@@ -13,7 +13,7 @@ from typing import List, Tuple
 import numpy as np
 import pennylane as qml
 
-from common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
+from common.hamiltonian import build_hamiltonian as _build_hamiltonian
 
 
 def build_hamiltonian(
@@ -39,7 +39,7 @@ def build_hamiltonian(
         basis,
         charge,
         unit_out,
-    ) = _common_build_hamiltonian(
+    ) = _build_hamiltonian(
         molecule=str(molecule),
         mapping=mapping_out,
         unit=unit_in,

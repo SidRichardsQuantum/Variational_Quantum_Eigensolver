@@ -28,7 +28,6 @@ from .engine import (
 )
 from .hamiltonian import (
     build_hamiltonian,
-    build_hamiltonian_from_geometry,
     generate_geometry,
 )
 from .io_utils import (
@@ -85,6 +84,8 @@ def run_vqe(
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
+    charge: int = 0,
+    unit: str = "angstrom",
     mapping: str = "jordan_wigner",
 ):
     ensure_dirs()
@@ -92,6 +93,8 @@ def run_vqe(
 
     mapping_norm = str(mapping).strip().lower()
     basis_norm = str(basis).strip().lower()
+    unit_norm = str(unit).strip().lower()
+    charge_int = int(charge)
 
     # --- Hamiltonian & molecular data (VQE-facing adapters only) ---
     if symbols is not None and coordinates is not None:
@@ -107,13 +110,14 @@ def run_vqe(
             basis_out,
             charge_out,
             unit_out,
-        ) = build_hamiltonian_from_geometry(
+        ) = build_hamiltonian(
+            molecule=None,
             symbols=sym,
             coordinates=coords,
-            charge=0,
+            charge=charge_int,
             basis=basis_norm,
             mapping=mapping_norm,
-            unit="angstrom",
+            unit=unit_norm,
         )
 
         molecule_label = str(molecule).strip() or "molecule"
@@ -128,13 +132,16 @@ def run_vqe(
             charge_out,
             unit_out,
         ) = build_hamiltonian(
-            str(molecule),
+            molecule=str(molecule),
             mapping=mapping_norm,
-            unit="angstrom",
+            unit=unit_norm,
         )
+
         molecule_label = str(molecule).strip()
 
     basis_out = str(basis_out).strip().lower()
+    unit_out = str(unit_out).strip().lower()
+    charge_out = int(charge_out)
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -151,6 +158,8 @@ def run_vqe(
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
         molecule_label=molecule_label,
+        charge=charge_out,
+        unit=unit_out,
     )
 
     sig = run_signature(cfg)
@@ -210,8 +219,6 @@ def run_vqe(
     params = np.array(params0, requires_grad=True)
     energies: list[float] = [float(energy_qnode(params))]
 
-    # Canonical: store final parameters for LR-VQE and reproducibility
-    # (and optionally full history, which is cheap for small parameter counts)
     params_history: list[list[float]] = [
         [float(x) for x in np.asarray(params, dtype=float).ravel()]
     ]
@@ -253,9 +260,7 @@ def run_vqe(
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
         "num_qubits": int(qubits),
-        # NEW: required for true tangent-space LR-VQE
         "final_params": final_params,
-        # Optional but recommended (helps debugging LR conditioning, convergence)
         "params_history": params_history,
     }
 

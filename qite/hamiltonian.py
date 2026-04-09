@@ -18,12 +18,16 @@ from typing import List, Tuple
 import numpy as np
 import pennylane as qml
 
-from common.hamiltonian import build_hamiltonian as _common_build_hamiltonian
+from common.hamiltonian import build_hamiltonian as _build_hamiltonian
 
 
 def build_hamiltonian(
-    molecule: str,
+    molecule: str | None = None,
+    coordinates: np.ndarray | None = None,
+    symbols: list[str] | None = None,
     *,
+    charge: int | None = None,
+    basis: str | None = None,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str, str]:
@@ -34,13 +38,17 @@ def build_hamiltonian(
         H,
         n_qubits,
         hf_state,
-        symbols,
-        coordinates,
-        basis,
-        charge,
+        symbols_out,
+        coordinates_out,
+        basis_out,
+        charge_out,
         unit_out,
-    ) = _common_build_hamiltonian(
-        molecule=str(molecule),
+    ) = _build_hamiltonian(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        charge=charge,
+        basis=basis,
         mapping=mapping_out,
         unit=unit_in,
         return_metadata=True,
@@ -50,10 +58,10 @@ def build_hamiltonian(
         H,
         int(n_qubits),
         np.array(hf_state, dtype=int),
-        list(symbols),
-        np.array(coordinates, dtype=float),
-        str(basis).strip().lower(),
-        int(charge),
+        list(symbols_out),
+        np.array(coordinates_out, dtype=float),
+        str(basis_out).strip().lower(),
+        int(charge_out),
         mapping_out,
-        str(unit_out),
+        str(unit_out).strip().lower(),
     )

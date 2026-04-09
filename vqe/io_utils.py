@@ -45,6 +45,8 @@ def make_run_config_dict(
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
     molecule_label: str | None = None,
+    charge: int = 0,
+    unit: str = "angstrom",
 ) -> Dict[str, Any]:
     """
     Construct a JSON-safe config dict used for hashing/caching.
@@ -66,6 +68,8 @@ def make_run_config_dict(
         "symbols": list(symbols),
         "geometry": canonical_geometry(coordinates, ndigits=8),
         "basis": str(basis).strip().lower(),
+        "charge": int(charge),
+        "unit": str(unit).strip().lower(),
         "mapping": str(mapping).strip().lower(),
         "seed": int(seed),
         "noisy": bool(bool(noise)),

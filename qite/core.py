@@ -72,15 +72,17 @@ def run_qite(
     plot: bool = True,
     ansatz_name: str = "UCCSD",
     force: bool = False,
+    symbols=None,
+    coordinates=None,
+    basis: str = "sto-3g",
+    charge: int = 0,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     show: bool = True,
-    # VarQITE numerics
     fd_eps: float = 1e-3,
     reg: float = 1e-6,
     solver: str = "solve",
     pinv_rcond: float = 1e-10,
-    # Explicitly not supported, kept only to make intent unambiguous at callsites
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
@@ -124,28 +126,59 @@ def run_qite(
         )
 
     # --- Hamiltonian pipeline (single source of truth) ---
-    (
-        H,
-        qubits,
-        hf_state,
-        symbols,
-        coordinates,
-        basis,
-        charge,
-        mapping_out,
-        unit_out,
-    ) = build_hamiltonian(
-        str(molecule),
-        mapping=str(mapping),
-        unit=str(unit),
-    )
-    basis = str(basis).strip().lower()
+    mapping_norm = str(mapping).strip().lower()
+    basis_norm = str(basis).strip().lower()
+    unit_norm = str(unit).strip().lower()
+    charge_int = int(charge)
+
+    if symbols is not None and coordinates is not None:
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            mapping_out,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=None,
+            symbols=list(symbols),
+            coordinates=np.array(coordinates, dtype=float),
+            charge=charge_int,
+            basis=basis_norm,
+            mapping=mapping_norm,
+            unit=unit_norm,
+        )
+        molecule_label = str(molecule).strip() or "molecule"
+    else:
+        (
+            H,
+            qubits,
+            hf_state,
+            symbols_out,
+            coordinates_out,
+            basis_out,
+            charge_out,
+            mapping_out,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=str(molecule),
+            mapping=mapping_norm,
+            unit=unit_norm,
+        )
+        molecule_label = str(molecule).strip()
+
+    basis_out = str(basis_out).strip().lower()
+    unit_out = str(unit_out).strip().lower()
+    charge_out = int(charge_out)
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
-        symbols=symbols,
-        coordinates=np.array(coordinates, dtype=float),
-        basis=str(basis),
+        symbols=symbols_out,
+        coordinates=np.array(coordinates_out, dtype=float),
+        basis=str(basis_out),
         seed=int(seed),
         mapping=str(mapping_out),
         noisy=False,
@@ -153,17 +186,15 @@ def run_qite(
         amplitude_damping_prob=0.0,
         dtau=float(dtau),
         steps=int(steps),
-        molecule_label=str(molecule),
+        molecule_label=molecule_label,
         ansatz_desc=str(ansatz_name),
         noise_model_name=None,
-        # VarQITE numerics (must be part of cache key)
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
-        # These are stable metadata but not used by VarQITE math; keep explicit
         unit=str(unit_out),
-        charge=int(charge),
+        charge=int(charge_out),
     )
 
     sig = run_signature(cfg)
@@ -189,9 +220,9 @@ def run_qite(
         str(ansatz_name),
         int(qubits),
         seed=int(seed),
-        symbols=symbols,
-        coordinates=np.array(coordinates, dtype=float),
-        basis=str(basis),
+        symbols=symbols_out,
+        coordinates=np.array(coordinates_out, dtype=float),
+        basis=str(basis_out),
         requires_grad=True,
         hf_state=np.array(hf_state, dtype=int),
     )
@@ -250,7 +281,7 @@ def run_qite(
     if plot:
         plot_convergence(
             energies,
-            molecule=str(molecule),
+            molecule=str(molecule_label),
             method="VarQITE",
             ansatz=str(ansatz_name),
             seed=int(seed),
@@ -264,11 +295,11 @@ def run_qite(
     # --- Save ---
     params_arr = np.array(params)
     result = {
-        "molecule": str(molecule),
+        "molecule": str(molecule_label),
         "mapping": str(mapping_out),
         "unit": str(unit_out),
-        "charge": int(charge),
-        "basis": str(basis),
+        "charge": int(charge_out),
+        "basis": str(basis_out),
         "ansatz": str(ansatz_name),
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],

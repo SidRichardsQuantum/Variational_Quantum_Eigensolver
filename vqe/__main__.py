@@ -62,6 +62,75 @@ def _parse_weights(
     return ws
 
 
+def _parse_symbols(s: Optional[str]) -> Optional[list[str]]:
+    if s is None or str(s).strip() == "":
+        return None
+    return [tok.strip() for tok in str(s).split(",") if tok.strip()]
+
+
+def _parse_coordinates(s: Optional[str]) -> Optional[np.ndarray]:
+    """
+    Parse coordinates from a CLI string of the form:
+
+        "0,0,0; 0,0,0.74"
+        "0 0 0; 0 0 0.74"
+
+    Returns
+    -------
+    np.ndarray of shape (N, 3)
+    """
+    if s is None or str(s).strip() == "":
+        return None
+
+    rows: list[list[float]] = []
+    for chunk in str(s).split(";"):
+        part = chunk.strip()
+        if not part:
+            continue
+
+        if "," in part:
+            vals = [x.strip() for x in part.split(",") if x.strip()]
+        else:
+            vals = [x.strip() for x in part.split() if x.strip()]
+
+        if len(vals) != 3:
+            raise ValueError(
+                "Each coordinate row must contain exactly 3 values. "
+                "Example: --coordinates '0,0,0; 0,0,0.74'"
+            )
+
+        rows.append([float(v) for v in vals])
+
+    if not rows:
+        return None
+
+    arr = np.asarray(rows, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 3:
+        raise ValueError("Coordinates must parse to an array of shape (N, 3).")
+    return arr
+
+
+def _validated_geometry_inputs(
+    args,
+) -> tuple[Optional[list[str]], Optional[np.ndarray]]:
+    symbols = _parse_symbols(getattr(args, "symbols", None))
+    coordinates = _parse_coordinates(getattr(args, "coordinates", None))
+
+    if (symbols is None) ^ (coordinates is None):
+        raise ValueError(
+            "Explicit geometry mode requires both --symbols and --coordinates."
+        )
+
+    if symbols is not None and coordinates is not None:
+        if len(symbols) != int(len(coordinates)):
+            raise ValueError(
+                f"Mismatch between symbols ({len(symbols)}) and coordinate rows "
+                f"({len(coordinates)})."
+            )
+
+    return symbols, coordinates
+
+
 # ================================================================
 # SPECIAL MODES DISPATCHER
 # ================================================================
@@ -407,6 +476,8 @@ def handle_special_modes(args) -> bool:
     if args.compare_noise:
         print(f"🔹 Comparing noisy vs noiseless VQE for {args.molecule}")
 
+        symbols, coordinates = _validated_geometry_inputs(args)
+
         res_noiseless = run_vqe(
             molecule=args.molecule,
             seed=int(args.seed),
@@ -415,6 +486,11 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=False,
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
             mapping=args.mapping,
             force=bool(args.force),
             plot=False,
@@ -430,6 +506,11 @@ def handle_special_modes(args) -> bool:
             noisy=True,
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
             mapping=args.mapping,
             force=bool(args.force),
             plot=False,
@@ -469,7 +550,7 @@ def main() -> None:
         "--molecule",
         type=str,
         default="H2",
-        help="Molecule (H2, LiH, H2O, H3+)",
+        help="Molecule label or registry key (e.g. H2, LiH, H2O, H3+). In explicit geometry mode, this is used as a label.",
     )
     core.add_argument("-a", "--ansatz", type=str, default="UCCSD", help="Ansatz name")
     core.add_argument(
@@ -482,6 +563,36 @@ def main() -> None:
         default="jordan_wigner",
         choices=["jordan_wigner", "bravyi_kitaev", "parity"],
         help="Fermion-to-qubit mapping (applies to VQE workflows; excited-state solvers currently default to jordan_wigner).",
+    )
+    core.add_argument(
+        "--basis",
+        type=str,
+        default="sto-3g",
+        help="Basis set used in explicit geometry mode.",
+    )
+    core.add_argument(
+        "--charge",
+        type=int,
+        default=0,
+        help="Molecular charge used in explicit geometry mode.",
+    )
+    core.add_argument(
+        "--unit",
+        type=str,
+        default="angstrom",
+        help="Coordinate unit passed through to Hamiltonian construction (e.g. angstrom, bohr).",
+    )
+    core.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated atomic symbols for explicit geometry mode, e.g. 'H,H'",
+    )
+    core.add_argument(
+        "--coordinates",
+        type=str,
+        default=None,
+        help="Semicolon-separated xyz rows for explicit geometry mode, e.g. '0,0,0; 0,0,0.74'",
     )
     core.add_argument(
         "-s",
@@ -767,6 +878,8 @@ def main() -> None:
     misc.add_argument("--plot", action="store_true", help="Plot convergence")
 
     args = parser.parse_args()
+    symbols, coordinates = _validated_geometry_inputs(args)
+    explicit_geometry = symbols is not None and coordinates is not None
 
     # ------------------------------------------------------------------
     # Summary banner
@@ -779,6 +892,15 @@ def main() -> None:
     print(f"• Steps:      {args.steps}  | Stepsize: {args.stepsize}")
     print(f"• Noise:      {'ON' if args.noisy else 'OFF'}")
     print(f"• Seed:       {args.seed}")
+    if explicit_geometry:
+        print("• Input:      explicit geometry")
+        print(f"• Symbols:    {symbols}")
+        print(f"• Basis:      {args.basis}")
+        print(f"• Charge:     {args.charge}")
+        print(f"• Unit:       {args.unit}")
+    else:
+        print("• Input:      molecule registry")
+        print(f"• Unit:       {args.unit}")
     if args.ssvqe:
         print(f"• Mode:       SSVQE (num_states={args.num_states})")
     elif args.vqd:
@@ -820,16 +942,22 @@ def main() -> None:
     print(f"🔹 Running standard VQE for {args.molecule}")
     result = run_vqe(
         molecule=args.molecule,
-        steps=args.steps,
-        stepsize=args.stepsize,
+        seed=int(args.seed),
+        steps=int(args.steps),
+        stepsize=float(args.stepsize),
         ansatz_name=args.ansatz,
         optimizer_name=args.optimizer,
-        mapping=args.mapping,
-        noisy=args.noisy,
-        depolarizing_prob=args.depolarizing_prob,
-        amplitude_damping_prob=args.amplitude_damping_prob,
-        force=args.force,
-        plot=args.plot,
+        noisy=bool(args.noisy),
+        depolarizing_prob=float(args.depolarizing_prob),
+        amplitude_damping_prob=float(args.amplitude_damping_prob),
+        force=bool(args.force),
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=str(args.basis),
+        charge=int(args.charge),
+        unit=str(args.unit),
+        mapping=str(args.mapping),
+        plot=bool(args.plot),
     )
 
     print("\nFinal result:")

@@ -4,41 +4,201 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.7] – April 9, 2026
+
+### Added
+
+- **Explicit geometry support across VQE, QPE, and QITE workflows**
+
+  All major ground-state and imaginary-time solvers can now operate either:
+
+  - from a molecule registry entry (e.g. `"H2"`)
+  - from fully user-specified molecular geometry
+
+  Explicit geometry inputs include:
+
+  - `symbols`
+  - `coordinates`
+  - `basis`
+  - `charge`
+  - `unit`
+  - `mapping`
+
+  enabling workflows such as:
+
+  - custom bond lengths
+  - non-registry molecules
+  - geometry overrides in tutorial notebooks
+  - consistent benchmarking across VQE, QPE, and QITE
+
+- **Unified Hamiltonian metadata interface**
+
+  All algorithm-facing Hamiltonian builders now return:
+
+  ```
+  (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
+  ```
+
+  ensuring a single consistent contract between:
+
+  - `vqe.hamiltonian`
+  - `qpe.hamiltonian`
+  - `qite.hamiltonian`
+  - `common.hamiltonian`
+
+- **New geometry override tutorial**
+
+  ```
+  notebooks/getting_started/08_geometry_override_h2.ipynb
+  ```
+
+  demonstrates:
+
+  - registry vs explicit geometry workflows
+  - direct control of molecular structure
+  - consistent solver behaviour across representations
+
+- **Improved QPE visualisation**
+
+  - bitstring probability plots now render correctly for multi-bit ancilla registers
+  - axis label overlap resolved using rotated tick labels and tight layout
+  - consistent plotting behaviour aligned with `common.plotting`
+
+- **CLI support for explicit geometry**
+
+  `python -m vqe`, `python -m qpe`, and `python -m qite` now accept:
+
+  ```
+  --symbols
+  --coordinates
+  --basis
+  --charge
+  --unit
+  ```
+
+  allowing command-line execution of custom molecular systems without modifying source code.
+
+---
+
+### Changed
+
+- **run_vqe(), run_qpe(), and run_qite() APIs standardized**
+
+  Solver entrypoints now share a consistent geometry interface:
+
+  ```python
+  symbols=None
+  coordinates=None
+  basis="sto-3g"
+  charge=0
+  unit="angstrom"
+  mapping="jordan_wigner"
+  ```
+
+  allowing uniform usage patterns across algorithms.
+
+- **common.hamiltonian promoted as single source of truth**
+
+  All solver-specific Hamiltonian wrappers now delegate to:
+
+  ```
+  common.hamiltonian.build_hamiltonian(...)
+  ```
+
+  eliminating duplicated logic and preventing drift between algorithm implementations.
+
+- **Configuration hashing extended**
+
+  geometry metadata (`symbols`, `coordinates`, `basis`, `charge`, `unit`) now contributes to:
+
+  - run configuration dictionaries
+  - cache keys
+  - JSON metadata records
+
+  ensuring reproducibility across geometry overrides.
+
+- **Notebooks updated to use public APIs only**
+
+  tutorial notebooks now rely exclusively on:
+
+  ```
+  run_vqe
+  run_qpe
+  run_qite
+  build_hamiltonian
+  ```
+
+  avoiding internal imports and improving long-term maintainability.
+
+---
+
+### Fixed
+
+- Fixed unpacking errors caused by inconsistent Hamiltonian return signatures.
+- Fixed missing `charge` propagation through VQE configuration dictionaries.
+- Fixed QPE CLI import error where `build_hamiltonian` was not defined in `qpe.core`.
+- Fixed incompatibilities between registry-based and explicit-geometry workflows.
+- Fixed QPE plotting readability issues due to overlapping ancilla bitstring labels.
+- Fixed inconsistent metadata propagation between QPE, QITE, and VQE pipelines.
+
+---
+
+### Internal
+
+- Harmonized solver interfaces across:
+
+  - VQE
+  - QPE
+  - QITE
+
+  enabling future algorithms to integrate with minimal infrastructure changes.
+
+- Reduced implicit coupling between solver packages by routing all molecular construction through `common`.
+
+- Improved forward compatibility for:
+
+  - geometry scans
+  - basis comparisons
+  - molecular dataset benchmarking
+  - future chemistry-oriented tutorials
+
+---
+
 ## [0.3.5] – March 12, 2026
 
 ### Changed
 
-* **Comprehensive documentation refresh** across the project:
+- **Comprehensive documentation refresh** across the project:
 
-  * `README.md` reorganized for clearer separation between project overview, solver capabilities, and package structure.
-  * `USAGE.md` expanded and clarified to document all CLI workflows (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD, QPE, QITE) with consistent CLI/API examples.
-  * `THEORY.md` substantially expanded and reorganized:
+  - `README.md` reorganized for clearer separation between project overview, solver capabilities, and package structure.
+  - `USAGE.md` expanded and clarified to document all CLI workflows (VQE, ADAPT-VQE, LR-VQE, EOM-VQE, QSE, EOM-QSE, SSVQE, VQD, QPE, QITE) with consistent CLI/API examples.
+  - `THEORY.md` substantially expanded and reorganized:
 
-    * clearer background section connecting quantum chemistry to VQE/QPE/QITE,
-    * structured explanation of excited-state methods,
-    * improved comparison of post-VQE vs variational excited-state approaches,
-    * additional discussion of mappings, ansatz design, and imaginary-time evolution.
+    - clearer background section connecting quantum chemistry to VQE/QPE/QITE,
+    - structured explanation of excited-state methods,
+    - improved comparison of post-VQE vs variational excited-state approaches,
+    - additional discussion of mappings, ansatz design, and imaginary-time evolution.
 
-* **Documentation structure made consistent across the repository**:
+- **Documentation structure made consistent across the repository**:
 
-  * Theory, usage, and architecture content now separated cleanly between
+  - Theory, usage, and architecture content now separated cleanly between
     `README.md`, `USAGE.md`, and `THEORY.md`.
-  * Table-of-contents anchors and section hierarchy aligned across documents.
+  - Table-of-contents anchors and section hierarchy aligned across documents.
 
 ### Fixed
 
-* Corrected outdated or inconsistent documentation references after the introduction of
+- Corrected outdated or inconsistent documentation references after the introduction of
   LR-VQE, EOM-VQE, QSE, and EOM-QSE.
-* Fixed stale table-of-contents anchors and section names in `THEORY.md`.
+- Fixed stale table-of-contents anchors and section names in `THEORY.md`.
 
 ### Internal
 
-* **Repository hygiene improvements**:
+- **Repository hygiene improvements**:
 
-  * `.gitignore` simplified and standardized for Python packaging, notebooks, and generated artifacts.
-  * Ensured generated outputs (`results/`, `images/`, build artifacts) remain excluded from version control.
+  - `.gitignore` simplified and standardized for Python packaging, notebooks, and generated artifacts.
+  - Ensured generated outputs (`results/`, `images/`, build artifacts) remain excluded from version control.
 
-* Minor consistency improvements across documentation and project metadata in preparation for the **0.3.5 release**.
+- Minor consistency improvements across documentation and project metadata in preparation for the **0.3.5 release**.
 
 ---
 
@@ -46,68 +206,68 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-* **Equation-of-Motion VQE (EOM-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
+- **Equation-of-Motion VQE (EOM-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
 
-  * Implements **tangent-space full-response EOM-VQE** (positive-root spectrum) as a sister method to LR-VQE.
-  * Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
-  * Solves a stabilized full-response eigenproblem using overlap-spectrum filtering + whitening,
+  - Implements **tangent-space full-response EOM-VQE** (positive-root spectrum) as a sister method to LR-VQE.
+  - Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
+  - Solves a stabilized full-response eigenproblem using overlap-spectrum filtering + whitening,
     returning excitation energies $\omega_i$ and excited-state energies $E_i = E_0 + \omega_i$.
-  * Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space response theory.
+  - Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space response theory.
 
-* **Equation-of-Motion QSE (EOM-QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
+- **Equation-of-Motion QSE (EOM-QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
 
-  * Implements commutator-based EOM in an operator manifold via the generalized eigenvalue problem
+  - Implements commutator-based EOM in an operator manifold via the generalized eigenvalue problem
     $A c = \omega S c$ with $A_{ij}=\langle\psi|O_i^\dagger[H,O_j]|\psi\rangle$ and $S_{ij}=\langle\psi|O_i^\dagger O_j|\psi\rangle$.
-  * Handles the generally **non-Hermitian** reduced problem by selecting **positive, real-dominant** roots
+  - Handles the generally **non-Hermitian** reduced problem by selecting **positive, real-dominant** roots
     using `imag_tol` and `omega_eps` filtering.
-  * Uses a Hamiltonian-driven Pauli pool (plus identity) with overlap filtering for numerical stability.
-  * Designed explicitly as **noiseless-only** (statevector reference), consistent with the current post-VQE workflow.
+  - Uses a Hamiltonian-driven Pauli pool (plus identity) with overlap filtering for numerical stability.
+  - Designed explicitly as **noiseless-only** (statevector reference), consistent with the current post-VQE workflow.
 
-* **EOM spectrum plotting utilities**:
+- **EOM spectrum plotting utilities**:
 
-  * `vqe.visualize.plot_eom_vqe_spectrum(...)`
-  * `vqe.visualize.plot_eom_qse_spectrum(...)`
-  * Mirrors the LR-VQE plotting conventions: exact spectrum vs post-VQE roots matched by nearest exact level index,
+  - `vqe.visualize.plot_eom_vqe_spectrum(...)`
+  - `vqe.visualize.plot_eom_qse_spectrum(...)`
+  - Mirrors the LR-VQE plotting conventions: exact spectrum vs post-VQE roots matched by nearest exact level index,
     with per-root $|\Delta E|$ annotations and molecule pretty titles (subscripts) while keeping filenames ASCII-safe.
 
-* **New EOM example notebooks** (pure package clients):
+- **New EOM example notebooks** (pure package clients):
 
-  * `notebooks/vqe/H2/EOM_VQE.ipynb` — exact-spectrum benchmark + EOM-VQE excited energies vs nearest exact eigenvalues.
-  * `notebooks/vqe/H2/EOM_QSE.ipynb` — exact-spectrum benchmark + EOM-QSE roots (real-dominant selection) vs nearest exact eigenvalues.
+  - `notebooks/vqe/H2/EOM_VQE.ipynb` — exact-spectrum benchmark + EOM-VQE excited energies vs nearest exact eigenvalues.
+  - `notebooks/vqe/H2/EOM_QSE.ipynb` — exact-spectrum benchmark + EOM-QSE roots (real-dominant selection) vs nearest exact eigenvalues.
 
-* **EOM CLI support** via `python -m vqe --eom-vqe` and `python -m vqe --eom-qse`:
+- **EOM CLI support** via `python -m vqe --eom-vqe` and `python -m vqe --eom-qse`:
 
-  * Runs EOM-VQE / EOM-QSE using the same molecule/ansatz/optimizer configuration flags as VQE.
-  * Optional plotting / saving of spectrum figures using the standard `--plot` / `--save` semantics.
+  - Runs EOM-VQE / EOM-QSE using the same molecule/ansatz/optimizer configuration flags as VQE.
+  - Optional plotting / saving of spectrum figures using the standard `--plot` / `--save` semantics.
 
-* **New minimal EOM tests**:
+- **New minimal EOM tests**:
 
-  * End-to-end pytest coverage for EOM-VQE and EOM-QSE on H₂, including deterministic behavior given seed + forced recomputation,
+  - End-to-end pytest coverage for EOM-VQE and EOM-QSE on H₂, including deterministic behavior given seed + forced recomputation,
     sorted/finite roots, and presence/structure of diagnostics + configuration metadata.
 
 ### Changed
 
-* **EOM caching prefixes made solver-specific (no legacy behavior):**
+- **EOM caching prefixes made solver-specific (no legacy behavior):**
 
-  * EOM-VQE results now use the prefix token **`eom_vqe`** (previously ambiguous `eom`).
-  * EOM-QSE results now use the prefix token **`eom_qse`** (previously ambiguous `eom`).
+  - EOM-VQE results now use the prefix token **`eom_vqe`** (previously ambiguous `eom`).
+  - EOM-QSE results now use the prefix token **`eom_qse`** (previously ambiguous `eom`).
 
   This guarantees EOM-VQE and EOM-QSE caches cannot collide and ensures strict reproducibility.
 
-* **Documentation updates across the project**:
+- **Documentation updates across the project**:
 
-  * `README.md` — EOM-VQE and EOM-QSE added to solver overview and project capabilities.
-  * `USAGE.md` — EOM-VQE and EOM-QSE documented alongside other post-VQE excited-state workflows (CLI + API).
-  * `THEORY.md` — excited-state discussion extended to include full-response tangent-space EOM-VQE and commutator EOM-QSE.
-  * `notebooks/README_notebooks.md` — EOM notebooks added alongside LR-VQE and QSE in the H₂ section.
+  - `README.md` — EOM-VQE and EOM-QSE added to solver overview and project capabilities.
+  - `USAGE.md` — EOM-VQE and EOM-QSE documented alongside other post-VQE excited-state workflows (CLI + API).
+  - `THEORY.md` — excited-state discussion extended to include full-response tangent-space EOM-VQE and commutator EOM-QSE.
+  - `notebooks/README_notebooks.md` — EOM notebooks added alongside LR-VQE and QSE in the H₂ section.
 
 ### Internal
 
-* EOM methods implemented **without introducing new infrastructure layers**:
+- EOM methods implemented **without introducing new infrastructure layers**:
 
-  * reuse the existing VQE engine for devices/ansatz/state QNodes,
-  * reuse `common` plotting/I/O conventions via existing utilities,
-  * maintain deterministic hashing and JSON-first run records consistent with the broader suite.
+  - reuse the existing VQE engine for devices/ansatz/state QNodes,
+  - reuse `common` plotting/I/O conventions via existing utilities,
+  - maintain deterministic hashing and JSON-first run records consistent with the broader suite.
 
 ---
 
@@ -115,131 +275,131 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-* **Linear-Response VQE (LR-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
+- **Linear-Response VQE (LR-VQE)** as a first-class post-VQE excited-state method in the `vqe` package:
 
-  * Implements **tangent-space TDA LR-VQE** via the generalized eigenvalue problem
+  - Implements **tangent-space TDA LR-VQE** via the generalized eigenvalue problem
     $A c = \omega S c$, solved by **overlap-spectrum filtering + whitening** for numerical stability.
-  * Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
-  * Returns excitation energies $\omega_i$ and excited-state energies $E_i = E_0 + \omega_i$, plus diagnostics
+  - Builds tangent vectors using finite-difference parameter derivatives evaluated at a **converged VQE reference**.
+  - Returns excitation energies $\omega_i$ and excited-state energies $E_i = E_0 + \omega_i$, plus diagnostics
     (overlap spectrum, kept rank, conditioning, and thresholds).
-  * Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space LR theory.
+  - Designed explicitly as **noiseless-only** (statevector reference), consistent with tangent-space LR theory.
 
-* **LR-VQE spectrum plotting utility**:
+- **LR-VQE spectrum plotting utility**:
 
-  * `vqe.visualize.plot_lr_vqe_spectrum(...)`
-  * Plots the exact spectrum and LR-VQE roots **matched to nearest exact level index** (no horizontal jitter),
+  - `vqe.visualize.plot_lr_vqe_spectrum(...)`
+  - Plots the exact spectrum and LR-VQE roots **matched to nearest exact level index** (no horizontal jitter),
     with per-root $|\Delta E|$ annotations.
-  * Uses molecule **pretty titles** (subscripts) while keeping filenames **ASCII-safe** via shared plotting utilities.
+  - Uses molecule **pretty titles** (subscripts) while keeping filenames **ASCII-safe** via shared plotting utilities.
 
-* **New LR-VQE example notebook**:
+- **New LR-VQE example notebook**:
 
-  * `notebooks/vqe/H2/LR_VQE.ipynb`
-  * Demonstrates end-to-end LR-VQE workflow on H₂:
+  - `notebooks/vqe/H2/LR_VQE.ipynb`
+  - Demonstrates end-to-end LR-VQE workflow on H₂:
 
-    * exact-spectrum benchmark,
-    * deterministic VQE reference $E_0$ and parameters $\theta^\*$ (used to build the tangent space),
-    * tangent-space generalized EVP (TDA),
-    * comparison against nearest exact eigenvalues with $|\Delta E|$ reporting.
-  * Written as a **pure package client**, using only public APIs.
+    - exact-spectrum benchmark,
+    - deterministic VQE reference $E_0$ and parameters $\theta^\*$ (used to build the tangent space),
+    - tangent-space generalized EVP (TDA),
+    - comparison against nearest exact eigenvalues with $|\Delta E|$ reporting.
+  - Written as a **pure package client**, using only public APIs.
 
-* **LR-VQE CLI support** via `python -m vqe --lr-vqe`:
+- **LR-VQE CLI support** via `python -m vqe --lr-vqe`:
 
-  * Runs LR-VQE using the same molecule/ansatz/optimizer configuration flags as VQE.
-  * Optional plotting / saving of the LR spectrum figure using the standard `--plot` / `--save` semantics.
+  - Runs LR-VQE using the same molecule/ansatz/optimizer configuration flags as VQE.
+  - Optional plotting / saving of the LR spectrum figure using the standard `--plot` / `--save` semantics.
 
-* **New LR-VQE deterministic test**:
+- **New LR-VQE deterministic test**:
 
-  * Minimal end-to-end pytest covering:
+  - Minimal end-to-end pytest covering:
 
-    * successful execution on H₂,
-    * deterministic results given seed and forced recomputation,
-    * sorted, finite excitation energies and eigenvalues,
-    * presence and structure of diagnostics and configuration metadata.
+    - successful execution on H₂,
+    - deterministic results given seed and forced recomputation,
+    - sorted, finite excitation energies and eigenvalues,
+    - presence and structure of diagnostics and configuration metadata.
 
 ### Changed
 
-* **`run_vqe()` result schema extended** to support post-VQE methods cleanly:
+- **`run_vqe()` result schema extended** to support post-VQE methods cleanly:
 
-  * Adds `final_params` (optimized parameter vector) and `params_history` (parameter trajectory).
-  * Enables true post-VQE methods (e.g., LR-VQE) without rebuilding optimization logic externally.
+  - Adds `final_params` (optimized parameter vector) and `params_history` (parameter trajectory).
+  - Enables true post-VQE methods (e.g., LR-VQE) without rebuilding optimization logic externally.
 
-* **Documentation updates across the project**:
+- **Documentation updates across the project**:
 
-  * `README.md` — LR-VQE added to solver overview and project capabilities.
-  * `USAGE.md` — LR-VQE documented alongside other post-VQE excited-state workflows (CLI + API).
-  * `THEORY.md` — excited-state discussion extended to include tangent-space linear response (TDA).
-  * `notebooks/README_notebooks.md` — LR-VQE notebook added in the H₂ section.
+  - `README.md` — LR-VQE added to solver overview and project capabilities.
+  - `USAGE.md` — LR-VQE documented alongside other post-VQE excited-state workflows (CLI + API).
+  - `THEORY.md` — excited-state discussion extended to include tangent-space linear response (TDA).
+  - `notebooks/README_notebooks.md` — LR-VQE notebook added in the H₂ section.
 
 ### Fixed
 
-* Standardized access to VQE optimized parameters for post-processing workflows by introducing `final_params`
+- Standardized access to VQE optimized parameters for post-processing workflows by introducing `final_params`
   (eliminates brittle reliance on implicit/legacy parameter keys).
 
 ### Internal
 
-* LR-VQE implemented **without introducing new infrastructure layers**:
+- LR-VQE implemented **without introducing new infrastructure layers**:
 
-  * reuses the existing VQE engine for devices/ansatz/state QNodes,
-  * reuses `common` plotting/I/O conventions via existing utilities.
+  - reuses the existing VQE engine for devices/ansatz/state QNodes,
+  - reuses `common` plotting/I/O conventions via existing utilities.
 
 ## [0.3.2] – February 8, 2026
 
 ### Added
 
-* **Quantum Subspace Expansion (QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
+- **Quantum Subspace Expansion (QSE)** as a first-class post-VQE excited-state method in the `vqe` package:
 
-  * Implements standard QSE via subspace projection around a converged VQE reference state.
-  * Operator pools constructed from top-|coeff| Pauli terms of the molecular Hamiltonian (plus identity).
-  * Generalized eigenvalue problem $Hc = ESc$ solved with overlap-matrix eigenvalue filtering for numerical stability.
-  * Returns lowest-*k* approximate eigenvalues with detailed diagnostics (subspace rank, conditioning, kept modes).
-  * Designed explicitly as **noiseless-only**, consistent with statevector-based QSE theory.
+  - Implements standard QSE via subspace projection around a converged VQE reference state.
+  - Operator pools constructed from top-|coeff| Pauli terms of the molecular Hamiltonian (plus identity).
+  - Generalized eigenvalue problem $Hc = ESc$ solved with overlap-matrix eigenvalue filtering for numerical stability.
+  - Returns lowest-*k- approximate eigenvalues with detailed diagnostics (subspace rank, conditioning, kept modes).
+  - Designed explicitly as **noiseless-only**, consistent with statevector-based QSE theory.
 
-* **New QSE example notebook**:
+- **New QSE example notebook**:
 
-  * `notebooks/vqe/H2/QSE.ipynb`
-  * Demonstrates end-to-end QSE workflow on H₂:
+  - `notebooks/vqe/H2/QSE.ipynb`
+  - Demonstrates end-to-end QSE workflow on H₂:
 
-    * cached VQE reference,
-    * subspace construction,
-    * comparison against the exact qubit Hamiltonian spectrum,
-    * visualization of QSE vs exact energies.
-  * Written as a **pure package client**, using only public APIs and shared plotting utilities.
+    - cached VQE reference,
+    - subspace construction,
+    - comparison against the exact qubit Hamiltonian spectrum,
+    - visualization of QSE vs exact energies.
+  - Written as a **pure package client**, using only public APIs and shared plotting utilities.
 
-* **New QSE smoke + sanity tests**:
+- **New QSE smoke + sanity tests**:
 
-  * Minimal end-to-end pytest covering:
+  - Minimal end-to-end pytest covering:
 
-    * successful execution on H₂,
-    * correct handling of reduced-rank subspaces,
-    * sorted, finite eigenvalues,
-    * presence and structure of diagnostics and configuration metadata.
-  * Integrated into the existing test suite without increasing runtime instability.
+    - successful execution on H₂,
+    - correct handling of reduced-rank subspaces,
+    - sorted, finite eigenvalues,
+    - presence and structure of diagnostics and configuration metadata.
+  - Integrated into the existing test suite without increasing runtime instability.
 
 ### Changed
 
-* **Documentation updates across the project**:
+- **Documentation updates across the project**:
 
-  * `README.md` — QSE added to the solver overview and project capabilities.
-  * `USAGE.md` — clarified solver scope and excited-state landscape.
-  * `THEORY.md` — extended excited-state discussion to include subspace-based (post-VQE) methods.
-  * `notebooks/README_notebooks.md` — QSE notebook added, positioned alongside SSVQE and VQD.
+  - `README.md` — QSE added to the solver overview and project capabilities.
+  - `USAGE.md` — clarified solver scope and excited-state landscape.
+  - `THEORY.md` — extended excited-state discussion to include subspace-based (post-VQE) methods.
+  - `notebooks/README_notebooks.md` — QSE notebook added, positioned alongside SSVQE and VQD.
 
-* **Internal linear-algebra handling hardened**:
+- **Internal linear-algebra handling hardened**:
 
-  * Explicit use of complex-valued Hamiltonian matrices where required to avoid silent imaginary-part truncation.
-  * Improves numerical correctness without altering existing solver semantics.
+  - Explicit use of complex-valued Hamiltonian matrices where required to avoid silent imaginary-part truncation.
+  - Improves numerical correctness without altering existing solver semantics.
 
 ### Fixed
 
-* Prevented silent truncation of requested QSE eigenvalues when subspace rank is reduced by overlap filtering.
-* Eliminated ambiguous casting of complex Hamiltonians to real arrays in internal linear-algebra paths.
+- Prevented silent truncation of requested QSE eigenvalues when subspace rank is reduced by overlap filtering.
+- Eliminated ambiguous casting of complex Hamiltonians to real arrays in internal linear-algebra paths.
 
 ### Internal
 
-* QSE implemented **without introducing new infrastructure layers**:
+- QSE implemented **without introducing new infrastructure layers**:
 
-  * reuses `common.hamiltonian`, `common.persist`, `common.plotting`, and existing VQE caching semantics.
-* Version bumped from **0.3.1 → 0.3.2**.
+  - reuses `common.hamiltonian`, `common.persist`, `common.plotting`, and existing VQE caching semantics.
+- Version bumped from **0.3.1 → 0.3.2**.
 
 ---
 
@@ -247,77 +407,77 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-* **Full ADAPT-VQE implementation** as a first-class solver in the `vqe` package:
+- **Full ADAPT-VQE implementation** as a first-class solver in the `vqe` package:
 
-  * Chemistry-oriented ADAPT-VQE with Hartree–Fock reference state.
-  * Operator pools based on **UCC singles / doubles / singles+doubles** (`uccs`, `uccd`, `uccsd`).
-  * Deterministic operator selection via maximum energy gradient
+  - Chemistry-oriented ADAPT-VQE with Hartree–Fock reference state.
+  - Operator pools based on **UCC singles / doubles / singles+doubles** (`uccs`, `uccd`, `uccsd`).
+  - Deterministic operator selection via maximum energy gradient
     $|\partial E / \partial \theta|$ evaluated at zero initialization.
-  * Explicit inner/outer loop structure with configurable:
+  - Explicit inner/outer loop structure with configurable:
 
-    * inner optimizer steps and step size,
-    * maximum operator budget,
-    * gradient stopping tolerance.
-  * Fully compatible with existing VQE infrastructure:
+    - inner optimizer steps and step size,
+    - maximum operator budget,
+    - gradient stopping tolerance.
+  - Fully compatible with existing VQE infrastructure:
 
-    * device selection,
-    * noise handling,
-    * caching,
-    * plotting,
-    * run hashing.
+    - device selection,
+    - noise handling,
+    - caching,
+    - plotting,
+    - run hashing.
 
-* **ADAPT-VQE CLI support** via `python -m vqe --adapt`:
+- **ADAPT-VQE CLI support** via `python -m vqe --adapt`:
 
-  * Unified with existing VQE / SSVQE / VQD CLI dispatcher.
-  * Supports operator pool selection, stopping criteria, noise flags, plotting, and cache control.
-  * Results cached under the same deterministic hashing and filesystem conventions as standard VQE.
+  - Unified with existing VQE / SSVQE / VQD CLI dispatcher.
+  - Supports operator pool selection, stopping criteria, noise flags, plotting, and cache control.
+  - Results cached under the same deterministic hashing and filesystem conventions as standard VQE.
 
-* **ADAPT-VQE result schema** standardized and persisted:
+- **ADAPT-VQE result schema** standardized and persisted:
 
-  * Outer-loop energies.
-  * Inner-loop convergence trajectories per ADAPT iteration.
-  * Maximum gradient history used for stopping.
-  * Ordered list of selected operators with wire indices.
-  * Final optimized parameter vector.
-  * Full run configuration embedded in JSON records.
+  - Outer-loop energies.
+  - Inner-loop convergence trajectories per ADAPT iteration.
+  - Maximum gradient history used for stopping.
+  - Ordered list of selected operators with wire indices.
+  - Final optimized parameter vector.
+  - Full run configuration embedded in JSON records.
 
-* **New ADAPT-VQE smoke test**:
+- **New ADAPT-VQE smoke test**:
 
-  * Ensures end-to-end execution, caching, and deterministic behavior.
-  * Integrated into the existing pytest suite alongside VQE / QPE / QITE tests.
+  - Ensures end-to-end execution, caching, and deterministic behavior.
+  - Integrated into the existing pytest suite alongside VQE / QPE / QITE tests.
 
 ### Changed
 
-* **`vqe` CLI generalized** to act as a unified driver for:
+- **`vqe` CLI generalized** to act as a unified driver for:
 
-  * ground-state VQE,
-  * excited-state solvers (SSVQE, VQD),
-  * adaptive ansatz construction (ADAPT-VQE).
+  - ground-state VQE,
+  - excited-state solvers (SSVQE, VQD),
+  - adaptive ansatz construction (ADAPT-VQE).
 
-* Documentation updates across:
+- Documentation updates across:
 
-  * `README.md` — ADAPT-VQE promoted to a first-class solver with conceptual and CLI overview.
-  * `USAGE.md` — explicit ADAPT-VQE CLI usage and Python API examples.
+  - `README.md` — ADAPT-VQE promoted to a first-class solver with conceptual and CLI overview.
+  - `USAGE.md` — explicit ADAPT-VQE CLI usage and Python API examples.
 
-* Plotting for ADAPT-VQE integrated with `common.plotting`:
+- Plotting for ADAPT-VQE integrated with `common.plotting`:
 
-  * unified filename construction,
-  * consistent molecule labeling,
-  * reproducible image paths.
+  - unified filename construction,
+  - consistent molecule labeling,
+  - reproducible image paths.
 
 ### Fixed
 
-* Ensured ADAPT-VQE noise flags are canonicalized consistently with standard VQE
+- Ensured ADAPT-VQE noise flags are canonicalized consistently with standard VQE
   (non-effective noise parameters no longer pollute cache keys or filenames).
-* Prevented silent operator/parameter mismatches by enforcing strict length checks
+- Prevented silent operator/parameter mismatches by enforcing strict length checks
   between selected operator lists and parameter vectors.
 
 ### Internal
 
-* ADAPT-VQE implemented without introducing any new infrastructure layers:
+- ADAPT-VQE implemented without introducing any new infrastructure layers:
 
-  * reuses `common.hamiltonian`, `common.plotting`, `common.persist`, and existing VQE engine utilities.
-* Test suite expanded to cover adaptive workflows without increasing runtime instability.
+  - reuses `common.hamiltonian`, `common.plotting`, `common.persist`, and existing VQE engine utilities.
+- Test suite expanded to cover adaptive workflows without increasing runtime instability.
 
 ---
 
@@ -325,66 +485,66 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-* **Unified infrastructure layer (`common/`)** as the single source of truth for:
+- **Unified infrastructure layer (`common/`)** as the single source of truth for:
 
-  * Hamiltonian construction (`common.hamiltonian`)
-  * Filesystem layout (`common.paths`)
-  * Naming and ASCII-safe identifiers (`common.naming`)
-  * Plot routing and filenames (`common.plotting`)
-  * Atomic JSON persistence and stable hashing (`common.persist`)
+  - Hamiltonian construction (`common.hamiltonian`)
+  - Filesystem layout (`common.paths`)
+  - Naming and ASCII-safe identifiers (`common.naming`)
+  - Plot routing and filenames (`common.plotting`)
+  - Atomic JSON persistence and stable hashing (`common.persist`)
 
-* Full **VarQITE (McLachlan) workflow** promoted to a first-class package:
+- Full **VarQITE (McLachlan) workflow** promoted to a first-class package:
 
-  * Noiseless imaginary-time evolution with cached parameter trajectories.
-  * Post-hoc noisy evaluation on `default.mixed` using density-matrix expectation values.
-  * Depolarizing sweeps with multi-seed averaging and statistics.
-  * Deterministic, seed-safe caching keyed on physical *and* numerical parameters.
+  - Noiseless imaginary-time evolution with cached parameter trajectories.
+  - Post-hoc noisy evaluation on `default.mixed` using density-matrix expectation values.
+  - Depolarizing sweeps with multi-seed averaging and statistics.
+  - Deterministic, seed-safe caching keyed on physical *and- numerical parameters.
 
-* New **QITE CLI** with explicit command separation:
+- New **QITE CLI** with explicit command separation:
 
-  * `qite run` for true VarQITE (pure-state, noiseless).
-  * `qite eval-noise` for noisy evaluation and noise sweeps.
+  - `qite run` for true VarQITE (pure-state, noiseless).
+  - `qite eval-noise` for noisy evaluation and noise sweeps.
 
-* **Round-trip caching tests** and **public API smoke tests** covering VQE, QPE, and QITE.
-* ASCII-safe path guarantees for all result and image outputs (titles vs filenames formally separated).
+- **Round-trip caching tests** and **public API smoke tests** covering VQE, QPE, and QITE.
+- ASCII-safe path guarantees for all result and image outputs (titles vs filenames formally separated).
 
 ### Changed
 
-* **Major internal refactor of VQE, QPE, and QITE** to fully delegate:
+- **Major internal refactor of VQE, QPE, and QITE** to fully delegate:
 
-  * Hamiltonians to `common.hamiltonian`
-  * Paths to `common.paths`
-  * Plot naming and routing to `common.plotting`
-  * Hashing and persistence to `common.persist`
+  - Hamiltonians to `common.hamiltonian`
+  - Paths to `common.paths`
+  - Plot naming and routing to `common.plotting`
+  - Hashing and persistence to `common.persist`
 
-* Removed legacy `vqe_qpe_common` and replaced it with explicit, testable modules.
-* Hardened all CLIs (VQE / QPE / QITE):
+- Removed legacy `vqe_qpe_common` and replaced it with explicit, testable modules.
+- Hardened all CLIs (VQE / QPE / QITE):
 
-  * Deterministic run signatures
-  * Identical caching semantics
-  * Strict separation of computation, I/O, and plotting
+  - Deterministic run signatures
+  - Identical caching semantics
+  - Strict separation of computation, I/O, and plotting
 
-* Standardized metadata returned by all Hamiltonian builders to ensure cross-algorithm compatibility.
-* Notebooks updated to use **pure package APIs only** (no internal imports).
+- Standardized metadata returned by all Hamiltonian builders to ensure cross-algorithm compatibility.
+- Notebooks updated to use **pure package APIs only** (no internal imports).
 
 ### Fixed
 
-* Cache degeneracy and seed-collision bugs across QITE and QPE.
-* Inconsistent molecule naming between paths and plot titles.
-* Silent mismatches between Hamiltonian wire orderings in mixed stacks.
-* Import-order and packaging errors revealed by full test isolation.
+- Cache degeneracy and seed-collision bugs across QITE and QPE.
+- Inconsistent molecule naming between paths and plot titles.
+- Silent mismatches between Hamiltonian wire orderings in mixed stacks.
+- Import-order and packaging errors revealed by full test isolation.
 
 ### Internal
 
-* Repository architecture flattened and made fully explicit.
-* All algorithms now share the same:
+- Repository architecture flattened and made fully explicit.
+- All algorithms now share the same:
 
-  * filesystem layout
-  * naming rules
-  * hashing logic
-  * persistence model
+  - filesystem layout
+  - naming rules
+  - hashing logic
+  - persistence model
 
-* Test suite expanded to enforce architectural invariants, not just numerical correctness.
+- Test suite expanded to enforce architectural invariants, not just numerical correctness.
 
 ---
 

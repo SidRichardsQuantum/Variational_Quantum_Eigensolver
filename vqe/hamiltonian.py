@@ -52,7 +52,12 @@ def generate_geometry(
 
 
 def build_hamiltonian(
-    molecule: str,
+    molecule: Optional[str] = None,
+    coordinates: Optional[np.ndarray] = None,
+    symbols: Optional[list[str]] = None,
+    *,
+    charge: Optional[int] = None,
+    basis: Optional[str] = None,
     mapping: Optional[str] = "jordan_wigner",
     unit: str = "angstrom",
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str]:
@@ -60,13 +65,17 @@ def build_hamiltonian(
         H,
         n_qubits,
         hf_state,
-        symbols,
-        coordinates,
-        basis,
-        charge,
+        symbols_out,
+        coordinates_out,
+        basis_out,
+        charge_out,
         unit_out,
     ) = _build_common_hamiltonian(
-        molecule=str(molecule),
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        charge=charge,
+        basis=basis,
         mapping=(
             str(mapping).strip().lower() if mapping is not None else "jordan_wigner"
         ),
@@ -78,11 +87,11 @@ def build_hamiltonian(
         H,
         int(n_qubits),
         np.array(hf_state, dtype=int),
-        list(symbols),
-        np.array(coordinates, dtype=float),
-        str(basis).strip().lower(),
-        int(charge),
-        str(unit_out),
+        list(symbols_out),
+        np.array(coordinates_out, dtype=float),
+        str(basis_out).strip().lower(),
+        int(charge_out),
+        str(unit_out).strip().lower(),
     )
 
 

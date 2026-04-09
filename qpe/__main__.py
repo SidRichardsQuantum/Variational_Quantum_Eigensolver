@@ -19,7 +19,6 @@ import argparse
 import time
 
 from qpe.core import run_qpe
-from qpe.hamiltonian import build_hamiltonian
 from qpe.io_utils import ensure_dirs
 from qpe.visualize import plot_qpe_distribution
 
@@ -131,50 +130,27 @@ def main():
     print(f"• Trotter:    {args.trotter_steps}")
     print(f"• Seed:       {args.seed}")
 
-    noise_params = None
-    if args.noisy:
-        noise_params = {"p_dep": float(args.p_dep), "p_amp": float(args.p_amp)}
-        print(f"• Noise:      dep={args.p_dep}, amp={args.p_amp}")
-    else:
-        print("• Noise:      OFF")
-
     # ------------------------------------------------------------
     # Caching (hash depends on run-relevant QPE parameters)
     # ------------------------------------------------------------
     print("\n▶️ Running QPE (will use cache unless --force)...")
     start_time = time.time()
 
-    # Build Hamiltonian + HF state via the unified pipeline
-    (
-        H,
-        n_qubits,
-        hf_state,
-        _symbols,
-        _coordinates,
-        _basis,
-        _charge,
-        _unit_out,
-    ) = build_hamiltonian(
-        str(args.molecule),
-        mapping=str(args.mapping),
-        unit=str(args.unit),
-    )
-
     # Let qpe.core handle caching + saving (single responsibility)
     result = run_qpe(
-        hamiltonian=H,
-        hf_state=hf_state,
+        molecule=str(args.molecule),
         seed=int(args.seed),
         n_ancilla=int(args.ancillas),
         t=float(args.t),
         trotter_steps=int(args.trotter_steps),
-        noise_params=noise_params,
         shots=int(args.shots),
-        molecule_name=str(args.molecule),
-        system_qubits=int(n_qubits),
+        plot=False,
+        noisy=bool(args.noisy),
+        depolarizing_prob=float(args.p_dep),
+        amplitude_damping_prob=float(args.p_amp),
+        force=bool(args.force),
         mapping=str(args.mapping),
         unit=str(args.unit),
-        force=bool(args.force),
     )
 
     elapsed = time.time() - start_time
