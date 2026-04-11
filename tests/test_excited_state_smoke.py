@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 
 import numpy as np
+import pennylane as qml
+import pytest
+from pennylane import numpy as pnp
 
 from common.hamiltonian import get_exact_spectrum
+import vqe.__main__ as vqe_main
 from vqe import run_qse
+from vqe import run_ssvqe
+from vqe import run_vqd
 from vqe.adapt import run_adapt_vqe
 from vqe.eom_qse import run_eom_qse
 from vqe.eom_vqe import run_eom_vqe
@@ -170,3 +177,275 @@ def test_eom_qse_smoke_and_deterministic() -> None:
     assert eigs1.size >= 1
     assert np.all(np.isfinite(eigs1))
     assert np.allclose(eigs1, eigs2, atol=1e-10, rtol=0.0)
+
+
+def test_ssvqe_propagates_mapping_to_hamiltonian(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_build_hamiltonian(molecule, mapping="jordan_wigner", unit="angstrom"):
+        captured["mapping"] = mapping
+        return (
+            qml.Hamiltonian([0.0], [qml.Identity(0)]),
+            1,
+            np.array([1], dtype=int),
+            ["H"],
+            np.array([[0.0, 0.0, 0.0]], dtype=float),
+            "sto-3g",
+            0,
+            "angstrom",
+        )
+
+    def fake_build_ansatz(*args, **kwargs):
+        def ansatz_fn(params, wires):
+            return None
+
+        return ansatz_fn, pnp.array([], requires_grad=True)
+
+    monkeypatch.setattr("vqe.ssvqe.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr("vqe.ssvqe.build_ansatz", fake_build_ansatz)
+
+    res = run_ssvqe(
+        molecule="H2",
+        num_states=2,
+        ansatz_name="Minimal",
+        steps=1,
+        plot=False,
+        force=True,
+        mapping="parity",
+    )
+
+    assert captured["mapping"] == "parity"
+    assert res["config"]["mapping"] == "parity"
+
+
+def test_ssvqe_explicit_geometry_uses_shared_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_build_hamiltonian(
+        molecule=None,
+        coordinates=None,
+        symbols=None,
+        *,
+        charge=None,
+        basis=None,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    ):
+        captured["molecule"] = molecule
+        captured["symbols"] = list(symbols)
+        captured["coordinates"] = np.array(coordinates, dtype=float)
+        captured["charge"] = charge
+        captured["basis"] = basis
+        captured["mapping"] = mapping
+        captured["unit"] = unit
+        return (
+            qml.Hamiltonian([0.0], [qml.Identity(0)]),
+            1,
+            np.array([1], dtype=int),
+            list(symbols),
+            np.array(coordinates, dtype=float),
+            "sto-3g",
+            int(charge),
+            str(unit),
+        )
+
+    def fake_build_ansatz(*args, **kwargs):
+        def ansatz_fn(params, wires):
+            return None
+
+        return ansatz_fn, pnp.array([], requires_grad=True)
+
+    monkeypatch.setattr("vqe.ssvqe.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr("vqe.ssvqe.build_ansatz", fake_build_ansatz)
+
+    run_ssvqe(
+        molecule="custom",
+        num_states=2,
+        ansatz_name="Minimal",
+        steps=1,
+        plot=False,
+        force=True,
+        symbols=["H"],
+        coordinates=[[0.0, 0.0, 0.0]],
+        basis="6-31g",
+        charge=1,
+        unit="bohr",
+        mapping="parity",
+    )
+
+    assert captured["molecule"] is None
+    assert captured["symbols"] == ["H"]
+    assert np.array_equal(
+        captured["coordinates"], np.array([[0.0, 0.0, 0.0]], dtype=float)
+    )
+    assert captured["charge"] == 1
+    assert captured["basis"] == "6-31g"
+    assert captured["mapping"] == "parity"
+    assert captured["unit"] == "bohr"
+
+
+def test_vqd_explicit_geometry_uses_shared_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_build_hamiltonian(
+        molecule=None,
+        coordinates=None,
+        symbols=None,
+        *,
+        charge=None,
+        basis=None,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    ):
+        captured["molecule"] = molecule
+        captured["symbols"] = list(symbols)
+        captured["coordinates"] = np.array(coordinates, dtype=float)
+        captured["charge"] = charge
+        captured["basis"] = basis
+        captured["mapping"] = mapping
+        captured["unit"] = unit
+        return (
+            qml.Hamiltonian([0.0], [qml.Identity(0)]),
+            1,
+            np.array([1], dtype=int),
+            list(symbols),
+            np.array(coordinates, dtype=float),
+            "sto-3g",
+            int(charge),
+            str(unit),
+        )
+
+    def fake_build_ansatz(*args, **kwargs):
+        def ansatz_fn(params, wires):
+            return None
+
+        return ansatz_fn, pnp.array([], requires_grad=True)
+
+    monkeypatch.setattr("vqe.vqd.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr("vqe.vqd.build_ansatz", fake_build_ansatz)
+
+    run_vqd(
+        molecule="custom",
+        num_states=2,
+        ansatz_name="Minimal",
+        steps=1,
+        plot=False,
+        force=True,
+        symbols=["H"],
+        coordinates=[[0.0, 0.0, 0.0]],
+        basis="6-31g",
+        charge=1,
+        unit="bohr",
+        mapping="parity",
+    )
+
+    assert captured["molecule"] is None
+    assert captured["symbols"] == ["H"]
+    assert np.array_equal(
+        captured["coordinates"], np.array([[0.0, 0.0, 0.0]], dtype=float)
+    )
+    assert captured["charge"] == 1
+    assert captured["basis"] == "6-31g"
+    assert captured["mapping"] == "parity"
+    assert captured["unit"] == "bohr"
+
+
+def test_excited_state_cli_forwards_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
+    ssvqe_called: dict[str, object] = {}
+    vqd_called: dict[str, object] = {}
+
+    def fake_run_ssvqe(**kwargs):
+        ssvqe_called.update(kwargs)
+        return {"energies_per_state": [[-1.0], [-0.5]]}
+
+    def fake_run_vqd(**kwargs):
+        vqd_called.update(kwargs)
+        return {"energies_per_state": [[-1.0], [-0.5]]}
+
+    monkeypatch.setattr(vqe_main, "run_ssvqe", fake_run_ssvqe)
+    monkeypatch.setattr(vqe_main, "run_vqd", fake_run_vqd)
+
+    ssvqe_args = SimpleNamespace(
+        ssvqe=True,
+        lr_vqe=False,
+        eom_vqe=False,
+        eom_qse=False,
+        vqd=False,
+        noisy=False,
+        mapping="parity",
+        weights=None,
+        num_states=2,
+        molecule="H2",
+        ansatz="Minimal",
+        optimizer="Adam",
+        steps=1,
+        stepsize=0.1,
+        seed=0,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        plot=False,
+        force=True,
+        basis="6-31g",
+        charge=1,
+        unit="bohr",
+        symbols="H",
+        coordinates="0,0,0",
+    )
+
+    handled = vqe_main.handle_special_modes(ssvqe_args)
+    assert handled is True
+    assert ssvqe_called["mapping"] == "parity"
+    assert ssvqe_called["symbols"] == ["H"]
+    assert np.array_equal(
+        ssvqe_called["coordinates"], np.array([[0.0, 0.0, 0.0]], dtype=float)
+    )
+    assert ssvqe_called["basis"] == "6-31g"
+    assert ssvqe_called["charge"] == 1
+    assert ssvqe_called["unit"] == "bohr"
+
+    vqd_args = SimpleNamespace(
+        ssvqe=False,
+        lr_vqe=False,
+        eom_vqe=False,
+        eom_qse=False,
+        vqd=True,
+        noisy=False,
+        mapping="bravyi_kitaev",
+        molecule="H2",
+        num_states=2,
+        beta=10.0,
+        beta_start=None,
+        beta_ramp="linear",
+        beta_hold_fraction=0.0,
+        ansatz="Minimal",
+        optimizer="Adam",
+        steps=1,
+        stepsize=0.1,
+        seed=0,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        plot=False,
+        force=True,
+        basis="6-31g",
+        charge=1,
+        unit="bohr",
+        symbols="H",
+        coordinates="0,0,0",
+    )
+
+    handled = vqe_main.handle_special_modes(vqd_args)
+    assert handled is True
+    assert vqd_called["mapping"] == "bravyi_kitaev"
+    assert vqd_called["symbols"] == ["H"]
+    assert np.array_equal(
+        vqd_called["coordinates"], np.array([[0.0, 0.0, 0.0]], dtype=float)
+    )
+    assert vqd_called["basis"] == "6-31g"
+    assert vqd_called["charge"] == 1
+    assert vqd_called["unit"] == "bohr"

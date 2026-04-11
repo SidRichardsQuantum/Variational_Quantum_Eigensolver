@@ -4,6 +4,83 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.8] – April 11, 2026
+
+### Added
+
+- **Variational Quantum Real-Time Evolution (VarQRTE)** as a first-class projected-dynamics workflow in the `qite` package:
+
+  - `run_qrte(...)` Python API
+  - `qite run-qrte` CLI entrypoint
+  - real-time McLachlan update support alongside VarQITE
+  - parameter-history output for observable reconstruction and benchmarking
+
+- **Prepared-state VarQRTE support**
+
+  `run_qrte(...)` now accepts `initial_params`, enabling real-time evolution from states prepared by prior VQE / QITE workflows instead of only from default ansatz initialization.
+
+- **New VarQRTE notebooks**
+
+  - `notebooks/getting_started/13_getting_started_qrte_h2.ipynb` — prepared-state VarQRTE usage demo
+  - `notebooks/qite/H2/Real_Time.ipynb` — package-client VarQRTE workflow
+  - `notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` — exact-vs-VarQRTE H2 quench benchmark
+
+- **Dedicated notebook benchmark layout**
+
+  benchmark / comparison notebooks now live under:
+
+  - `notebooks/benchmarks/vqe/`
+  - `notebooks/benchmarks/qpe/`
+  - `notebooks/benchmarks/qite/`
+
+### Changed
+
+- **Excited-state geometry handling unified**
+
+  `SSVQE` and `VQD` now route explicit-geometry workflows through the shared Hamiltonian builder rather than ad hoc Hamiltonian construction paths.
+
+- **Projected-dynamics framing updated**
+
+  Documentation now treats `qite/` as the projected-dynamics package for:
+
+  - VarQITE
+  - VarQRTE
+
+  rather than describing it only as imaginary-time evolution.
+
+- **Notebook organization clarified**
+
+  tutorial / getting-started notebooks remain under `notebooks/getting_started/`, while reproducible comparison and validation workflows have been separated into `notebooks/benchmarks/`.
+
+### Fixed
+
+- Fixed broken explicit-geometry support in QPE where `run_qpe(...)` forwarded geometry kwargs that `qpe.hamiltonian.build_hamiltonian(...)` did not accept.
+- Fixed missing fermion-to-qubit `mapping` propagation in:
+
+  - SSVQE execution
+  - SSVQE cache metadata
+  - VQD CLI forwarding
+
+- Fixed charge propagation through chemistry-inspired UCC ansatz plumbing so charged systems no longer silently use neutral excitation bookkeeping.
+- Fixed the remaining QITE chemistry-ansatz delegation issue by routing through the shared VQE ansatz builder while preserving a true VarQITE implementation.
+- Fixed a QITE UCCSD stagnation bug caused by double reference-state preparation in delegated chemistry ansatzes.
+- Fixed malformed QRTE notebook labels and stale notebook path references after the benchmark reorganization.
+
+### Internal
+
+- Expanded regression coverage for:
+
+  - QPE explicit geometry
+  - excited-state mapping forwarding
+  - charged UCC ansatz construction
+  - QITE charge-aware ansatz delegation
+  - VarQITE UCCSD descent on H2
+  - VarQRTE prepared-state initialization
+
+- Added `.codex` and `.codex/` to `.gitignore`.
+
+---
+
 ## [0.3.7] – April 9, 2026
 
 ### Added

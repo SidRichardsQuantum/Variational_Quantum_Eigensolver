@@ -2,7 +2,7 @@
 qite.__main__
 -------------
 
-CLI entrypoint for VarQITE routines.
+CLI entrypoint for VarQITE / VarQRTE routines.
 
 Usage
 -----
@@ -12,6 +12,9 @@ Commands
 --------
 run
     True VarQITE (McLachlan) parameter updates (pure-state only; noiseless).
+
+run-qrte
+    True VarQRTE (McLachlan real-time) parameter updates (pure-state only; noiseless).
 
 eval-noise
     Post-evaluate a converged VarQITE circuit under noise using default.mixed.
@@ -32,7 +35,7 @@ from typing import Optional
 
 import numpy as np
 
-from qite.core import run_qite
+from qite.core import run_qite, run_qrte
 from qite.engine import build_ansatz, make_device, make_energy_qnode, make_state_qnode
 from qite.hamiltonian import build_hamiltonian
 
@@ -182,6 +185,48 @@ def build_parser() -> argparse.ArgumentParser:
     run_p.add_argument("--pinv-rcond", type=float, default=1e-10)
 
     # -----------------------------------------------------------------
+    # True VarQRTE run (noiseless)
+    # -----------------------------------------------------------------
+    qrte_p = sub.add_parser("run-qrte", help="Run true VarQRTE (noiseless; cached).")
+    qrte_p.add_argument("--molecule", type=str, default="H2")
+    qrte_p.add_argument("--ansatz", type=str, default="UCCSD")
+    qrte_p.add_argument("--steps", type=int, default=50)
+    qrte_p.add_argument("--dt", type=float, default=0.05)
+    qrte_p.add_argument("--seed", type=int, default=0)
+    qrte_p.add_argument("--basis", type=str, default="sto-3g")
+    qrte_p.add_argument("--charge", type=int, default=0)
+    qrte_p.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated atomic symbols for explicit geometry mode, e.g. 'H,H'",
+    )
+    qrte_p.add_argument(
+        "--coordinates",
+        type=str,
+        default=None,
+        help="Semicolon-separated xyz rows for explicit geometry mode, e.g. '0,0,0; 0,0,0.74'",
+    )
+    qrte_p.add_argument("--mapping", type=str, default="jordan_wigner")
+    qrte_p.add_argument(
+        "--unit",
+        type=str,
+        default="angstrom",
+        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
+    )
+    qrte_p.add_argument("--plot", action="store_true", help="Generate plots.")
+    qrte_p.add_argument("--no-plot", action="store_true", help="Disable plots.")
+    qrte_p.add_argument("--show", action="store_true", help="Show plots.")
+    qrte_p.add_argument("--no-show", action="store_true", help="Do not show plots.")
+    qrte_p.add_argument("--force", action="store_true", help="Ignore cache and rerun.")
+    qrte_p.add_argument("--fd-eps", type=float, default=1e-3)
+    qrte_p.add_argument("--reg", type=float, default=1e-6)
+    qrte_p.add_argument(
+        "--solver", type=str, default="solve", choices=["solve", "lstsq", "pinv"]
+    )
+    qrte_p.add_argument("--pinv-rcond", type=float, default=1e-10)
+
+    # -----------------------------------------------------------------
     # Noisy evaluation of converged parameters
     # -----------------------------------------------------------------
     ev_p = sub.add_parser(
@@ -310,6 +355,33 @@ def _run_varqite(args) -> dict:
     )
 
 
+def _run_varqrte(args) -> dict:
+    plot, show = _resolve_plot_show(args)
+    symbols, coordinates = _validated_geometry_inputs(args)
+
+    return run_qrte(
+        molecule=str(args.molecule),
+        seed=int(args.seed),
+        steps=int(args.steps),
+        dt=float(args.dt),
+        ansatz_name=str(args.ansatz),
+        noisy=False,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=str(args.basis),
+        charge=int(args.charge),
+        mapping=str(args.mapping),
+        unit=str(args.unit),
+        plot=bool(plot),
+        show=bool(show),
+        force=bool(args.force),
+        fd_eps=float(args.fd_eps),
+        reg=float(args.reg),
+        solver=str(args.solver),
+        pinv_rcond=float(args.pinv_rcond),
+    )
+
+
 def _noisy_eval_energy_and_diag(
     *,
     H,
@@ -317,6 +389,7 @@ def _noisy_eval_energy_and_diag(
     symbols,
     coordinates,
     basis: str,
+    charge: int,
     hf_state,
     ansatz: str,
     seed: int,
@@ -335,6 +408,7 @@ def _noisy_eval_energy_and_diag(
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=str(basis).strip().lower(),
         requires_grad=False,
         hf_state=hf_state,
@@ -521,6 +595,7 @@ def eval_noise(args) -> dict:
             symbols=symbols,
             coordinates=coordinates,
             basis=str(basis),
+            charge=int(charge),
             hf_state=np.array(hf_state, dtype=int),
             ansatz=str(args.ansatz),
             seed=int(args.seed),
@@ -566,6 +641,7 @@ def eval_noise(args) -> dict:
                 symbols=symbols,
                 coordinates=coordinates,
                 basis=str(basis),
+                charge=int(charge),
                 hf_state=np.array(hf_state, dtype=int),
                 ansatz=str(args.ansatz),
                 seed=int(sd),
@@ -650,6 +726,11 @@ def main(argv: Optional[list[str]] = None) -> None:
             print(json.dumps(out, indent=2))
         else:
             _print_pretty_eval(out)
+        return
+
+    if args.command == "run-qrte":
+        out = _run_varqrte(args)
+        print(json.dumps(out, indent=2))
         return
 
     out = _run_varqite(args)

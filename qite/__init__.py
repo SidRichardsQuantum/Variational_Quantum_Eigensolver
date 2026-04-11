@@ -1,10 +1,11 @@
 """
 qite.__init__.py
 ----------------
-Public API surface for the QITE / VarQITE subpackage.
+Public API surface for the QITE / projected-dynamics subpackage.
 
 This package provides:
 - Variational imaginary-time evolution (VarQITE) workflows
+- Variational real-time evolution (VarQRTE) workflows
 - Reproducible caching and I/O helpers
 - Plotting utilities for QITE notebooks
 - Circuit / device plumbing for advanced users
@@ -32,13 +33,14 @@ except PackageNotFoundError:  # pragma: no cover
 # ---------------------------------------------------------------------
 # Public API Imports
 # ---------------------------------------------------------------------
-from .core import run_qite  # noqa: E402
+from .core import run_qite, run_qrte  # noqa: E402
 
 from .engine import (  # noqa: E402
     build_ansatz,
     make_device,
     make_energy_qnode,
     make_state_qnode,
+    qrte_step,
     qite_step,
 )
 
@@ -66,6 +68,7 @@ __all__ = [
     "__version__",
     # Core workflow
     "run_qite",
+    "run_qrte",
     # Hamiltonian
     "build_hamiltonian",
     # Engine utilities (advanced / notebooks)
@@ -74,6 +77,7 @@ __all__ = [
     "make_state_qnode",
     "build_ansatz",
     "qite_step",
+    "qrte_step",
     # I/O helpers
     "ensure_dirs",
     "make_run_config_dict",

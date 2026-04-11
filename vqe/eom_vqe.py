@@ -217,7 +217,7 @@ def run_eom_vqe(
     mapping_norm = str(mapping).strip().lower()
     molecule_label = str(molecule).strip()
 
-    H, num_qubits, _hf_state, symbols, coordinates, basis, _charge, _unit = (
+    H, num_qubits, _hf_state, symbols, coordinates, basis, charge, _unit = (
         build_hamiltonian(
             str(molecule),
             mapping=mapping_norm,
@@ -303,6 +303,7 @@ def run_eom_vqe(
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=str(basis).strip().lower(),
     )
 
@@ -313,6 +314,7 @@ def run_eom_vqe(
         noisy=False,
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=str(basis).strip().lower(),
     )
 

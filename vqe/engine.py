@@ -153,6 +153,7 @@ def _call_ansatz(
     wires: Iterable[int],
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     reference_state=None,
     prepare_reference: Optional[bool] = None,
     basis: Optional[str] = None,
@@ -175,6 +176,8 @@ def _call_ansatz(
         kwargs["symbols"] = symbols
     if "coordinates" in supported:
         kwargs["coordinates"] = coordinates
+    if "charge" in supported:
+        kwargs["charge"] = int(charge)
     if "basis" in supported and basis is not None:
         kwargs["basis"] = basis
     if "reference_state" in supported:
@@ -192,6 +195,7 @@ def build_ansatz(
     seed: int = 0,
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     basis: str = "sto-3g",
     requires_grad: bool = True,
     scale: float = 0.01,
@@ -213,6 +217,7 @@ def build_ansatz(
         requires_grad=requires_grad,
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=basis,
         seed=seed,
     )
@@ -257,6 +262,7 @@ def make_energy_qnode(
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     basis: str = "sto-3g",
     diff_method: Optional[str] = None,
 ):
@@ -277,6 +283,7 @@ def make_energy_qnode(
             wires=range(num_wires),
             symbols=symbols,
             coordinates=coordinates,
+            charge=int(charge),
             basis=basis,
         )
         apply_optional_noise(
@@ -302,6 +309,7 @@ def make_state_qnode(
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     basis: str = "sto-3g",
     diff_method: Optional[str] = None,
 ):
@@ -325,6 +333,7 @@ def make_state_qnode(
             wires=range(num_wires),
             symbols=symbols,
             coordinates=coordinates,
+            charge=int(charge),
             basis=basis,
         )
         apply_optional_noise(
@@ -350,6 +359,7 @@ def make_overlap00_fn(
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     basis: str = "sto-3g",
     diff_method: Optional[str] = None,
 ):
@@ -374,6 +384,7 @@ def make_overlap00_fn(
             wires=range(num_wires),
             symbols=symbols,
             coordinates=coordinates,
+            charge=int(charge),
             basis=basis,
         )
         apply_optional_noise(

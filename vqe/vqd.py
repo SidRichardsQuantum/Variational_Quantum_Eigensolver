@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 from typing import Callable, List, Optional
 
-import pennylane as qml
 from pennylane import numpy as np
 
 from .engine import (
@@ -135,6 +134,8 @@ def run_vqd(
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
+    charge: int = 0,
+    unit: str = "angstrom",
     plot: bool = True,
     force: bool = False,
     mapping: str = "jordan_wigner",
@@ -185,9 +186,23 @@ def run_vqd(
             build_hamiltonian(molecule, mapping=mapping)
         )
     else:
-        charge = +1 if str(molecule).upper() == "H3+" else 0
-        H, num_wires = qml.qchem.molecular_hamiltonian(
-            symbols, coordinates, charge=charge, basis=basis, unit="angstrom"
+        (
+            H,
+            num_wires,
+            hf_state,
+            symbols,
+            coordinates,
+            basis,
+            charge,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=None,
+            symbols=list(symbols),
+            coordinates=np.array(coordinates, dtype=float),
+            charge=int(charge),
+            basis=str(basis),
+            mapping=str(mapping),
+            unit=str(unit),
         )
 
     # 2) Ansatz (for QNode construction)
@@ -197,6 +212,7 @@ def run_vqd(
         seed=seed,
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=basis,
     )
 
@@ -224,6 +240,7 @@ def run_vqd(
         noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=basis,
     )
 
@@ -237,6 +254,7 @@ def run_vqd(
         noise_model=noise_model,
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=basis,
         diff_method="finite-diff",
     )
@@ -301,6 +319,7 @@ def run_vqd(
             seed=seed + n,
             symbols=symbols,
             coordinates=coordinates,
+            charge=int(charge),
             basis=basis,
         )
         theta = np.array(p_init, requires_grad=True)

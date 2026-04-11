@@ -10,17 +10,19 @@ def test_top_level_imports_smoke() -> None:
     assert hasattr(vqe, "run_vqe")
     assert hasattr(qpe, "run_qpe")
     assert hasattr(qite, "run_qite")
+    assert hasattr(qite, "run_qrte")
     assert hasattr(common, "__file__")
 
 
 def test_canonical_entrypoints_are_callable() -> None:
     from qpe import run_qpe
-    from qite import run_qite
+    from qite import run_qite, run_qrte
     from vqe import run_vqe
 
     assert callable(run_vqe)
     assert callable(run_qpe)
     assert callable(run_qite)
+    assert callable(run_qrte)
 
 
 def test_versions_exist() -> None:

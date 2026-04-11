@@ -113,13 +113,18 @@ def hardware_efficient_ansatz(params, wires):
 # ================================================================
 # UCC-STYLE CHEMISTRY ANSATZES
 # ================================================================
-def _ucc_cache_key(symbols, coordinates, basis: str):
+def _ucc_cache_key(symbols, coordinates, basis: str, charge: int):
     """Build a hashable cache key from molecular data."""
     coords = np.array(coordinates, dtype=float).flatten().tolist()
-    return (tuple(symbols), tuple(coords), basis.upper())
+    return (tuple(symbols), tuple(coords), basis.upper(), int(charge))
 
 
-def _build_ucc_data(symbols, coordinates, basis: str = "STO-3G"):
+def _build_ucc_data(
+    symbols,
+    coordinates,
+    basis: str = "STO-3G",
+    charge: int = 0,
+):
     """
     Compute (singles, doubles, hf_state) for a given molecule and cache them.
 
@@ -129,9 +134,6 @@ def _build_ucc_data(symbols, coordinates, basis: str = "STO-3G"):
 
     Notes
     -----
-    * We intentionally keep the call signature minimal: (symbols, coordinates, basis)
-      so that `vqe.engine.build_ansatz(...)` can pass through the values it has
-      without needing charge / multiplicity.
     * The cache lives on the function object so repeated calls are cheap.
     """
     if symbols is None or coordinates is None:
@@ -140,16 +142,17 @@ def _build_ucc_data(symbols, coordinates, basis: str = "STO-3G"):
             "Make sure build_hamiltonian(...) is used and passed through."
         )
 
-    key = _ucc_cache_key(symbols, coordinates, basis)
+    charge_int = int(charge)
+    key = _ucc_cache_key(symbols, coordinates, basis, charge_int)
 
     if not hasattr(_build_ucc_data, "_cache"):
         _build_ucc_data._cache = {}
 
     if key not in _build_ucc_data._cache:
         try:
-            mol = qchem.Molecule(symbols, coordinates, charge=0, basis=basis)
+            mol = qchem.Molecule(symbols, coordinates, charge=charge_int, basis=basis)
         except TypeError:
-            mol = qchem.Molecule(symbols, coordinates, charge=0)
+            mol = qchem.Molecule(symbols, coordinates, charge=charge_int)
 
         electrons = mol.n_electrons
         spin_orbitals = 2 * mol.n_orbitals
@@ -240,6 +243,7 @@ def uccsd_ansatz(
     symbols=None,
     coordinates=None,
     basis: str = "STO-3G",
+    charge: int = 0,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -265,7 +269,12 @@ def uccsd_ansatz(
     symbols, coordinates, basis
         Molecular information (must be provided for chemistry simulations)
     """
-    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
+    singles, doubles, hf_state = _build_ucc_data(
+        symbols,
+        coordinates,
+        basis=basis,
+        charge=charge,
+    )
 
     _apply_ucc_layers(
         params,
@@ -287,6 +296,7 @@ def uccd_ansatz(
     symbols=None,
     coordinates=None,
     basis: str = "STO-3G",
+    charge: int = 0,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -305,7 +315,12 @@ def uccd_ansatz(
     symbols, coordinates, basis
         Molecular information
     """
-    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
+    singles, doubles, hf_state = _build_ucc_data(
+        symbols,
+        coordinates,
+        basis=basis,
+        charge=charge,
+    )
 
     _apply_ucc_layers(
         params,
@@ -327,6 +342,7 @@ def uccs_ansatz(
     symbols=None,
     coordinates=None,
     basis: str = "STO-3G",
+    charge: int = 0,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -336,7 +352,12 @@ def uccs_ansatz(
     Matches the structure of UCCSD/UCCD and the legacy
     `excitation_ansatz(..., excitation_type="single")` behaviour.
     """
-    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
+    singles, doubles, hf_state = _build_ucc_data(
+        symbols,
+        coordinates,
+        basis=basis,
+        charge=charge,
+    )
 
     _apply_ucc_layers(
         params,
@@ -391,6 +412,7 @@ def init_params(
     symbols=None,
     coordinates=None,
     basis: str = "STO-3G",
+    charge: int = 0,
     seed: int = 0,
 ):
     """
@@ -447,7 +469,12 @@ def init_params(
                 "build_hamiltonian(...) and engine.build_ansatz(...)."
             )
 
-        singles, doubles, _ = _build_ucc_data(symbols, coordinates, basis=basis)
+        singles, doubles, _ = _build_ucc_data(
+            symbols,
+            coordinates,
+            basis=basis,
+            charge=charge,
+        )
 
         if ansatz_name in ["UCC-D", "UCCD"]:
             # doubles-only

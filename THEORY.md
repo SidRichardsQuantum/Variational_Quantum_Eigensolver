@@ -10,6 +10,7 @@ This document summarizes the main algorithms, physical assumptions, and implemen
 - ADAPT-VQE
 - Quantum Phase Estimation (QPE)
 - variational imaginary-time evolution (VarQITE)
+- variational real-time evolution (VarQRTE)
 - noise models
 
 For practical workflows and CLI usage, see [`USAGE.md`](USAGE.md).
@@ -40,6 +41,7 @@ Detailed implementation references:
 - [ADAPT-VQE](#adapt-vqe)
 - [Quantum Phase Estimation](#quantum-phase-estimation)
 - [Quantum Imaginary Time Evolution](#quantum-imaginary-time-evolution)
+- [Quantum Real Time Evolution](#quantum-real-time-evolution)
 - [Noise Models](#noise-models)
 - [References](#references)
 
@@ -63,7 +65,7 @@ Shared assumptions:
 - Hamiltonian construction → `common/hamiltonian.py`
 - STO-3G basis used for consistency across examples
 
-Using a shared chemistry layer ensures that differences between VQE, QPE, and VarQITE reflect algorithmic behaviour rather than inconsistent physical inputs.
+Using a shared chemistry layer ensures that differences between VQE, QPE, VarQITE, and VarQRTE reflect algorithmic behaviour rather than inconsistent physical inputs.
 
 ---
 
@@ -160,6 +162,7 @@ Once the qubit Hamiltonian is constructed, algorithm families differ in how they
 | post-VQE methods | linear algebra in reduced manifolds     |
 | QPE              | phase extraction from unitary evolution |
 | VarQITE          | imaginary-time filtering                |
+| VarQRTE          | projected real-time dynamics            |
 
 All share identical Hamiltonians, enabling consistent algorithm comparisons.
 
@@ -572,6 +575,44 @@ $$
 Suppresses higher-energy components.
 
 VarQITE approximates evolution using McLachlan projection.
+
+VarQRTE uses the same projected-variational machinery, but for real-time unitary dynamics rather than imaginary-time relaxation.
+
+Practical distinction in this repository:
+
+- `VQE` / `VarQITE` are state-finding workflows
+- `QPE` is a spectral / phase-estimation workflow
+- `VarQRTE` is a dynamics workflow used after a relevant state has already been prepared
+
+For a time-independent Hamiltonian, real-time evolution should conserve energy up to numerical error. For that reason, the most useful VarQRTE diagnostics are usually:
+
+- time-dependent observables
+- fidelity to exact evolution on small systems
+- overlap with the initial state
+- trajectory error over time
+
+---
+
+# Quantum Real Time Evolution
+
+VarQRTE in this repository is a McLachlan-projected real-time evolution method on a variational state manifold.
+
+Conceptually:
+
+1. start from a prepared state $|\psi(\theta_0)\rangle$
+2. project Schrödinger evolution onto the ansatz tangent space
+3. solve a linear system for parameter velocities
+4. integrate the parameter trajectory forward in time
+
+Unlike VarQITE, VarQRTE does not try to suppress excited-state components or minimize the energy. Its role is to approximate the time evolution of a chosen initial state under a fixed Hamiltonian.
+
+That means a good correctness question for VarQRTE is:
+
+- how well does the variational trajectory track exact real-time evolution of the same initial state?
+
+not:
+
+- how low is the final energy?
 
 Linear system:
 

@@ -218,6 +218,9 @@ def run_ssvqe(
     symbols=None,
     coordinates=None,
     basis: str = "sto-3g",
+    charge: int = 0,
+    unit: str = "angstrom",
+    mapping: str = "jordan_wigner",
     reference_states: Optional[Sequence[Sequence[int]]] = None,
     plot: bool = True,
     force: bool = False,
@@ -261,16 +264,30 @@ def run_ssvqe(
     # 1) Hamiltonian + molecular data
     if symbols is None or coordinates is None:
         H, num_wires, hf_state, symbols, coordinates, basis_out, charge, unit_out = (
-            build_hamiltonian(molecule)
+            build_hamiltonian(molecule, mapping=str(mapping))
         )
         basis = str(basis_out)
     else:
-        # Best-effort: preserve old override behaviour
-        # (charge inference kept minimal; preferred path is build_hamiltonian.)
-        charge = +1 if str(molecule).strip().upper() == "H3+" else 0
-        H, num_wires = qml.qchem.molecular_hamiltonian(
-            symbols, coordinates, charge=charge, basis=str(basis), unit="angstrom"
+        (
+            H,
+            num_wires,
+            hf_state,
+            symbols,
+            coordinates,
+            basis_out,
+            charge_out,
+            unit_out,
+        ) = build_hamiltonian(
+            molecule=None,
+            symbols=list(symbols),
+            coordinates=np.array(coordinates, dtype=float),
+            charge=int(charge),
+            basis=str(basis),
+            mapping=str(mapping),
+            unit=str(unit),
         )
+        basis = str(basis_out)
+        charge = int(charge_out)
 
     # 2) Shared ansatz parameters
     ansatz_fn, p0 = build_ansatz(
@@ -279,6 +296,7 @@ def run_ssvqe(
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
+        charge=int(charge),
         basis=basis,
     )
     params = np.array(p0, requires_grad=True)
@@ -287,7 +305,10 @@ def run_ssvqe(
     if reference_states is None:
         if str(ansatz_name).strip().upper().startswith("UCC"):
             singles, doubles, hf_state = _build_ucc_data(
-                symbols, coordinates, basis=basis
+                symbols,
+                coordinates,
+                basis=basis,
+                charge=int(charge),
             )
             refs = _ucc_reference_states_from_excitations(
                 hf_state,
@@ -354,6 +375,7 @@ def run_ssvqe(
             wires=range(int(num_wires)),
             symbols=symbols,
             coordinates=coordinates,
+            charge=int(charge),
             basis=basis,
             reference_state=None,
             prepare_reference=False,
@@ -378,7 +400,7 @@ def run_ssvqe(
         stepsize=float(stepsize),
         max_iterations=int(steps),
         seed=int(seed),
-        mapping="jordan_wigner",
+        mapping=str(mapping).strip().lower(),
         noisy=bool(effective_noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),

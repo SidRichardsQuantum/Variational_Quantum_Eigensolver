@@ -1,4 +1,4 @@
-# Quantum Simulation Suite — VQE, Excited-State Methods, QPE, and VarQITE (PennyLane)
+# Quantum Simulation Suite — VQE, Excited-State Methods, QPE, VarQITE, and VarQRTE (PennyLane)
 
 <p align="center">
 
@@ -24,6 +24,7 @@ A **modular quantum simulation framework** built on **PennyLane**, combining:
 - variational eigensolvers (ground and excited states)
 - quantum phase estimation (QPE)
 - variational imaginary-time evolution (VarQITE)
+- variational real-time evolution (VarQRTE)
 
 The project provides a **reproducible research environment** with:
 
@@ -58,6 +59,7 @@ The project provides a **reproducible research environment** with:
 
 - **QPE**
 - **QITE / VarQITE**
+- **QRTE / VarQRTE**
 
 ---
 
@@ -91,7 +93,7 @@ Deeper technical and architectural material.
 | `more_docs/architecture.md` | system design and module interactions    |
 | `more_docs/vqe/`            | VQE workflows and implementation details |
 | `more_docs/qpe/`            | time evolution and phase estimation      |
-| `more_docs/qite/`           | VarQITE derivations and internals        |
+| `more_docs/qite/`           | projected-dynamics derivations and internals |
 
 Intended for:
 
@@ -118,11 +120,13 @@ Variational_Quantum_Eigensolver/
 │
 ├── vqe/        # variational + excited-state solvers
 ├── qpe/        # quantum phase estimation
-├── qite/       # imaginary-time evolution
+├── qite/       # projected variational dynamics (VarQITE / VarQRTE)
 │
 ├── common/     # shared chemistry + infrastructure
 │
 ├── notebooks/  # demonstrations and benchmarks
+│   ├── getting_started/
+│   └── benchmarks/
 ├── results/    # cached runs (gitignored)
 └── images/     # generated plots (gitignored)
 ```
@@ -242,7 +246,7 @@ print(res["energy"])
 
 ---
 
-## QITE / VarQITE Package
+## QITE / Projected-Dynamics Package
 
 Imaginary-time evolution via the McLachlan variational principle.
 

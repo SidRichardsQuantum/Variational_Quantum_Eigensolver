@@ -53,3 +53,22 @@ def test_qpe_probability_dict_has_mass() -> None:
 
     total = sum(float(v) for v in probs.values())
     assert 0.0 < total <= 1.0
+
+
+def test_qpe_explicit_geometry_mode_smoke() -> None:
+    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
+
+    res = run_qpe(
+        symbols=["H", "H"],
+        coordinates=coords,
+        charge=0,
+        basis="sto-3g",
+        n_ancilla=1,
+        shots=200,
+        plot=False,
+        force=True,
+    )
+
+    assert isinstance(res, dict)
+    assert "phase" in res
+    assert "probs" in res

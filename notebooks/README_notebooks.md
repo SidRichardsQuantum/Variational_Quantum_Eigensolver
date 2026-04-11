@@ -1,6 +1,6 @@
 # Notebooks
 
-This directory contains curated Jupyter notebooks demonstrating **VQE**, **ADAPT-VQE**, **LR-VQE**, **EOM-VQE**, **QSE**, **EOM-QSE**, **SSVQE**, **VQD**, **QPE**, and **VarQITE** workflows using the packaged code in:
+This directory contains curated Jupyter notebooks demonstrating **VQE**, **ADAPT-VQE**, **LR-VQE**, **EOM-VQE**, **QSE**, **EOM-QSE**, **SSVQE**, **VQD**, **QPE**, **VarQITE**, and **VarQRTE** workflows using the packaged code in:
 
 - `vqe/`
 - `qpe/`
@@ -46,8 +46,14 @@ Default output locations:
 notebooks/
 ├── README_notebooks.md
 │
+├── benchmarks/
+│   ├── qite/
+│   ├── qpe/
+│   └── vqe/
+│
 ├── getting_started/
-│   └── H2_VQE_vs_QPE_From_Scratch.ipynb
+│   ├── vqe_vs_qpe_from_scratch_h2.ipynb
+│   └── 13_getting_started_qrte_h2.ipynb
 │
 ├── vqe/
 │   ├── H2/
@@ -67,7 +73,7 @@ notebooks/
 
 If you are new to the repository, begin with:
 
-`notebooks/getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb`
+`notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`
 
 This notebook provides compact, conceptual implementations of **VQE** and **QPE** before moving to the packaged workflows used elsewhere in the repository.
 
@@ -81,29 +87,18 @@ Path: `notebooks/vqe/H2/`
 
 H2 is the main educational benchmark in this repository: small enough to run quickly, but rich enough to demonstrate ansatz choice, optimizer behaviour, geometry dependence, noise modelling, and excited-state workflows.
 
-| Notebook                            | Purpose                                                                                        | Style          |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- | -------------- |
-| `Ansatz_Comparison.ipynb`           | Compare ansätze with an introductory educational section followed by a package-client workflow | Mixed          |
-| `Bond_Length.ipynb`                 | H2 bond-length scan using the package geometry-scan API                                        | Package client |
-| `Mapping_Comparison.ipynb`          | Compare fermion-to-qubit mappings for H2                                                       | Package client |
-| `Noise_Scan.ipynb`                  | Multi-seed noise statistics for H2                                                             | Package client |
-| `Noisy_Ansatz_Comparison.ipynb`     | Compare ansätze under noise                                                                    | Package client |
-| `Noisy_Ansatz_Convergence.ipynb`    | Compare noisy convergence behaviour across ansätze                                             | Package client |
-| `Noisy_Optimizer_Comparison.ipynb`  | Compare optimizers under noise                                                                 | Package client |
-| `Noisy_Optimizer_Convergence.ipynb` | Compare noisy convergence behaviour across optimizers                                          | Package client |
-| `QSE.ipynb`                         | QSE spectrum from a converged VQE reference vs exact eigenvalues                               | Package client |
-| `EOM_QSE.ipynb`                     | EOM-QSE roots from a converged VQE reference vs exact eigenvalues                              | Package client |
-| `LR_VQE.ipynb`                      | LR-VQE tangent-space excitations vs exact eigenvalues                                          | Package client |
-| `EOM_VQE.ipynb`                     | EOM-VQE full-response tangent-space excitations vs exact eigenvalues                           | Package client |
-| `SSVQE.ipynb`                       | Excited-state calculation with SSVQE, including validation against exact energies              | Package client |
-| `SSVQE_Comparisons.ipynb`           | Noiseless SSVQE sweeps across ansatz / optimizer choices with validation                       | Package client |
-| `VQD.ipynb`                         | Excited-state calculation with VQD, including validation against exact energies                | Package client |
-| `VQD_Comparisons.ipynb`             | Noiseless VQD sweeps across ansatz / optimizer choices with validation                         | Package client |
+| Notebook      | Purpose                                                              | Style          |
+| ------------- | -------------------------------------------------------------------- | -------------- |
+| `Bond_Length.ipynb` | H2 bond-length scan using the package geometry-scan API         | Package client |
+| `QSE.ipynb`         | QSE spectrum from a converged VQE reference vs exact eigenvalues | Package client |
+| `EOM_QSE.ipynb`     | EOM-QSE roots from a converged VQE reference vs exact eigenvalues | Package client |
+| `LR_VQE.ipynb`      | LR-VQE tangent-space excitations vs exact eigenvalues            | Package client |
+| `EOM_VQE.ipynb`     | EOM-VQE full-response tangent-space excitations vs exact eigenvalues | Package client |
+| `SSVQE.ipynb`       | Excited-state calculation with SSVQE, including validation against exact energies | Package client |
+| `VQD.ipynb`         | Excited-state calculation with VQD, including validation against exact energies | Package client |
 
 Notes:
 
-* `Noise_Scan.ipynb` is intentionally **multi-seed** and aimed at statistical behaviour rather than a single-run demo.
-* `Ansatz_Comparison.ipynb` begins with a more educational “toy ansatz” section; the remainder follows the production package workflow.
 * `QSE.ipynb`, `EOM_QSE.ipynb`, `LR_VQE.ipynb`, and `EOM_VQE.ipynb` are all **post-VQE** workflows built on converged noiseless VQE reference states.
 * `EOM_QSE.ipynb` studies a generally non-Hermitian reduced problem and uses physical-root selection heuristics.
 * `LR_VQE.ipynb` demonstrates the tangent-space **Tamm-Dancoff approximation (TDA)**.
@@ -120,8 +115,6 @@ H3plus is used as a larger benchmark than H2 while still keeping notebook runtim
 | Notebook          | Purpose                                                      | Style          |
 | ----------------- | ------------------------------------------------------------ | -------------- |
 | `Adapt.ipynb`     | ADAPT-VQE convergence and operator-growth workflow on H3plus | Package client |
-| `Noiseless.ipynb` | Noiseless VQE comparison for UCC-S / UCC-D / UCCSD on H3plus | Package client |
-| `Noisy.ipynb`     | Noisy VQE comparison for UCC-S / UCC-D / UCCSD on H3plus     | Package client |
 
 ---
 
@@ -153,27 +146,77 @@ These notebooks demonstrate the QPE pipeline on H2, including:
 | Notebook          | Purpose                                           | Style          |
 | ----------------- | ------------------------------------------------- | -------------- |
 | `Noiseless.ipynb` | Noiseless QPE distribution and ancilla sweep      | Package client |
-| `Noisy.ipynb`     | Noisy QPE distribution and multi-seed noise sweep | Package client |
 
 All QPE notebooks are package clients built on the `qpe` module and shared chemistry infrastructure.
 
 ---
 
-## QITE / VarQITE Notebooks
+## QITE / Projected-Dynamics Notebooks
 
 ### H2
 
 Path: `notebooks/qite/H2/`
 
-VarQITE is demonstrated on H2 as a package-client workflow.
+VarQITE and VarQRTE are demonstrated on H2 as package-client workflows.
 
-| Notebook          | Purpose                 | Style          |
-| ----------------- | ----------------------- | -------------- |
-| `Noiseless.ipynb` | Noiseless VarQITE on H2 | Package client |
+| Notebook                           | Purpose                    | Style          |
+| ---------------------------------- | -------------------------- | -------------- |
+| `Noiseless.ipynb`                  | Noiseless VarQITE on H2    | Package client |
+| `Real_Time.ipynb`                  | Noiseless VarQRTE on H2    | Package client |
+| `getting_started/13_getting_started_qrte_h2.ipynb` | Prepared-state VarQRTE intro on H2 | Package client |
 
 Note:
 
 * if a noisy-evaluation notebook is added in future, it should follow the repository convention used elsewhere: perform the parameter-update stage noiselessly, then evaluate the converged circuit under noise
+* both VarQITE and VarQRTE are implemented as projected pure-state variational dynamics workflows; they do not optimize under mixed-state noise
+
+---
+
+## Benchmark Notebooks
+
+These notebooks are dedicated comparison, scan, or exact-reference workflows and now live under `notebooks/benchmarks/`.
+
+### VQE Benchmarks
+
+Paths:
+
+* `notebooks/benchmarks/vqe/H2/`
+* `notebooks/benchmarks/vqe/H3plus/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/vqe/H2/Ansatz_Comparison.ipynb` | Compare H2 VQE ansätze, including exact-reference checks | Mixed |
+| `benchmarks/vqe/H2/Mapping_Comparison.ipynb` | Compare fermion-to-qubit mappings for H2 | Package client |
+| `benchmarks/vqe/H2/Noise_Scan.ipynb` | Multi-seed H2 noise statistics benchmark | Package client |
+| `benchmarks/vqe/H2/Noisy_Ansatz_Comparison.ipynb` | Compare H2 ansatz families under noise | Package client |
+| `benchmarks/vqe/H2/Noisy_Ansatz_Convergence.ipynb` | Compare noisy H2 ansatz convergence traces | Package client |
+| `benchmarks/vqe/H2/Noisy_Optimizer_Comparison.ipynb` | Compare H2 optimizers under noise | Package client |
+| `benchmarks/vqe/H2/Noisy_Optimizer_Convergence.ipynb` | Compare noisy H2 optimizer convergence traces | Package client |
+| `benchmarks/vqe/H2/SSVQE_Comparisons.ipynb` | Noiseless SSVQE sweeps across ansatz / optimizer choices | Package client |
+| `benchmarks/vqe/H2/VQD_Comparisons.ipynb` | Noiseless VQD sweeps across ansatz / optimizer choices | Package client |
+| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb` | Noiseless H3plus ansatz comparison for UCC-S / UCC-D / UCCSD | Package client |
+| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb` | Noisy H3plus ansatz comparison for UCC-S / UCC-D / UCCSD | Package client |
+
+### QPE Benchmarks
+
+Path: `notebooks/benchmarks/qpe/H2/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/qpe/H2/Noisy.ipynb` | Noisy QPE distribution and multi-seed noise sweep | Package client |
+
+### QITE / VarQRTE Benchmarks
+
+Path: `notebooks/benchmarks/qite/H2/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` | Exact-vs-VarQRTE quench benchmark on H2 | Mixed |
+
+Notes:
+
+* `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` is the main small-system correctness notebook for VarQRTE: it compares the variational trajectory against exact real-time evolution of the same post-quench initial state
+* benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the algorithm-specific package-client notebooks
 
 ---
 
@@ -181,17 +224,18 @@ Note:
 
 1. **Conceptual starting point**
 
-   * `getting_started/H2_VQE_vs_QPE_From_Scratch.ipynb`
+   * `getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`
 
 2. **Core VQE workflow**
 
-   * `vqe/H2/Ansatz_Comparison.ipynb`
+   * `getting_started/01_getting_started_vqe_h2.ipynb`
    * `vqe/H2/Bond_Length.ipynb`
 
 3. **Noise studies**
 
-   * `vqe/H2/Noise_Scan.ipynb`
-   * `qpe/H2/Noisy.ipynb`
+   * `getting_started/12_noise_scan_h2.ipynb`
+   * `benchmarks/vqe/H2/Noise_Scan.ipynb`
+   * `benchmarks/qpe/H2/Noisy.ipynb`
 
 4. **Excited-state methods**
 
@@ -205,13 +249,16 @@ Note:
 5. **Larger systems and geometry**
 
    * `vqe/H3plus/Adapt.ipynb`
-   * `vqe/H3plus/Noiseless.ipynb`
-   * `vqe/H3plus/Noisy.ipynb`
+   * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
+   * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
    * `vqe/H2O/Bond_Angle.ipynb`
 
-6. **VarQITE**
+6. **Projected dynamics**
 
    * `qite/H2/Noiseless.ipynb`
+   * `getting_started/13_getting_started_qrte_h2.ipynb`
+   * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
+   * `qite/H2/Real_Time.ipynb`
 
 ---
 

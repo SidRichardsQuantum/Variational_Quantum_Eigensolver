@@ -4,7 +4,7 @@ Workflows and APIs for:
 
 - **VQE** — ground state, ADAPT-VQE, excited states
 - **QPE** — quantum phase estimation
-- **QITE / VarQITE** — imaginary-time evolution
+- **QITE / VarQITE / VarQRTE** — projected variational dynamics
 - **common** — Hamiltonians, geometry, plotting, persistence
 
 ---
@@ -350,14 +350,14 @@ Controls:
 
 ---
 
-# QITE / VarQITE
+# QITE / Projected Dynamics
 
-Imaginary-time evolution via McLachlan updates.
+Imaginary-time and real-time projected evolution via McLachlan updates.
 
 Canonical entrypoint:
 
 ```python
-from qite.core import run_qite
+from qite.core import run_qite, run_qrte
 ```
 
 ---
@@ -395,6 +395,37 @@ res = run_qite(
 print(res["energy"])
 ```
 
+## Real-time run
+
+```bash
+qite run-qrte \
+  --molecule H2 \
+  --steps 50 \
+  --dt 0.05
+```
+
+Equivalent Python:
+
+```python
+from qite.core import run_qrte
+
+res = run_qrte(
+    molecule="H2",
+    steps=50,
+    dt=0.05,
+)
+
+print(res["energy"])
+print(res["times"])
+```
+
+Use `run_qrte()` after a relevant state has already been identified or prepared.
+In practice that usually means:
+
+- prepare a ground state with `run_vqe()` or `run_qite()`
+- prepare an excited or approximate spectral reference with the excited-state tools
+- evolve that prepared state in time and analyze observables rather than energy minimization
+
 ---
 
 ## Noisy evaluation
@@ -420,13 +451,14 @@ qite eval-noise \
 
 ## Cache semantics
 
-VarQITE cache keys include:
+VarQITE / VarQRTE cache keys include:
 
 - molecule, geometry
 - ansatz
-- `steps`, `dtau`
+- `steps`, `dtau` or `dt`
 - solver parameters
 - seed
+- initialization metadata for prepared-state VarQRTE runs
 
 Ensures:
 
@@ -452,6 +484,8 @@ vqe --force
 qpe --force
 
 qite run --force
+
+qite run-qrte --force
 ```
 
 ---

@@ -185,6 +185,7 @@ def run_vqe(
         seed=int(seed),
         symbols=symbols_out,
         coordinates=coordinates_out,
+        charge=charge_out,
         basis=basis_out,
     )
 
@@ -198,6 +199,7 @@ def run_vqe(
         amplitude_damping_prob=float(amplitude_damping_prob),
         symbols=symbols_out,
         coordinates=coordinates_out,
+        charge=charge_out,
         basis=basis_out,
     )
 
@@ -210,6 +212,7 @@ def run_vqe(
         amplitude_damping_prob=float(amplitude_damping_prob),
         symbols=symbols_out,
         coordinates=coordinates_out,
+        charge=charge_out,
         basis=basis_out,
     )
 

@@ -10,6 +10,7 @@ Public surface
 - make_energy_qnode(...)
 - make_state_qnode(...)
 - qite_step(...)
+- qrte_step(...)
 
 Notes
 -----
@@ -120,6 +121,7 @@ def build_ansatz(
     seed: int = 0,
     symbols=None,
     coordinates=None,
+    charge: int = 0,
     basis: Optional[str] = None,
     requires_grad: bool = True,
     hf_state: Optional[np.ndarray] = None,
@@ -139,27 +141,50 @@ def build_ansatz(
 
     hf = None if hf_state is None else np.array(hf_state, dtype=int)
 
-    # Preferred: reuse VQE ansatz library if present.
+    # Preferred: reuse the VQE ansatz plumbing so chemistry ansatzes
+    # share the same charge-aware parameterization and circuit kwargs.
     try:
-        import vqe.ansatz as _vqe_ansatz_mod  # type: ignore
+        import vqe.engine as _vqe_engine_mod  # type: ignore
 
-        builder = getattr(_vqe_ansatz_mod, "build_ansatz", None)
-        if callable(builder):
-            inner_fn, init = builder(
+        inner_builder = getattr(_vqe_engine_mod, "build_ansatz", None)
+        inner_call = getattr(_vqe_engine_mod, "_call_ansatz", None)
+        if callable(inner_builder) and callable(inner_call):
+            inner_fn, init = inner_builder(
                 name,
                 n,
                 seed=int(seed),
                 symbols=symbols,
                 coordinates=coordinates,
-                basis=basis,
+                charge=int(charge),
+                basis=basis if basis is not None else "sto-3g",
                 requires_grad=bool(requires_grad),
             )
             init_params = np.array(init, requires_grad=bool(requires_grad))
+            chemistry_style = False
+            try:
+                supported = getattr(_vqe_engine_mod, "_supported_ansatz_kwargs")(
+                    inner_fn
+                )
+                chemistry_style = (
+                    "prepare_reference" in supported or "reference_state" in supported
+                )
+            except Exception:
+                chemistry_style = False
 
             def ansatz_fn(params: np.ndarray) -> None:
-                if hf is not None:
+                if hf is not None and not chemistry_style:
                     qml.BasisState(hf, wires=list(range(n)))
-                inner_fn(params)
+                inner_call(
+                    inner_fn,
+                    params,
+                    wires=range(n),
+                    symbols=symbols,
+                    coordinates=coordinates,
+                    charge=int(charge),
+                    reference_state=(hf if chemistry_style else None),
+                    prepare_reference=(True if chemistry_style else None),
+                    basis=basis,
+                )
 
             return ansatz_fn, init_params
     except Exception:
@@ -436,4 +461,79 @@ def qite_step(
 
     flat, shape = _flatten_params(params)
     new_flat = np.array(flat, dtype=float) + float(dtau) * np.array(v, dtype=float)
+    return _unflatten_params(new_flat, shape, requires_grad=True)
+
+
+def qrte_step(
+    *,
+    params: np.ndarray,
+    energy_qnode: Callable[[np.ndarray], Any],
+    state_qnode: Callable[[np.ndarray], Any],
+    dt: float,
+    num_wires: int,
+    hamiltonian: qml.Hamiltonian,
+    fd_eps: float = 1e-3,
+    reg: float = 1e-6,
+    solver: str = "solve",
+    pinv_rcond: float = 1e-10,
+    cache: Optional[dict] = None,
+) -> np.ndarray:
+    """
+    One McLachlan VarQRTE update step:
+
+        A(θ) v = C(θ)
+        θ <- θ + dt * v
+
+    where A_ij = Re(<∂i ψ|∂j ψ>) and
+          C_i  = Im(<∂i ψ|(H-E)|ψ>),
+    with tangent-space projection applied to the derivatives.
+    """
+    if hamiltonian is None:
+        raise ValueError("qrte_step requires `hamiltonian`.")
+
+    psi, dpsi = _finite_difference_state_derivatives(
+        state_qnode, params, eps=float(fd_eps)
+    )
+    P = int(dpsi.shape[0])
+    if P == 0:
+        return np.array(params, requires_grad=True)
+
+    dpsi_t = np.stack([_project_tangent(psi, dpsi[i]) for i in range(P)], axis=0)
+
+    E = float(energy_qnode(params))
+    Hpsi = _hamiltonian_action(hamiltonian, psi, num_wires=int(num_wires), cache=cache)
+
+    A = np.zeros((P, P), dtype=float)
+    C = np.zeros((P,), dtype=float)
+
+    for i in range(P):
+        dpi = dpsi_t[i]
+        C[i] = float(np.imag(np.vdot(dpi, Hpsi) - E * np.vdot(dpi, psi)))
+
+        for j in range(i, P):
+            val = float(np.real(np.vdot(dpi, dpsi_t[j])))
+            A[i, j] = val
+            A[j, i] = val
+
+    A = A + float(reg) * np.eye(P, dtype=float)
+    b = C
+
+    solver_l = str(solver).strip().lower()
+    try:
+        if solver_l == "solve":
+            v = np.linalg.solve(A, b)
+        elif solver_l == "lstsq":
+            v, *_ = np.linalg.lstsq(A, b, rcond=None)
+        elif solver_l == "pinv":
+            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
+        else:
+            raise ValueError("solver must be one of: 'solve', 'lstsq', 'pinv'.")
+    except Exception:
+        try:
+            v, *_ = np.linalg.lstsq(A, b, rcond=None)
+        except Exception:
+            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
+
+    flat, shape = _flatten_params(params)
+    new_flat = np.array(flat, dtype=float) + float(dt) * np.array(v, dtype=float)
     return _unflatten_params(new_flat, shape, requires_grad=True)

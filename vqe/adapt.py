@@ -48,9 +48,15 @@ def _make_ucc_pool(
     symbols: Sequence[str],
     coordinates,
     basis: str,
+    charge: int,
     pool: str,
 ) -> Tuple[List[PoolOp], np.ndarray]:
-    singles, doubles, hf_state = _build_ucc_data(symbols, coordinates, basis=basis)
+    singles, doubles, hf_state = _build_ucc_data(
+        symbols,
+        coordinates,
+        basis=basis,
+        charge=int(charge),
+    )
 
     pool_key = str(pool).strip().lower()
     if pool_key in {"uccsd", "ucc-sd", "sd", "both"}:
@@ -213,6 +219,7 @@ def run_adapt_vqe(
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
+        charge=int(charge),
         pool=str(pool),
     )
 

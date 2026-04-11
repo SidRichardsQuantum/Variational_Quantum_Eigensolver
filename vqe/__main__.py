@@ -139,16 +139,13 @@ def handle_special_modes(args) -> bool:
     Dispatch CLI options for all extended experiment modes.
     Returns True if a special mode handled the execution.
     """
+    symbols, coordinates = _validated_geometry_inputs(args)
 
     # ---------------------------
     #  SSVQE (excited states)
     # ---------------------------
     if args.ssvqe:
         print("🔹 Running SSVQE (excited states)...")
-        if args.noisy and args.mapping != "jordan_wigner":
-            print(
-                "ℹ️  Note: SSVQE currently uses the package default mapping (jordan_wigner)."
-            )
 
         weights = _parse_weights(args.weights, num_states=args.num_states)
 
@@ -165,9 +162,15 @@ def handle_special_modes(args) -> bool:
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
             noise_model=None,
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
             reference_states=None,
             plot=bool(args.plot),
             force=bool(args.force),
+            mapping=str(args.mapping),
         )
 
         finals = [float(traj[-1]) for traj in res["energies_per_state"]]
@@ -293,10 +296,6 @@ def handle_special_modes(args) -> bool:
     # ---------------------------
     if args.vqd:
         print("🔹 Running VQD (excited states via deflation)...")
-        if args.mapping != "jordan_wigner":
-            print(
-                "ℹ️  Note: VQD currently uses the package default mapping (jordan_wigner)."
-            )
 
         res = run_vqd(
             molecule=args.molecule,
@@ -316,8 +315,14 @@ def handle_special_modes(args) -> bool:
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
             noise_model=None,
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
             plot=bool(args.plot),
             force=bool(args.force),
+            mapping=str(args.mapping),
         )
 
         finals = [float(traj[-1]) for traj in res["energies_per_state"]]
@@ -562,7 +567,7 @@ def main() -> None:
         type=str,
         default="jordan_wigner",
         choices=["jordan_wigner", "bravyi_kitaev", "parity"],
-        help="Fermion-to-qubit mapping (applies to VQE workflows; excited-state solvers currently default to jordan_wigner).",
+        help="Fermion-to-qubit mapping used across VQE workflows.",
     )
     core.add_argument(
         "--basis",
