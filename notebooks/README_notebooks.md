@@ -77,6 +77,13 @@ If you are new to the repository, begin with:
 
 This notebook provides compact, conceptual implementations of **VQE** and **QPE** before moving to the packaged workflows used elsewhere in the repository.
 
+Fast path:
+
+- start with `getting_started/01_getting_started_vqe_h2.ipynb` for the basic VQE API
+- use `getting_started/06_getting_started_qite_h2.ipynb` for VarQITE
+- use `getting_started/13_getting_started_qrte_h2.ipynb` for prepared-state VarQRTE usage
+- use `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` when you want to validate VarQRTE against exact evolution
+
 ---
 
 ## VQE Notebooks

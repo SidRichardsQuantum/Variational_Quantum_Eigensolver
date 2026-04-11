@@ -101,6 +101,7 @@ Execution behaviour:
 | VQD       | variational excited |                     no | yes           |
 | QPE       | phase estimation    |                     no | yes           |
 | QITE      | imaginary time      |                     no | eval-only     |
+| QRTE      | real-time dynamics  |                     no | no            |
 
 ---
 
@@ -114,6 +115,8 @@ vqe -m H2 --lr-vqe --lr-k 4
 qpe --molecule H2 --ancillas 4
 
 qite run --molecule H2 --steps 50 --dtau 0.2
+
+qite run-qrte --molecule H2 --steps 20 --dt 0.05
 ```
 
 ---

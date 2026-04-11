@@ -1,155 +1,56 @@
-# Quantum Simulation Suite — VQE, Excited-State Methods, QPE, VarQITE, and VarQRTE (PennyLane)
+# Quantum Simulation Suite
 
-<p align="center">
+PennyLane-based workflows for:
 
-<a href="https://pypi.org/project/vqe-pennylane/">
-<img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version">
-</a>
+- ground-state VQE
+- excited-state methods
+- quantum phase estimation
+- variational imaginary-time evolution
+- variational real-time evolution
 
-<a href="https://pypi.org/project/vqe-pennylane/">
-<img src="https://img.shields.io/pypi/dm/vqe-pennylane?style=flat-square" alt="PyPI Downloads">
-</a>
+Implemented packages:
 
-<a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions/workflows/tests.yml">
-<img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
-</a>
+- `vqe` for ground-state and excited-state solvers
+- `qpe` for phase-estimation workflows
+- `qite` for projected variational dynamics (`VarQITE`, `VarQRTE`)
+- `common` for shared chemistry, Hamiltonians, caching, and plotting
 
-<img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions">
-<img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
+## What This Repo Is Good For
 
-</p>
+Use this repo if you want:
 
-A **modular quantum simulation framework** built on **PennyLane**, combining:
+- one Hamiltonian pipeline shared across VQE, QPE, and QITE/QRTE
+- reproducible runs with stable cache keys and JSON outputs
+- both Python APIs and CLI workflows
+- notebooks that separate demos from benchmarks
 
-- variational eigensolvers (ground and excited states)
-- quantum phase estimation (QPE)
-- variational imaginary-time evolution (VarQITE)
-- variational real-time evolution (VarQRTE)
+It is optimized for small-molecule algorithm development and comparison, not large-scale production chemistry.
 
-The project provides a **reproducible research environment** with:
+## Choose A Method
 
-- unified molecule and Hamiltonian infrastructure
-- deterministic caching via run signatures
-- shared plotting and output conventions
-- CLI workflows and Python APIs
-- curated notebooks for benchmarking and demonstrations
+Use `VQE` when you want a ground-state energy or a good reference state.
 
----
+Use `ADAPT-VQE` when you want an adaptive ansatz rather than a fixed one.
 
-## Implemented Algorithms
+Use `QSE`, `EOM-QSE`, `LR-VQE`, or `EOM-VQE` when you already have a converged VQE reference and want excited-state information.
 
-### Variational methods
+Use `SSVQE` or `VQD` when you want variational excited-state solvers directly.
 
-- **VQE** — ground-state eigensolver
-- **ADAPT-VQE** — adaptive ansatz growth
+Use `QPE` when you want spectral / phase information rather than a compact variational state.
 
-### Post-VQE excited-state methods
+Use `VarQITE` when you want imaginary-time relaxation toward a low-energy state.
 
-- **LR-VQE**
-- **EOM-VQE**
-- **QSE**
-- **EOM-QSE**
+Use `VarQRTE` when you already have a relevant state and want to evolve it in real time and analyze observables.
 
-### Variational excited-state solvers
+## Install
 
-- **SSVQE**
-- **VQD**
-
-### Non-variational algorithms
-
-- **QPE**
-- **QITE / VarQITE**
-- **QRTE / VarQRTE**
-
----
-
-## Documentation
-
-Documentation is structured in **two layers**.
-
-### Core (user-facing)
-
-| File                              | Purpose                    |
-| --------------------------------- | -------------------------- |
-| **README.md**                     | overview and quickstart    |
-| **USAGE.md**                      | CLI and Python workflows   |
-| **THEORY.md**                     | algorithms and derivations |
-| **notebooks/README_notebooks.md** | notebook guide             |
-
-Start here:
-
-- 📘 [`THEORY.md`](THEORY.md)
-- ⚙️ [`USAGE.md`](USAGE.md)
-- 📓 [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md)
-
----
-
-### Extended documentation (`more_docs/`)
-
-Deeper technical and architectural material.
-
-| Path                        | Purpose                                  |
-| --------------------------- | ---------------------------------------- |
-| `more_docs/architecture.md` | system design and module interactions    |
-| `more_docs/vqe/`            | VQE workflows and implementation details |
-| `more_docs/qpe/`            | time evolution and phase estimation      |
-| `more_docs/qite/`           | projected-dynamics derivations and internals |
-
-Intended for:
-
-- contributors
-- advanced users
-- algorithm deep dives beyond THEORY.md
-
----
-
-## Repository Structure
-
-```
-Variational_Quantum_Eigensolver/
-├── README.md
-├── THEORY.md
-├── USAGE.md
-├── pyproject.toml
-│
-├── more_docs/
-│   ├── architecture.md
-│   ├── vqe/
-│   ├── qpe/
-│   └── qite/
-│
-├── vqe/        # variational + excited-state solvers
-├── qpe/        # quantum phase estimation
-├── qite/       # projected variational dynamics (VarQITE / VarQRTE)
-│
-├── common/     # shared chemistry + infrastructure
-│
-├── notebooks/  # demonstrations and benchmarks
-│   ├── getting_started/
-│   └── benchmarks/
-├── results/    # cached runs (gitignored)
-└── images/     # generated plots (gitignored)
-```
-
-### Design principles
-
-- shared chemistry + Hamiltonian layer (`common/`)
-- consistent run signatures across all solvers
-- deterministic caching for reproducibility
-- CLI and Python APIs backed by identical core logic
-- minimal configuration friction for common workflows
-
----
-
-## Installation
-
-### From PyPI
+From PyPI:
 
 ```bash
 pip install vqe-pennylane
 ```
 
-### From source
+From source:
 
 ```bash
 git clone https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver.git
@@ -157,194 +58,212 @@ cd Variational_Quantum_Eigensolver
 pip install -e .
 ```
 
-### Verify
+Verify:
 
 ```bash
 python -c "import vqe, qpe, qite, common; print('Quantum stacks imported successfully')"
 ```
 
----
+## Quickstart
 
-## Core Infrastructure
+Python:
 
-Shared modules used across all solvers.
+```python
+from vqe import run_vqe
+from qite import run_qite, run_qrte
 
-| Module                  | Purpose                         |
-| ----------------------- | ------------------------------- |
-| `common/molecules.py`   | molecule definitions            |
-| `common/geometry.py`    | coordinate generation           |
-| `common/hamiltonian.py` | Hamiltonian construction        |
-| `common/plotting.py`    | plot + filename standardisation |
-| `common/persist.py`     | deterministic run hashing       |
-| `common/paths.py`       | output directory structure      |
+vqe_res = run_vqe(molecule="H2")
+print("VQE:", vqe_res["energy"])
 
-Provides:
+qite_res = run_qite(molecule="H2", steps=50, dtau=0.2)
+print("VarQITE:", qite_res["energy"])
+
+qrte_res = run_qrte(molecule="H2", steps=20, dt=0.05)
+print("VarQRTE final energy:", qrte_res["energy"])
+```
+
+CLI:
+
+```bash
+python -m vqe -m H2
+python -m qpe --molecule H2 --ancillas 4 --shots 2000
+python -m qite run --molecule H2 --steps 50 --dtau 0.2
+python -m qite run-qrte --molecule H2 --steps 20 --dt 0.05
+```
+
+## Typical Workflow
+
+For stationary-state work:
+
+1. run `VQE` to get a ground-state reference
+2. run post-VQE or excited-state solvers if needed
+3. compare against exact small-system references where possible
+
+For dynamics:
+
+1. prepare a state with `VQE`, `VarQITE`, or an excited-state workflow
+2. use `VarQRTE` for real-time dynamics
+3. benchmark against exact evolution on small systems when possible
+
+## Package Overview
+
+### `vqe`
+
+Includes:
+
+- `run_vqe`
+- `run_adapt_vqe`
+- `run_lr_vqe`
+- `run_eom_vqe`
+- `run_qse`
+- `run_eom_qse`
+- `run_ssvqe`
+- `run_vqd`
+
+Use it for:
+
+- ground-state optimization
+- excited-state studies
+- ansatz / optimizer / mapping comparisons
+- geometry scans
+- noisy VQE experiments
+
+### `qpe`
+
+Includes:
+
+- `run_qpe`
+
+Use it for:
+
+- phase-to-energy estimation
+- ancilla / shot studies
+- controlled time-evolution experiments
+
+### `qite`
+
+Includes:
+
+- `run_qite`
+- `run_qrte`
+
+Use it for:
+
+- imaginary-time relaxation with `VarQITE`
+- real-time dynamics with `VarQRTE`
+- prepared-state quench workflows
+
+Important:
+
+- `VarQITE` is a state-finding / relaxation method
+- `VarQRTE` is a dynamics method, not an eigensolver
+- for time-independent Hamiltonians, `VarQRTE` should usually conserve energy up to numerical error
+
+## Shared Infrastructure
+
+All solver packages use the same chemistry layer in `common/`.
+
+That gives you:
 
 - consistent Hamiltonians across algorithms
-- reproducible experiment signatures
-- standardised output locations
+- comparable outputs across methods
+- shared run signatures and cache reuse
+- standardized result and image paths
 
----
+Main shared modules:
 
-## VQE Package
+- `common/molecules.py`
+- `common/geometry.py`
+- `common/hamiltonian.py`
+- `common/persist.py`
+- `common/plotting.py`
+- `common/paths.py`
 
-Ground-state and excited-state workflows.
+## Outputs And Reproducibility
 
-### Capabilities
+Generated outputs are written under:
 
-- VQE, ADAPT-VQE
-- LR-VQE, EOM-VQE
-- QSE, EOM-QSE
-- SSVQE, VQD
-- noise support
-- geometry scans
-
-### Canonical entrypoint
-
-```python
-from vqe.core import run_vqe
-
-res = run_vqe(
-    molecule="H2",
-    ansatz_name="UCCSD",
-    optimizer_name="Adam",
-    steps=50,
-)
-
-print(res["energy"])
+```text
+results/vqe/
+results/qpe/
+results/qite/
+images/vqe/
+images/qpe/
+images/qite/
 ```
 
----
+General behavior:
 
-## QPE Package
+- run configurations are hashed deterministically
+- matching runs reuse cached JSON records
+- `--force` recomputes instead of loading cache
 
-Quantum Phase Estimation using shared Hamiltonians.
+## Notebooks
 
-### Features
+Notebook guide:
 
-- Trotterized time evolution
-- inverse QFT
-- noisy and noiseless execution
-- cached runs
+- [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md)
 
-### Canonical entrypoint
+Layout:
 
-```python
-from common.hamiltonian import build_hamiltonian
-from qpe.core import run_qpe
+- `notebooks/getting_started/` for usage-oriented demos
+- `notebooks/benchmarks/` for exact-reference, comparison, and scan workflows
 
-H, n_qubits, hf_state = build_hamiltonian("H2")
+Recommended starting points:
 
-res = run_qpe(
-    hamiltonian=H,
-    hf_state=hf_state,
-    n_ancilla=4,
-)
+- [`notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`](notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb)
+- [`notebooks/getting_started/06_getting_started_qite_h2.ipynb`](notebooks/getting_started/06_getting_started_qite_h2.ipynb)
+- [`notebooks/getting_started/13_getting_started_qrte_h2.ipynb`](notebooks/getting_started/13_getting_started_qrte_h2.ipynb)
+- [`notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`](notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb)
 
-print(res["energy"])
+## Documentation
+
+Use these in order:
+
+1. [`README.md`](README.md) for orientation and quickstart
+2. [`USAGE.md`](USAGE.md) for CLI and Python entrypoints
+3. [`THEORY.md`](THEORY.md) for algorithmic background
+4. [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md) for notebook navigation
+
+Deeper implementation notes:
+
+- [`more_docs/architecture.md`](more_docs/architecture.md)
+- `more_docs/vqe/`
+- `more_docs/qpe/`
+- `more_docs/qite/`
+
+## Repository Layout
+
+```text
+Variational_Quantum_Eigensolver/
+├── vqe/
+├── qpe/
+├── qite/
+├── common/
+├── notebooks/
+│   ├── getting_started/
+│   └── benchmarks/
+├── results/
+├── images/
+├── README.md
+├── USAGE.md
+├── THEORY.md
+└── pyproject.toml
 ```
-
----
-
-## QITE / Projected-Dynamics Package
-
-Imaginary-time evolution via the McLachlan variational principle.
-
-### Capabilities
-
-- variational imaginary-time updates
-- convergence tracking
-- cached trajectories
-- optional noisy evaluation
-
-### Canonical entrypoint
-
-```python
-from qite.core import run_qite
-
-res = run_qite(
-    molecule="H2",
-    ansatz_name="UCCSD",
-    steps=50,
-    dtau=0.2,
-)
-
-print(res["energy"])
-```
-
----
-
-## Command-Line Interface
-
-### VQE
-
-```bash
-python -m vqe -m H2 -a UCCSD -o Adam --steps 50
-```
-
-### QPE
-
-```bash
-python -m qpe --molecule H2 --ancillas 4 --shots 2000
-```
-
-### QITE
-
-```bash
-python -m qite run --molecule H2 --steps 50 --dtau 0.2
-```
-
-Full workflows:
-
-⚙️ [`USAGE.md`](USAGE.md)
-
----
-
-## Reproducibility
-
-All solvers share:
-
-- deterministic configuration hashing
-- standardised result storage
-- consistent naming conventions
-- cached experiment reuse
-
-Outputs are stored under:
-
-```
-results/<module>/
-images/<module>/<MOLECULE>/
-```
-
----
 
 ## Testing
 
 ```bash
-pytest -v
+pytest -q
 ```
-
-Tests cover:
-
-- core algorithm execution
-- Hamiltonian construction
-- CLI workflows
-- smoke tests for packaged interfaces
-
----
 
 ## Author
 
-**Sid Richards**
+Sid Richards
 
-LinkedIn:
-[https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
-
-GitHub:
-[https://github.com/SidRichardsQuantum](https://github.com/SidRichardsQuantum)
-
----
+- LinkedIn: [sid-richards-21374b30b](https://www.linkedin.com/in/sid-richards-21374b30b/)
+- GitHub: [SidRichardsQuantum](https://github.com/SidRichardsQuantum)
 
 ## License
 
-MIT License — see [LICENSE](LICENSE)
+MIT. See [LICENSE](LICENSE).
