@@ -1,5 +1,22 @@
 # Quantum Simulation Suite
 
+<p align="center">
+
+<a href="https://pypi.org/project/vqe-pennylane/">
+<img src="https://img.shields.io/pypi/v/vqe-pennylane?style=flat-square" alt="PyPI Version">
+</a>
+<a href="https://pypi.org/project/vqe-pennylane/">
+<img src="https://img.shields.io/pypi/pyversions/vqe-pennylane?style=flat-square" alt="Python Versions">
+</a>
+<a href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/actions/workflows/tests.yml">
+<img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
+</a>
+<a href="LICENSE">
+<img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
+</a>
+
+</p>
+
 PennyLane-based workflows for:
 
 - ground-state VQE
