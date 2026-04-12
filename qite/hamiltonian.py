@@ -30,6 +30,8 @@ def build_hamiltonian(
     basis: str | None = None,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str, str]:
     mapping_out = str(mapping).strip().lower()
     unit_in = str(unit).strip().lower()
@@ -49,6 +51,8 @@ def build_hamiltonian(
         coordinates=coordinates,
         charge=charge,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
         mapping=mapping_out,
         unit=unit_in,
         return_metadata=True,

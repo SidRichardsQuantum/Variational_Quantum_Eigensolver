@@ -128,6 +128,21 @@ def _validated_geometry_inputs(
     return symbols, coordinates
 
 
+def _active_space_kwargs(args) -> dict[str, int | None]:
+    return {
+        "active_electrons": (
+            None
+            if getattr(args, "active_electrons", None) is None
+            else int(args.active_electrons)
+        ),
+        "active_orbitals": (
+            None
+            if getattr(args, "active_orbitals", None) is None
+            else int(args.active_orbitals)
+        ),
+    }
+
+
 def _builtin_noise_from_args(args) -> dict[str, float]:
     return {
         "depolarizing": float(args.depolarizing_prob),
@@ -175,6 +190,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_p.add_argument("--basis", type=str, default="sto-3g")
     run_p.add_argument("--charge", type=int, default=0)
+    run_p.add_argument("--active-electrons", type=int, default=None)
+    run_p.add_argument("--active-orbitals", type=int, default=None)
     run_p.add_argument(
         "--symbols",
         type=str,
@@ -221,6 +238,8 @@ def build_parser() -> argparse.ArgumentParser:
     qrte_p.add_argument("--seed", type=int, default=0)
     qrte_p.add_argument("--basis", type=str, default="sto-3g")
     qrte_p.add_argument("--charge", type=int, default=0)
+    qrte_p.add_argument("--active-electrons", type=int, default=None)
+    qrte_p.add_argument("--active-orbitals", type=int, default=None)
     qrte_p.add_argument(
         "--symbols",
         type=str,
@@ -272,6 +291,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     ev_p.add_argument("--basis", type=str, default="sto-3g")
     ev_p.add_argument("--charge", type=int, default=0)
+    ev_p.add_argument("--active-electrons", type=int, default=None)
+    ev_p.add_argument("--active-orbitals", type=int, default=None)
     ev_p.add_argument(
         "--symbols",
         type=str,
@@ -397,6 +418,7 @@ def _run_varqite(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        **_active_space_kwargs(args),
         mapping=str(args.mapping),
         unit=str(args.unit),
         plot=bool(plot),
@@ -424,6 +446,7 @@ def _run_varqrte(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        **_active_space_kwargs(args),
         mapping=str(args.mapping),
         unit=str(args.unit),
         plot=bool(plot),
@@ -444,6 +467,8 @@ def _noisy_eval_energy_and_diag(
     coordinates,
     basis: str,
     charge: int,
+    active_electrons: int | None,
+    active_orbitals: int | None,
     hf_state,
     ansatz: str,
     seed: int,
@@ -466,6 +491,8 @@ def _noisy_eval_energy_and_diag(
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
         basis=str(basis).strip().lower(),
         requires_grad=False,
         hf_state=hf_state,
@@ -513,6 +540,8 @@ def _unpack_hamiltonian_metadata(
     coordinates: Optional[np.ndarray] = None,
     basis: Optional[str] = None,
     charge: Optional[int] = None,
+    active_electrons: Optional[int] = None,
+    active_orbitals: Optional[int] = None,
 ):
     """
     Build Hamiltonian metadata in either registry mode or explicit geometry mode.
@@ -528,12 +557,20 @@ def _unpack_hamiltonian_metadata(
             coordinates=np.array(coordinates, dtype=float),
             charge=int(charge) if charge is not None else None,
             basis=str(basis) if basis is not None else None,
+            active_electrons=(
+                None if active_electrons is None else int(active_electrons)
+            ),
+            active_orbitals=(None if active_orbitals is None else int(active_orbitals)),
             mapping=str(mapping),
             unit=str(unit),
         )
     else:
         out = build_hamiltonian(
             molecule=str(molecule),
+            active_electrons=(
+                None if active_electrons is None else int(active_electrons)
+            ),
+            active_orbitals=(None if active_orbitals is None else int(active_orbitals)),
             mapping=str(mapping),
             unit=str(unit),
         )
@@ -615,6 +652,8 @@ def eval_noise(args) -> dict:
             coordinates=coordinates_in,
             basis=str(args.basis),
             charge=int(args.charge),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
         )
     )
 
@@ -639,6 +678,7 @@ def eval_noise(args) -> dict:
             coordinates=coordinates_in,
             basis=str(args.basis),
             charge=int(args.charge),
+            **_active_space_kwargs(args),
             mapping=str(args.mapping),
             unit=str(args.unit),
             plot=False,
@@ -663,6 +703,8 @@ def eval_noise(args) -> dict:
             coordinates=coordinates,
             basis=str(basis),
             charge=int(charge),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             hf_state=np.array(hf_state, dtype=int),
             ansatz=str(args.ansatz),
             seed=int(args.seed),
@@ -717,6 +759,8 @@ def eval_noise(args) -> dict:
                 coordinates=coordinates,
                 basis=str(basis),
                 charge=int(charge),
+                active_electrons=getattr(args, "active_electrons", None),
+                active_orbitals=getattr(args, "active_orbitals", None),
                 hf_state=np.array(hf_state, dtype=int),
                 ansatz=str(args.ansatz),
                 seed=int(sd),

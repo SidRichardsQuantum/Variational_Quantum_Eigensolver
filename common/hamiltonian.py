@@ -82,6 +82,8 @@ def hartree_fock_state_from_molecule(
     charge: int,
     basis: str,
     n_qubits: int,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> np.ndarray:
     """
     Compute Hartree–Fock occupation bitstring using PennyLane-qchem Molecule.
@@ -97,13 +99,82 @@ def hartree_fock_state_from_molecule(
     # Ensure plain array for qchem
     coords = np.array(coordinates, dtype=float)
 
-    try:
-        mol = qchem.Molecule(symbols, coords, charge=charge, basis=basis)
-    except TypeError:
-        mol = qchem.Molecule(symbols, coords, charge=charge)
+    electrons, spin_orbitals, _active_orbitals = resolve_active_space(
+        symbols=symbols,
+        coordinates=coords,
+        charge=charge,
+        basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+    )
+    return qchem.hf_state(electrons, spin_orbitals)
 
-    electrons = int(mol.n_electrons)
-    return qchem.hf_state(electrons, n_qubits)
+
+def _make_molecule(
+    *,
+    symbols: list[str],
+    coordinates: np.ndarray,
+    charge: int,
+    basis: str,
+):
+    coords = np.array(coordinates, dtype=float)
+    try:
+        return qchem.Molecule(symbols, coords, charge=charge, basis=basis)
+    except TypeError:
+        return qchem.Molecule(symbols, coords, charge=charge)
+
+
+def resolve_active_space(
+    *,
+    symbols: list[str],
+    coordinates: np.ndarray,
+    charge: int,
+    basis: str,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+) -> tuple[int, int, tuple[int | None, int | None]]:
+    """
+    Resolve active-space settings into electron and spin-orbital counts.
+
+    Returns
+    -------
+    (electrons, spin_orbitals, (resolved_active_electrons, resolved_active_orbitals))
+    """
+    mol = _make_molecule(
+        symbols=list(symbols),
+        coordinates=np.array(coordinates, dtype=float),
+        charge=int(charge),
+        basis=str(basis),
+    )
+
+    total_electrons = int(mol.n_electrons)
+    total_orbitals = int(mol.n_orbitals)
+
+    ae = None if active_electrons is None else int(active_electrons)
+    ao = None if active_orbitals is None else int(active_orbitals)
+
+    if ae is None and ao is None:
+        return total_electrons, 2 * total_orbitals, (None, None)
+
+    if ae is not None and ae <= 0:
+        raise ValueError("active_electrons must be a positive integer when provided")
+    if ao is not None and ao <= 0:
+        raise ValueError("active_orbitals must be a positive integer when provided")
+
+    core, active = qchem.active_space(
+        total_electrons,
+        total_orbitals,
+        mult=1,
+        active_electrons=ae,
+        active_orbitals=ao,
+    )
+    resolved_active_orbitals = int(len(active))
+    resolved_active_electrons = int(total_electrons - 2 * len(core))
+    return (
+        resolved_active_electrons,
+        2 * resolved_active_orbitals,
+        (resolved_active_electrons, resolved_active_orbitals),
+    )
 
 
 # ---------------------------------------------------------------------
@@ -118,6 +189,8 @@ def build_molecular_hamiltonian(
     mapping: Optional[str] = None,
     unit: str = "angstrom",
     method_fallback: bool = True,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int]:
     """
     Build a molecular qubit Hamiltonian using PennyLane-qchem.
@@ -153,6 +226,10 @@ def build_molecular_hamiltonian(
             basis=basis,
             unit=unit_norm,
         )
+        if active_electrons is not None:
+            kwargs["active_electrons"] = int(active_electrons)
+        if active_orbitals is not None:
+            kwargs["active_orbitals"] = int(active_orbitals)
         if mapping_kw is not None:
             kwargs["mapping"] = mapping_kw
 
@@ -170,6 +247,10 @@ def build_molecular_hamiltonian(
                     basis=basis,
                     unit=unit_norm,
                 )
+                if active_electrons is not None:
+                    kwargs["active_electrons"] = int(active_electrons)
+                if active_orbitals is not None:
+                    kwargs["active_orbitals"] = int(active_orbitals)
                 H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
                 return H, int(n_qubits)
             except Exception:
@@ -198,6 +279,10 @@ def build_molecular_hamiltonian(
             unit=unit_norm,
             method="openfermion",
         )
+        if active_electrons is not None:
+            kwargs["active_electrons"] = int(active_electrons)
+        if active_orbitals is not None:
+            kwargs["active_orbitals"] = int(active_orbitals)
         if mapping_kw is not None:
             try:
                 kwargs["mapping"] = mapping_kw
@@ -222,6 +307,8 @@ def build_from_molecule_name(
     *,
     mapping: Optional[str] = None,
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, Dict[str, Any]]:
     """
     Convenience wrapper for the common molecule registry.
@@ -239,6 +326,8 @@ def build_from_molecule_name(
         basis=cfg["basis"],
         mapping=mapping,
         unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
     return H, n_qubits, cfg
 
@@ -256,6 +345,8 @@ def build_hamiltonian(
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     return_metadata: bool = False,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ):
     """
     Unified Hamiltonian entrypoint.
@@ -320,6 +411,8 @@ def build_hamiltonian(
             mapping=mapping_norm,
             unit=unit_norm,
             method_fallback=True,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
         )
         hf_state = hartree_fock_state_from_molecule(
             symbols=sym,
@@ -327,6 +420,8 @@ def build_hamiltonian(
             charge=chg,
             basis=bas,
             n_qubits=int(n_qubits),
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
         )
 
         hf_state = np.array(hf_state, dtype=int)
@@ -416,6 +511,8 @@ def build_hamiltonian(
         mapping=mapping_norm,
         unit=unit_norm,
         method_fallback=True,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
     hf_state = hartree_fock_state_from_molecule(
         symbols=list(sym),
@@ -423,6 +520,8 @@ def build_hamiltonian(
         charge=int(chg),
         basis=str(bas).lower(),
         n_qubits=int(n_qubits),
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     hf_state = np.array(hf_state, dtype=int)

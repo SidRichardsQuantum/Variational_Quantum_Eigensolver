@@ -28,20 +28,35 @@ Workflows and APIs for:
 All stacks share the same pipeline:
 
 ```
-molecule → geometry → Hamiltonian → algorithm → results + cache
+problem spec → resolved problem → algorithm → results + cache
 ```
 
-Interface contract:
+Lower-level chemistry contract:
 
 ```python
 H, n_qubits, hf_state = build_hamiltonian(...)
 ```
 
+High-level shared resolver:
+
+```python
+problem = resolve_problem(...)
+```
+
+from:
+
+```python
+from common.problem import resolve_problem
+```
+
 Implications:
 
 - identical physics across all methods
+- one normalization path for molecule, explicit-geometry, and expert-mode inputs
 - reproducible cross-algorithm comparisons
 - unified caching and output structure
+
+There is also an expert-mode path for prebuilt qubit Hamiltonians when you do not want molecule or geometry inputs.
 
 ---
 
@@ -119,6 +134,41 @@ qite run --molecule H2 --steps 50 --dtau 0.2
 qite run-qrte --molecule H2 --steps 20 --dt 0.05
 ```
 
+Python expert-mode example:
+
+```python
+import pennylane as qml
+
+from qite.core import run_qite
+from vqe.core import run_vqe
+
+H_model = qml.Hamiltonian(
+    [1.0, 0.4],
+    [qml.PauliZ(0), qml.PauliX(0)],
+)
+
+vqe_res = run_vqe(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    optimizer_name="Adam",
+    steps=10,
+    plot=False,
+)
+
+qite_res = run_qite(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    steps=10,
+    dtau=0.1,
+    plot=False,
+    show=False,
+)
+```
+
 ---
 
 # VQE Workflows
@@ -160,6 +210,38 @@ res = run_vqe(molecule="H2")
 
 print(res["energy"])
 ```
+
+### Non-molecule expert mode
+
+Use this when you already have a qubit Hamiltonian and want to benchmark VQE directly.
+
+```python
+import pennylane as qml
+
+from vqe.core import run_vqe
+
+H_model = qml.Hamiltonian(
+    [1.0, -0.7],
+    [qml.PauliZ(0), qml.PauliX(0)],
+)
+
+res = run_vqe(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    optimizer_name="Adam",
+    steps=20,
+    plot=False,
+)
+```
+
+Notes:
+
+- expert-mode VQE is Python-only
+- prebuilt-Hamiltonian runs bypass chemistry cache lookup / save paths
+- `reference_state` should be a computational-basis bitstring of length `num_qubits`
+- generic model Hamiltonians should use non-chemistry ansatzes unless you also provide chemistry metadata
 
 ---
 
@@ -323,6 +405,34 @@ res = run_qpe(
 print(res["energy"])
 ```
 
+Expert-mode QPE also supports direct qubit-Hamiltonian input:
+
+```python
+import pennylane as qml
+
+from qpe.core import run_qpe
+
+H_model = qml.Hamiltonian(
+    [1.0, 0.5],
+    [qml.PauliZ(0), qml.PauliX(0)],
+)
+
+res = run_qpe(
+    hamiltonian=H_model,
+    hf_state=[1],
+    system_qubits=1,
+    n_ancilla=4,
+    shots=2000,
+    plot=False,
+)
+```
+
+Notes:
+
+- QPE expert mode requires both `hamiltonian` and `hf_state`
+- `system_qubits` defaults to the `hf_state` length when omitted, but cannot be smaller than the Hamiltonian wire count
+- prebuilt-Hamiltonian QPE runs bypass cache lookup / save paths
+
 ---
 
 ## Noise
@@ -396,6 +506,43 @@ res = run_qite(
 )
 
 print(res["energy"])
+```
+
+### Non-molecule expert mode
+
+`run_qite(...)` and `run_qrte(...)` also accept a prebuilt qubit Hamiltonian:
+
+```python
+import pennylane as qml
+
+from qite.core import run_qite, run_qrte
+
+H_model = qml.Hamiltonian(
+    [1.0, 0.25],
+    [qml.PauliZ(0), qml.PauliX(0)],
+)
+
+qite_res = run_qite(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    steps=10,
+    dtau=0.1,
+    plot=False,
+    show=False,
+)
+
+qrte_res = run_qrte(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    steps=10,
+    dt=0.05,
+    plot=False,
+    show=False,
+)
 ```
 
 ## Real-time run

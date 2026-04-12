@@ -81,3 +81,18 @@ def test_explicit_mode_preserves_input_coordinate_unit_metadata() -> None:
 def test_invalid_coordinate_unit_is_rejected() -> None:
     with pytest.raises(ValueError, match="Unsupported coordinate unit"):
         build_hamiltonian(molecule="H2", unit="nanometers")
+
+
+def test_active_space_reduces_lih_qubit_count() -> None:
+    full_hamiltonian, full_qubits, full_hf = build_hamiltonian(molecule="LiH")
+    active_hamiltonian, active_qubits, active_hf = build_hamiltonian(
+        molecule="LiH",
+        active_electrons=2,
+        active_orbitals=2,
+    )
+
+    assert full_qubits > active_qubits
+    assert active_qubits == 4
+    assert len(active_hf) == active_qubits
+    assert len(active_hamiltonian) > 0
+    assert len(full_hamiltonian) > 0

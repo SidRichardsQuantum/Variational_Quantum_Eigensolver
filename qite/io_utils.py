@@ -51,6 +51,8 @@ def make_run_config_dict(
     molecule_label: str,
     ansatz_name: str,
     noise_model_name: str | None = None,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     fd_eps: float | None = None,
     reg: float | None = None,
     solver: str | None = None,
@@ -81,6 +83,10 @@ def make_run_config_dict(
         "charge": int(charge),
         "unit": str(unit).strip().lower(),
         "mapping": str(mapping).strip().lower(),
+        "active_electrons": (
+            None if active_electrons is None else int(active_electrons)
+        ),
+        "active_orbitals": (None if active_orbitals is None else int(active_orbitals)),
         "seed": int(seed),
         "noisy": bool(bool(noise)),
         "noise": noise,

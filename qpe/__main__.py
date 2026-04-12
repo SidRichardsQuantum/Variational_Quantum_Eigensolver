@@ -132,6 +132,18 @@ def parse_args():
         default=0,
         help="Total molecular charge for explicit geometry mode",
     )
+    parser.add_argument(
+        "--active-electrons",
+        type=int,
+        default=None,
+        help="Optional active-space electron count for chemistry Hamiltonian construction.",
+    )
+    parser.add_argument(
+        "--active-orbitals",
+        type=int,
+        default=None,
+        help="Optional active-space spatial orbital count for chemistry Hamiltonian construction.",
+    )
 
     parser.add_argument(
         "--mapping",
@@ -267,6 +279,16 @@ def main():
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        active_electrons=(
+            None
+            if getattr(args, "active_electrons", None) is None
+            else int(args.active_electrons)
+        ),
+        active_orbitals=(
+            None
+            if getattr(args, "active_orbitals", None) is None
+            else int(args.active_orbitals)
+        ),
         mapping=str(args.mapping),
         unit=str(args.unit),
     )

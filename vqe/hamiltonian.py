@@ -60,6 +60,8 @@ def build_hamiltonian(
     basis: Optional[str] = None,
     mapping: Optional[str] = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str]:
     (
         H,
@@ -76,6 +78,8 @@ def build_hamiltonian(
         coordinates=coordinates,
         charge=charge,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
         mapping=(
             str(mapping).strip().lower() if mapping is not None else "jordan_wigner"
         ),
@@ -103,6 +107,8 @@ def build_hamiltonian_from_geometry(
     basis: str,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str]:
     (
         H,
@@ -118,6 +124,8 @@ def build_hamiltonian_from_geometry(
         coordinates=np.array(coordinates, dtype=float),
         charge=int(charge),
         basis=str(basis),
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
         mapping=str(mapping).strip().lower(),
         unit=str(unit).strip().lower(),
         return_metadata=True,
@@ -140,6 +148,8 @@ def hartree_fock_state(
     *,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> np.ndarray:
     """
     Return the Hartree–Fock occupation bitstring for the molecule.
@@ -148,5 +158,7 @@ def hartree_fock_state(
         molecule=molecule,
         mapping=mapping,
         unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
     return np.array(hf_state, dtype=int)

@@ -50,6 +50,8 @@ def make_run_config_dict(
     molecule_label: str | None = None,
     charge: int = 0,
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Dict[str, Any]:
     """
     Construct a JSON-safe config dict used for hashing/caching.
@@ -77,6 +79,10 @@ def make_run_config_dict(
         "charge": int(charge),
         "unit": str(unit).strip().lower(),
         "mapping": str(mapping).strip().lower(),
+        "active_electrons": (
+            None if active_electrons is None else int(active_electrons)
+        ),
+        "active_orbitals": (None if active_orbitals is None else int(active_orbitals)),
         "seed": int(seed),
         "noisy": bool(bool(noise)),
         "noise": noise,

@@ -22,9 +22,8 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from common.persist import canonical_noise
+from common.problem import resolve_problem
 from qpe.noise import apply_noise_all
-
-from .hamiltonian import build_hamiltonian
 
 
 # ---------------------------------------------------------------------
@@ -198,6 +197,8 @@ def run_qpe(
     charge: int = 0,
     unit: str = "angstrom",
     mapping: str = "jordan_wigner",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     hamiltonian: qml.Hamiltonian | None = None,
     hf_state: np.ndarray | None = None,
     system_qubits: int | None = None,
@@ -215,72 +216,40 @@ def run_qpe(
 
     ensure_dirs()
     np.random.seed(int(seed))
-    cache_enabled = hamiltonian is None and hf_state is None
-
-    mapping_norm = str(mapping).strip().lower()
-    basis_norm = str(basis).strip().lower()
-    unit_norm = str(unit).strip().lower()
-    charge_int = int(charge)
-
-    # -------------------------
-    # Resolve Hamiltonian / HF state
-    # -------------------------
-    if hamiltonian is not None and hf_state is not None:
-        H = hamiltonian
-        hf_bits = np.array(hf_state, dtype=int)
-        molecule_label = str(molecule).strip() or "molecule"
-        symbols_out = list(symbols) if symbols is not None else []
-        coordinates_out = (
-            np.array(coordinates, dtype=float)
-            if coordinates is not None
-            else np.array([])
+    if (hamiltonian is None) != (hf_state is None):
+        raise ValueError(
+            "QPE expert mode requires both hamiltonian and hf_state together."
         )
-        basis_out = basis_norm
-        charge_out = charge_int
-        unit_out = unit_norm
-        qubits = int(system_qubits) if system_qubits is not None else len(hf_bits)
 
-    elif symbols is not None and coordinates is not None:
-        (
-            H,
-            qubits,
-            hf_bits,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=charge_int,
-            basis=basis_norm,
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip() or "molecule"
-
-    else:
-        (
-            H,
-            qubits,
-            hf_bits,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=str(molecule),
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip()
-
-    basis_out = str(basis_out).strip().lower()
-    unit_out = str(unit_out).strip().lower()
-    charge_out = int(charge_out)
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        mapping=mapping,
+        unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=system_qubits,
+        reference_state=hf_state,
+        require_reference_state=hamiltonian is not None,
+        reference_name="hf_state",
+    )
+    H = problem.hamiltonian
+    hf_bits = np.array(problem.reference_state, dtype=int)
+    molecule_label = problem.molecule_label
+    symbols_out = problem.symbols
+    coordinates_out = problem.coordinates
+    basis_out = problem.basis
+    charge_out = problem.charge
+    unit_out = problem.unit
+    qubits = problem.num_qubits
+    resolved_active_electrons = problem.active_electrons
+    resolved_active_orbitals = problem.active_orbitals
+    mapping_norm = problem.mapping
+    cache_enabled = problem.cacheable
 
     # -------------------------
     # Normalise noise
@@ -315,6 +284,8 @@ def run_qpe(
             trotter_steps=int(trotter_steps),
             mapping=mapping_norm,
             unit=unit_out,
+            active_electrons=resolved_active_electrons,
+            active_orbitals=resolved_active_orbitals,
         )
         if cached is not None:
             return cached
@@ -418,6 +389,8 @@ def run_qpe(
         "noise": dict(norm_noise),
         "shots": shots_i,
         "mapping": mapping_norm,
+        "active_electrons": resolved_active_electrons,
+        "active_orbitals": resolved_active_orbitals,
         "num_qubits": int(qubits),
     }
 

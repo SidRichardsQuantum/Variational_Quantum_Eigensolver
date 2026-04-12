@@ -35,6 +35,7 @@ flowchart LR
         M[molecules]
         G[geometry]
         H[hamiltonian]
+        R[problem]
         U[utils: plotting + persist]
     end
 
@@ -79,27 +80,38 @@ Implications:
 ```mermaid
 flowchart TD
 
-    A[molecule / params]
-    B[geometry generation]
-    C[Hamiltonian construction]
-    D[(H, n_qubits, hf_state)]
-    E[Algorithm: VQE / QPE / QITE]
-    F[Results + cache + plots]
+    A[molecule / geometry / expert Hamiltonian]
+    B[problem resolution]
+    C[geometry generation if needed]
+    D[Hamiltonian construction]
+    E[(resolved problem)]
+    F[Algorithm: VQE / QPE / QITE]
+    G[Results + cache + plots]
 
-    A --> B --> C --> D --> E --> F
+    A --> B --> C --> D --> E --> F --> G
 ```
 
 ---
 
-### Interface Contract
+### Interface Contracts
 
-All stacks consume:
+Lower-level chemistry construction:
 
 ```python
 H, n_qubits, hf_state = build_hamiltonian(...)
 ```
 
-This is the **only entrypoint into the physics layer**.
+Shared solver-facing resolution:
+
+```python
+problem = resolve_problem(...)
+```
+
+This is the entrypoint that normalizes:
+
+- molecule-registry inputs
+- explicit molecular geometries
+- expert-mode prebuilt qubit Hamiltonians
 
 ---
 
@@ -124,12 +136,14 @@ flowchart TD
     M[molecules.py]
     G[geometry.py]
     H[hamiltonian.py]
+    R[problem.py]
     P[persist.py]
     PL[plotting.py]
 
     M --> H
     G --> H
-    H --> OUT[(H, hf_state)]
+    H --> R
+    R --> OUT[(resolved problem)]
     P --> CACHE[(cache)]
     PL --> IMG[(plots)]
 ```

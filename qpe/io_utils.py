@@ -46,6 +46,8 @@ def signature_hash(
     seed: int = 0,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     shots: Optional[int] = None,
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
@@ -74,6 +76,10 @@ def signature_hash(
         "noise": nz,
         "mapping": str(mapping).strip().lower(),
         "unit": str(unit).strip().lower(),
+        "active_electrons": (
+            None if active_electrons is None else int(active_electrons)
+        ),
+        "active_orbitals": (None if active_orbitals is None else int(active_orbitals)),
     }
     return stable_hash_cfg(cfg, ndigits=10, n_hex=12)
 
@@ -152,6 +158,8 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         noise=noise,
         mapping=result.get("mapping", "jordan_wigner"),
         unit=result.get("unit", "angstrom"),
+        active_electrons=result.get("active_electrons"),
+        active_orbitals=result.get("active_orbitals"),
     )
 
     path = cache_path(
@@ -184,6 +192,8 @@ def load_qpe_result(
     trotter_steps: int,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ) -> Optional[Dict[str, Any]]:
     key = signature_hash(
         molecule=molecule,
@@ -199,6 +209,8 @@ def load_qpe_result(
         noise=noise or {},
         mapping=mapping,
         unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     path = cache_path(

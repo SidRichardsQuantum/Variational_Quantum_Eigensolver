@@ -131,6 +131,21 @@ def _validated_geometry_inputs(
     return symbols, coordinates
 
 
+def _active_space_kwargs(args) -> dict[str, int | None]:
+    return {
+        "active_electrons": (
+            None
+            if getattr(args, "active_electrons", None) is None
+            else int(args.active_electrons)
+        ),
+        "active_orbitals": (
+            None
+            if getattr(args, "active_orbitals", None) is None
+            else int(args.active_orbitals)
+        ),
+    }
+
+
 # ================================================================
 # SPECIAL MODES DISPATCHER
 # ================================================================
@@ -421,6 +436,8 @@ def handle_special_modes(args) -> bool:
             steps=args.steps,
             stepsize=args.stepsize,
             force=args.force,
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
         )
         return True
 
@@ -510,6 +527,7 @@ def handle_special_modes(args) -> bool:
             coordinates=coordinates,
             basis=str(args.basis),
             charge=int(args.charge),
+            **_active_space_kwargs(args),
             unit=str(args.unit),
             mapping=args.mapping,
             force=bool(args.force),
@@ -533,6 +551,7 @@ def handle_special_modes(args) -> bool:
             coordinates=coordinates,
             basis=str(args.basis),
             charge=int(args.charge),
+            **_active_space_kwargs(args),
             unit=str(args.unit),
             mapping=args.mapping,
             force=bool(args.force),
@@ -598,6 +617,18 @@ def main() -> None:
         type=int,
         default=0,
         help="Molecular charge used in explicit geometry mode.",
+    )
+    core.add_argument(
+        "--active-electrons",
+        type=int,
+        default=None,
+        help="Optional active-space electron count for chemistry Hamiltonian construction.",
+    )
+    core.add_argument(
+        "--active-orbitals",
+        type=int,
+        default=None,
+        help="Optional active-space spatial orbital count for chemistry Hamiltonian construction.",
     )
     core.add_argument(
         "--unit",
@@ -991,6 +1022,7 @@ def main() -> None:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        **_active_space_kwargs(args),
         unit=str(args.unit),
         mapping=str(args.mapping),
         plot=bool(args.plot),

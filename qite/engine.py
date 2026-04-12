@@ -21,6 +21,7 @@ Notes
 
 from __future__ import annotations
 
+import inspect
 from typing import Any, Callable, Optional, Tuple
 
 import pennylane as qml
@@ -135,6 +136,8 @@ def build_ansatz(
     coordinates=None,
     charge: int = 0,
     basis: Optional[str] = None,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     requires_grad: bool = True,
     hf_state: Optional[np.ndarray] = None,
 ) -> Tuple[Callable[[np.ndarray], None], np.ndarray]:
@@ -161,16 +164,21 @@ def build_ansatz(
         inner_builder = getattr(_vqe_engine_mod, "build_ansatz", None)
         inner_call = getattr(_vqe_engine_mod, "_call_ansatz", None)
         if callable(inner_builder) and callable(inner_call):
-            inner_fn, init = inner_builder(
-                name,
-                n,
-                seed=int(seed),
-                symbols=symbols,
-                coordinates=coordinates,
-                charge=int(charge),
-                basis=basis if basis is not None else "sto-3g",
-                requires_grad=bool(requires_grad),
-            )
+            builder_kwargs = {
+                "seed": int(seed),
+                "symbols": symbols,
+                "coordinates": coordinates,
+                "charge": int(charge),
+                "basis": basis if basis is not None else "sto-3g",
+                "requires_grad": bool(requires_grad),
+            }
+            builder_supported = set(inspect.signature(inner_builder).parameters)
+            if "active_electrons" in builder_supported:
+                builder_kwargs["active_electrons"] = active_electrons
+            if "active_orbitals" in builder_supported:
+                builder_kwargs["active_orbitals"] = active_orbitals
+
+            inner_fn, init = inner_builder(name, n, **builder_kwargs)
             init_params = np.array(init, requires_grad=bool(requires_grad))
             chemistry_style = False
             try:
@@ -193,6 +201,8 @@ def build_ansatz(
                     symbols=symbols,
                     coordinates=coordinates,
                     charge=int(charge),
+                    active_electrons=active_electrons,
+                    active_orbitals=active_orbitals,
                     reference_state=(hf if chemistry_style else None),
                     prepare_reference=(True if chemistry_style else None),
                     basis=basis,

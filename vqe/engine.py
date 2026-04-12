@@ -38,6 +38,7 @@ import inspect
 from typing import Callable, Iterable, Optional
 
 import pennylane as qml
+from pennylane import numpy as np
 
 from common.noise import apply_builtin_noise
 
@@ -171,6 +172,8 @@ def _call_ansatz(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     reference_state=None,
     prepare_reference: Optional[bool] = None,
     basis: Optional[str] = None,
@@ -188,6 +191,15 @@ def _call_ansatz(
     wires = list(wires)
     supported = _supported_ansatz_kwargs(ansatz_fn)
 
+    if reference_state is not None and "reference_state" not in supported:
+        ref = np.array(reference_state, dtype=int)
+        if len(ref) != len(wires):
+            raise ValueError(
+                f"reference_state length ({len(ref)}) does not match number of wires "
+                f"({len(wires)})."
+            )
+        qml.BasisState(ref, wires=wires)
+
     kwargs = {}
     if "symbols" in supported:
         kwargs["symbols"] = symbols
@@ -195,6 +207,10 @@ def _call_ansatz(
         kwargs["coordinates"] = coordinates
     if "charge" in supported:
         kwargs["charge"] = int(charge)
+    if "active_electrons" in supported:
+        kwargs["active_electrons"] = active_electrons
+    if "active_orbitals" in supported:
+        kwargs["active_orbitals"] = active_orbitals
     if "basis" in supported and basis is not None:
         kwargs["basis"] = basis
     if "reference_state" in supported:
@@ -213,7 +229,10 @@ def build_ansatz(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    reference_state=None,
     basis: str = "sto-3g",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     requires_grad: bool = True,
     scale: float = 0.01,
 ):
@@ -236,6 +255,8 @@ def build_ansatz(
         coordinates=coordinates,
         charge=int(charge),
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
         seed=seed,
     )
     return ansatz_fn, params
@@ -283,7 +304,10 @@ def make_energy_qnode(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    reference_state=None,
     basis: str = "sto-3g",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -304,6 +328,9 @@ def make_energy_qnode(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            reference_state=reference_state,
             basis=basis,
         )
         apply_optional_noise(
@@ -336,7 +363,10 @@ def make_state_qnode(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    reference_state=None,
     basis: str = "sto-3g",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -360,6 +390,9 @@ def make_state_qnode(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            reference_state=reference_state,
             basis=basis,
         )
         apply_optional_noise(
@@ -392,7 +425,10 @@ def make_overlap00_fn(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    reference_state=None,
     basis: str = "sto-3g",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -417,6 +453,8 @@ def make_overlap00_fn(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
             basis=basis,
         )
         apply_optional_noise(

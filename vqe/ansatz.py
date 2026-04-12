@@ -113,10 +113,24 @@ def hardware_efficient_ansatz(params, wires):
 # ================================================================
 # UCC-STYLE CHEMISTRY ANSATZES
 # ================================================================
-def _ucc_cache_key(symbols, coordinates, basis: str, charge: int):
+def _ucc_cache_key(
+    symbols,
+    coordinates,
+    basis: str,
+    charge: int,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+):
     """Build a hashable cache key from molecular data."""
     coords = np.array(coordinates, dtype=float).flatten().tolist()
-    return (tuple(symbols), tuple(coords), basis.upper(), int(charge))
+    return (
+        tuple(symbols),
+        tuple(coords),
+        basis.upper(),
+        int(charge),
+        None if active_electrons is None else int(active_electrons),
+        None if active_orbitals is None else int(active_orbitals),
+    )
 
 
 def _build_ucc_data(
@@ -124,6 +138,8 @@ def _build_ucc_data(
     coordinates,
     basis: str = "STO-3G",
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
 ):
     """
     Compute (singles, doubles, hf_state) for a given molecule and cache them.
@@ -143,7 +159,14 @@ def _build_ucc_data(
         )
 
     charge_int = int(charge)
-    key = _ucc_cache_key(symbols, coordinates, basis, charge_int)
+    key = _ucc_cache_key(
+        symbols,
+        coordinates,
+        basis,
+        charge_int,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+    )
 
     if not hasattr(_build_ucc_data, "_cache"):
         _build_ucc_data._cache = {}
@@ -154,8 +177,23 @@ def _build_ucc_data(
         except TypeError:
             mol = qchem.Molecule(symbols, coordinates, charge=charge_int)
 
-        electrons = mol.n_electrons
-        spin_orbitals = 2 * mol.n_orbitals
+        if active_electrons is None and active_orbitals is None:
+            electrons = int(mol.n_electrons)
+            spin_orbitals = 2 * int(mol.n_orbitals)
+        else:
+            core, active = qchem.active_space(
+                int(mol.n_electrons),
+                int(mol.n_orbitals),
+                mult=1,
+                active_electrons=(
+                    None if active_electrons is None else int(active_electrons)
+                ),
+                active_orbitals=(
+                    None if active_orbitals is None else int(active_orbitals)
+                ),
+            )
+            electrons = int(mol.n_electrons) - 2 * len(core)
+            spin_orbitals = 2 * len(active)
 
         singles, doubles = qchem.excitations(electrons, spin_orbitals)
         hf_state = qchem.hf_state(electrons, spin_orbitals)
@@ -244,6 +282,8 @@ def uccsd_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -274,6 +314,8 @@ def uccsd_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     _apply_ucc_layers(
@@ -297,6 +339,8 @@ def uccd_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -320,6 +364,8 @@ def uccd_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     _apply_ucc_layers(
@@ -343,6 +389,8 @@ def uccs_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     reference_state=None,
     prepare_reference: bool = True,
 ):
@@ -357,6 +405,8 @@ def uccs_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     _apply_ucc_layers(
@@ -413,6 +463,8 @@ def init_params(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     seed: int = 0,
 ):
     """
@@ -474,6 +526,8 @@ def init_params(
             coordinates,
             basis=basis,
             charge=charge,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
         )
 
         if ansatz_name in ["UCC-D", "UCCD"]:

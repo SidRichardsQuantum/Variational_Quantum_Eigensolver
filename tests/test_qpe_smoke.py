@@ -5,6 +5,8 @@ import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pennylane as qml
+import pytest
 
 import qpe.io_utils as qpe_io_utils
 from common.hamiltonian import build_hamiltonian
@@ -137,6 +139,13 @@ def test_qpe_hamiltonian_override_bypasses_cache_and_plotting(monkeypatch) -> No
 
     assert isinstance(res, dict)
     assert "phase" in res
+
+
+def test_qpe_rejects_partial_expert_mode() -> None:
+    H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
+
+    with pytest.raises(ValueError, match="both hamiltonian and hf_state"):
+        run_qpe(hamiltonian=H, n_ancilla=1, shots=10, plot=False)
 
 
 def test_qpe_distribution_displays_right_to_left_kets(monkeypatch) -> None:

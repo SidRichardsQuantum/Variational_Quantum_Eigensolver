@@ -214,6 +214,45 @@ def test_qpe_cache_roundtrip() -> None:
     assert loaded == payload
 
 
+def test_qpe_signature_hash_changes_with_active_space() -> None:
+    base = qpe_signature_hash(
+        molecule="LiH",
+        symbols=["Li", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.6]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=2,
+        t=1.0,
+        seed=0,
+        shots=100,
+        noise={},
+        trotter_steps=1,
+        mapping="jordan_wigner",
+        unit="angstrom",
+        active_electrons=2,
+        active_orbitals=2,
+    )
+    changed = qpe_signature_hash(
+        molecule="LiH",
+        symbols=["Li", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.6]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=2,
+        t=1.0,
+        seed=0,
+        shots=100,
+        noise={},
+        trotter_steps=1,
+        mapping="jordan_wigner",
+        unit="angstrom",
+        active_electrons=2,
+        active_orbitals=3,
+    )
+
+    assert base != changed
+
+
 def test_qite_run_signature_changes_with_charge_and_unit() -> None:
     cfg = qite_make_run_config_dict(
         symbols=["H", "H"],
@@ -242,6 +281,58 @@ def test_qite_run_signature_changes_with_charge_and_unit() -> None:
 
     assert qite_run_signature(cfg) != qite_run_signature(cfg_charge)
     assert qite_run_signature(cfg) != qite_run_signature(cfg_unit)
+
+
+def test_vqe_run_signature_changes_with_active_space() -> None:
+    cfg = vqe_make_run_config_dict(
+        symbols=["Li", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.6]],
+        basis="sto-3g",
+        ansatz_desc="UCCSD",
+        optimizer_name="Adam",
+        stepsize=0.2,
+        max_iterations=5,
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        molecule_label="LiH",
+        charge=0,
+        unit="angstrom",
+        active_electrons=2,
+        active_orbitals=2,
+    )
+    cfg2 = copy.deepcopy(cfg)
+    cfg2["active_orbitals"] = 3
+
+    assert vqe_run_signature(cfg) != vqe_run_signature(cfg2)
+
+
+def test_qite_run_signature_changes_with_active_space() -> None:
+    cfg = qite_make_run_config_dict(
+        symbols=["Li", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.6]],
+        basis="sto-3g",
+        charge=0,
+        unit="angstrom",
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
+        dtau=0.1,
+        steps=10,
+        molecule_label="LiH",
+        ansatz_name="UCCSD",
+        active_electrons=2,
+        active_orbitals=2,
+    )
+    cfg2 = copy.deepcopy(cfg)
+    cfg2["active_electrons"] = 4
+
+    assert qite_run_signature(cfg) != qite_run_signature(cfg2)
 
 
 def test_qpe_signature_changes_with_geometry_metadata() -> None:

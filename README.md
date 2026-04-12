@@ -37,6 +37,7 @@ Implemented packages:
 Use this repo if you want:
 
 - one Hamiltonian pipeline shared across VQE, QPE, and QITE/QRTE
+- one shared problem-resolution layer for molecule, explicit-geometry, and expert-mode inputs
 - reproducible runs with stable cache keys and JSON outputs
 - both Python APIs and CLI workflows
 - notebooks that separate demos from benchmarks
@@ -58,6 +59,8 @@ Use `QPE` when you want spectral / phase information rather than a compact varia
 Use `VarQITE` when you want imaginary-time relaxation toward a low-energy state.
 
 Use `VarQRTE` when you already have a relevant state and want to evolve it in real time and analyze observables.
+
+Use expert-mode Hamiltonian inputs when you want to benchmark algorithms on non-chemistry qubit models without going through the molecule / geometry pipeline.
 
 ## Install
 
@@ -86,6 +89,8 @@ python -c "import vqe, qpe, qite, common; print('Quantum stacks imported success
 Python:
 
 ```python
+import pennylane as qml
+
 from vqe import run_vqe
 from qite import run_qite, run_qrte
 
@@ -97,6 +102,17 @@ print("VarQITE:", qite_res["energy"])
 
 qrte_res = run_qrte(molecule="H2", steps=20, dt=0.05)
 print("VarQRTE final energy:", qrte_res["energy"])
+
+H_model = qml.Hamiltonian([1.0, 0.5], [qml.PauliZ(0), qml.PauliX(0)])
+model_res = run_vqe(
+    hamiltonian=H_model,
+    num_qubits=1,
+    reference_state=[1],
+    ansatz_name="RY-CZ",
+    steps=10,
+    plot=False,
+)
+print("Model VQE:", model_res["energy"])
 ```
 
 CLI:
@@ -192,9 +208,28 @@ Main shared modules:
 - `common/molecules.py`
 - `common/geometry.py`
 - `common/hamiltonian.py`
+- `common/problem.py`
 - `common/persist.py`
 - `common/plotting.py`
 - `common/paths.py`
+
+## Non-Molecule Mode
+
+The Python APIs also support a direct qubit-Hamiltonian mode for algorithm benchmarking outside chemistry.
+
+Currently supported:
+
+- `run_vqe(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+- `run_qite(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+- `run_qrte(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+- `run_qpe(..., hamiltonian=H, hf_state=..., system_qubits=...)`
+
+Notes:
+
+- this is a Python expert-mode API, not a CLI feature
+- arbitrary qubit wire labels are normalized internally
+- `run_qpe(...)` expert mode requires both `hamiltonian` and `hf_state`
+- chemistry-specific ansatzes like `UCCSD` still require chemistry metadata; for generic model Hamiltonians prefer ansatzes like `RY-CZ`, `Minimal`, or `StronglyEntanglingLayers`
 
 ## Outputs And Reproducibility
 

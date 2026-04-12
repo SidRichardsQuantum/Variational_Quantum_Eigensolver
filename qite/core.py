@@ -20,8 +20,10 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+import pennylane as qml
 from pennylane import numpy as np
 
+from common.problem import resolve_problem
 from qite.engine import build_ansatz as engine_build_ansatz
 from qite.engine import (
     make_device,
@@ -30,7 +32,6 @@ from qite.engine import (
     qite_step,
     qrte_step,
 )
-from qite.hamiltonian import build_hamiltonian
 from qite.io_utils import (
     ensure_dirs,
     load_run_record,
@@ -77,6 +78,8 @@ def run_qite(
     charge: int = 0,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     show: bool = True,
     fd_eps: float = 1e-3,
     reg: float = 1e-6,
@@ -89,6 +92,9 @@ def run_qite(
     bit_flip_prob: float = 0.0,
     phase_flip_prob: float = 0.0,
     noise_model=None,
+    hamiltonian: qml.Hamiltonian | None = None,
+    num_qubits: int | None = None,
+    reference_state=None,
 ) -> Dict[str, Any]:
     """
     Run VarQITE end-to-end with caching.
@@ -130,54 +136,35 @@ def run_qite(
             "post-evaluation under noise."
         )
 
-    # --- Hamiltonian pipeline (single source of truth) ---
-    mapping_norm = str(mapping).strip().lower()
-    basis_norm = str(basis).strip().lower()
-    unit_norm = str(unit).strip().lower()
-    charge_int = int(charge)
-
-    if symbols is not None and coordinates is not None:
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            mapping_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=charge_int,
-            basis=basis_norm,
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip() or "molecule"
-    else:
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            mapping_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=str(molecule),
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip()
-
-    basis_out = str(basis_out).strip().lower()
-    unit_out = str(unit_out).strip().lower()
-    charge_out = int(charge_out)
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        mapping=mapping,
+        unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+        default_reference_state=True,
+        reference_name="reference_state",
+    )
+    H = problem.hamiltonian
+    qubits = problem.num_qubits
+    hf_state = np.array(problem.reference_state, dtype=int)
+    symbols_out = problem.symbols
+    coordinates_out = problem.coordinates
+    basis_out = problem.basis
+    charge_out = problem.charge
+    mapping_out = problem.mapping
+    unit_out = problem.unit
+    molecule_label = problem.molecule_label
+    resolved_active_electrons = problem.active_electrons
+    resolved_active_orbitals = problem.active_orbitals
+    cache_enabled = problem.cacheable
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -199,27 +186,31 @@ def run_qite(
         molecule_label=molecule_label,
         ansatz_name=str(ansatz_name),
         noise_model_name=None,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
     )
 
-    sig = run_signature(cfg)
-    prefix = make_filename_prefix(
-        cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqite"
-    )
+    prefix = None
+    if cache_enabled:
+        sig = run_signature(cfg)
+        prefix = make_filename_prefix(
+            cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqite"
+        )
 
-    if not force:
-        record = load_run_record(prefix)
-        if record is not None:
-            res = record["result"]
-            if "final_params" not in res or "final_params_shape" not in res:
-                raise KeyError(
-                    "Cached VarQITE record is missing final parameters. "
-                    "Re-run with force=True to refresh the cache."
-                )
-            return res
+        if not force:
+            record = load_run_record(prefix)
+            if record is not None:
+                res = record["result"]
+                if "final_params" not in res or "final_params_shape" not in res:
+                    raise KeyError(
+                        "Cached VarQITE record is missing final parameters. "
+                        "Re-run with force=True to refresh the cache."
+                    )
+                return res
 
     # --- Device, ansatz, QNodes ---
     dev = make_device(int(qubits), noisy=False)
@@ -232,6 +223,8 @@ def run_qite(
         coordinates=np.array(coordinates_out, dtype=float),
         charge=int(charge_out),
         basis=str(basis_out),
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
         requires_grad=True,
         hf_state=np.array(hf_state, dtype=int),
     )
@@ -315,6 +308,8 @@ def run_qite(
         "unit": str(unit_out),
         "charge": int(charge_out),
         "basis": str(basis_out),
+        "active_electrons": resolved_active_electrons,
+        "active_orbitals": resolved_active_orbitals,
         "ansatz": str(ansatz_name),
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],
@@ -334,8 +329,9 @@ def run_qite(
     }
 
     record = {"config": cfg, "result": result}
-    save_run_record(prefix, record)
-    print(f"\n💾 Saved run record: {prefix}.json\n")
+    if cache_enabled and prefix is not None:
+        save_run_record(prefix, record)
+        print(f"\n💾 Saved run record: {prefix}.json\n")
 
     return result
 
@@ -355,6 +351,8 @@ def run_qrte(
     charge: int = 0,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     show: bool = True,
     fd_eps: float = 1e-3,
     reg: float = 1e-6,
@@ -368,6 +366,9 @@ def run_qrte(
     phase_flip_prob: float = 0.0,
     noise_model=None,
     initial_params=None,
+    hamiltonian: qml.Hamiltonian | None = None,
+    num_qubits: int | None = None,
+    reference_state=None,
 ) -> Dict[str, Any]:
     """
     Run VarQRTE end-to-end with caching.
@@ -392,53 +393,35 @@ def run_qrte(
             "noisy/mixed-state simulation."
         )
 
-    mapping_norm = str(mapping).strip().lower()
-    basis_norm = str(basis).strip().lower()
-    unit_norm = str(unit).strip().lower()
-    charge_int = int(charge)
-
-    if symbols is not None and coordinates is not None:
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            mapping_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=charge_int,
-            basis=basis_norm,
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip() or "molecule"
-    else:
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            mapping_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=str(molecule),
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-        molecule_label = str(molecule).strip()
-
-    basis_out = str(basis_out).strip().lower()
-    unit_out = str(unit_out).strip().lower()
-    charge_out = int(charge_out)
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        mapping=mapping,
+        unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+        default_reference_state=True,
+        reference_name="reference_state",
+    )
+    H = problem.hamiltonian
+    qubits = problem.num_qubits
+    hf_state = np.array(problem.reference_state, dtype=int)
+    symbols_out = problem.symbols
+    coordinates_out = problem.coordinates
+    basis_out = problem.basis
+    charge_out = problem.charge
+    mapping_out = problem.mapping
+    unit_out = problem.unit
+    molecule_label = problem.molecule_label
+    resolved_active_electrons = problem.active_electrons
+    resolved_active_orbitals = problem.active_orbitals
+    cache_enabled = problem.cacheable
 
     dev = make_device(int(qubits), noisy=False)
 
@@ -450,6 +433,8 @@ def run_qrte(
         coordinates=np.array(coordinates_out, dtype=float),
         charge=int(charge_out),
         basis=str(basis_out),
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
         requires_grad=True,
         hf_state=np.array(hf_state, dtype=int),
     )
@@ -488,6 +473,8 @@ def run_qrte(
         molecule_label=molecule_label,
         ansatz_name=str(ansatz_name),
         noise_model_name=None,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
@@ -501,21 +488,23 @@ def run_qrte(
             8,
         ).tolist()
 
-    sig = run_signature(cfg)
-    prefix = make_filename_prefix(
-        cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqrte"
-    )
+    prefix = None
+    if cache_enabled:
+        sig = run_signature(cfg)
+        prefix = make_filename_prefix(
+            cfg, noisy=False, seed=int(seed), hash_str=sig, algo="varqrte"
+        )
 
-    if not force:
-        record = load_run_record(prefix)
-        if record is not None:
-            res = record["result"]
-            if "final_params" not in res or "final_params_shape" not in res:
-                raise KeyError(
-                    "Cached VarQRTE record is missing final parameters. "
-                    "Re-run with force=True to refresh the cache."
-                )
-            return res
+        if not force:
+            record = load_run_record(prefix)
+            if record is not None:
+                res = record["result"]
+                if "final_params" not in res or "final_params_shape" not in res:
+                    raise KeyError(
+                        "Cached VarQRTE record is missing final parameters. "
+                        "Re-run with force=True to refresh the cache."
+                    )
+                return res
 
     energy_qnode = make_energy_qnode(
         H,
@@ -598,6 +587,8 @@ def run_qrte(
         "unit": str(unit_out),
         "charge": int(charge_out),
         "basis": str(basis_out),
+        "active_electrons": resolved_active_electrons,
+        "active_orbitals": resolved_active_orbitals,
         "ansatz": str(ansatz_name),
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],
@@ -620,7 +611,8 @@ def run_qrte(
     }
 
     record = {"config": cfg, "result": result}
-    save_run_record(prefix, record)
-    print(f"\n💾 Saved run record: {prefix}.json\n")
+    if cache_enabled and prefix is not None:
+        save_run_record(prefix, record)
+        print(f"\n💾 Saved run record: {prefix}.json\n")
 
     return result

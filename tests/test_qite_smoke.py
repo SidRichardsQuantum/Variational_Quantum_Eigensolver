@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
+import pennylane as qml
 import pytest
 
+import qite.core as qite_core
 from qite import run_qite, run_qrte
 from qite.engine import build_ansatz
 from vqe import run_vqe
@@ -73,6 +75,35 @@ def test_qite_charged_uccsd_smoke() -> None:
     assert isinstance(res, dict)
     assert np.isfinite(float(res["energy"]))
     assert len(res["final_params"]) >= 1
+
+
+def test_qite_prebuilt_hamiltonian_smoke_and_bypass_cache(monkeypatch) -> None:
+    H = qml.Hamiltonian([1.0], [qml.PauliZ(4)])
+
+    def fail_load(_prefix):
+        raise AssertionError("expert-mode QITE should not read from cache")
+
+    def fail_save(_prefix, _record):
+        raise AssertionError("expert-mode QITE should not save to cache")
+
+    monkeypatch.setattr(qite_core, "load_run_record", fail_load)
+    monkeypatch.setattr(qite_core, "save_run_record", fail_save)
+
+    res = run_qite(
+        hamiltonian=H,
+        num_qubits=1,
+        reference_state=[1],
+        ansatz_name="RY-CZ",
+        steps=2,
+        dtau=0.1,
+        force=False,
+        plot=False,
+        show=False,
+    )
+
+    assert isinstance(res, dict)
+    assert np.isfinite(float(res["energy"]))
+    assert int(res["num_qubits"]) == 1
 
 
 def test_qite_engine_delegates_charge_aware_builder(

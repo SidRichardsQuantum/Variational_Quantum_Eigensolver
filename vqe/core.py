@@ -13,8 +13,10 @@ Includes:
 
 from __future__ import annotations
 
+import pennylane as qml
 from pennylane import numpy as np
 
+from common.problem import resolve_problem
 from common.units import coordinate_unit_label
 
 from .engine import (
@@ -28,10 +30,7 @@ from .engine import (
     make_energy_qnode,
     make_state_qnode,
 )
-from .hamiltonian import (
-    build_hamiltonian,
-    generate_geometry,
-)
+from .hamiltonian import build_hamiltonian, generate_geometry
 from .io_utils import (
     ensure_dirs,
     load_run_record,
@@ -143,61 +142,42 @@ def run_vqe(
     charge: int = 0,
     unit: str = "angstrom",
     mapping: str = "jordan_wigner",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+    hamiltonian: qml.Hamiltonian | None = None,
+    num_qubits: int | None = None,
+    reference_state=None,
 ):
     ensure_dirs()
     np.random.seed(int(seed))
 
     mapping_norm = str(mapping).strip().lower()
-    basis_norm = str(basis).strip().lower()
-    unit_norm = str(unit).strip().lower()
-    charge_int = int(charge)
-
-    # --- Hamiltonian & molecular data (VQE-facing adapters only) ---
-    if symbols is not None and coordinates is not None:
-        sym = list(symbols)
-        coords = np.array(coordinates, dtype=float)
-
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=sym,
-            coordinates=coords,
-            charge=charge_int,
-            basis=basis_norm,
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-
-        molecule_label = str(molecule).strip() or "molecule"
-    else:
-        (
-            H,
-            qubits,
-            hf_state,
-            symbols_out,
-            coordinates_out,
-            basis_out,
-            charge_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=str(molecule),
-            mapping=mapping_norm,
-            unit=unit_norm,
-        )
-
-        molecule_label = str(molecule).strip()
-
-    basis_out = str(basis_out).strip().lower()
-    unit_out = str(unit_out).strip().lower()
-    charge_out = int(charge_out)
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        mapping=mapping,
+        unit=unit,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+        reference_name="reference_state",
+    )
+    H = problem.hamiltonian
+    qubits = problem.num_qubits
+    molecule_label = problem.molecule_label
+    symbols_out = problem.symbols
+    coordinates_out = problem.coordinates
+    basis_out = problem.basis
+    charge_out = problem.charge
+    unit_out = problem.unit
+    resolved_active_electrons = problem.active_electrons
+    resolved_active_orbitals = problem.active_orbitals
+    cache_enabled = problem.cacheable
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -219,21 +199,25 @@ def run_vqe(
         molecule_label=molecule_label,
         charge=charge_out,
         unit=unit_out,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
     )
 
-    sig = run_signature(cfg)
-    prefix = make_filename_prefix(
-        cfg,
-        noisy=bool(cfg.get("noise")),
-        seed=int(seed),
-        hash_str=sig,
-        algo="vqe",
-    )
+    prefix = None
+    if cache_enabled:
+        sig = run_signature(cfg)
+        prefix = make_filename_prefix(
+            cfg,
+            noisy=bool(cfg.get("noise")),
+            seed=int(seed),
+            hash_str=sig,
+            algo="vqe",
+        )
 
-    if not force:
-        record = load_run_record(prefix)
-        if record is not None:
-            return record["result"]
+        if not force:
+            record = load_run_record(prefix)
+            if record is not None:
+                return record["result"]
 
     # --- Device, ansatz, optim, QNodes ---
     dev = make_device(int(qubits), noisy=bool(cfg.get("noise")))
@@ -246,6 +230,9 @@ def run_vqe(
         coordinates=coordinates_out,
         charge=charge_out,
         basis=basis_out,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
+        reference_state=reference_state,
     )
 
     energy_qnode = make_energy_qnode(
@@ -263,6 +250,9 @@ def run_vqe(
         coordinates=coordinates_out,
         charge=charge_out,
         basis=basis_out,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
+        reference_state=reference_state,
     )
 
     state_qnode = make_state_qnode(
@@ -279,6 +269,8 @@ def run_vqe(
         coordinates=coordinates_out,
         charge=charge_out,
         basis=basis_out,
+        active_electrons=resolved_active_electrons,
+        active_orbitals=resolved_active_orbitals,
     )
 
     opt = engine_build_optimizer(str(optimizer_name), stepsize=float(stepsize))
@@ -333,12 +325,15 @@ def run_vqe(
         "final_state_real": np.real(final_state).tolist(),
         "final_state_imag": np.imag(final_state).tolist(),
         "num_qubits": int(qubits),
+        "active_electrons": resolved_active_electrons,
+        "active_orbitals": resolved_active_orbitals,
         "final_params": final_params,
         "params_history": params_history,
     }
 
-    save_run_record(prefix, {"config": cfg, "result": result})
-    print(f"\n💾 Saved run record: {prefix}.json\n")
+    if cache_enabled and prefix is not None:
+        save_run_record(prefix, {"config": cfg, "result": result})
+        print(f"\n💾 Saved run record: {prefix}.json\n")
 
     return result
 
@@ -1114,6 +1109,8 @@ def run_vqe_geometry_scan(
     force=False,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
     show: bool = True,
 ):
     """
@@ -1163,6 +1160,8 @@ def run_vqe_geometry_scan(
                 force=force,
                 mapping=mapping,
                 unit=unit,
+                active_electrons=active_electrons,
+                active_orbitals=active_orbitals,
             )
             energies_for_val.append(res["energy"])
 

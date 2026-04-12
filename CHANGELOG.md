@@ -33,6 +33,8 @@ All notable changes to this project will be documented in this file.
 - Fixed `python -m qpe` to return a nonzero exit code on failure so CI and shell workflows can detect errors reliably.
 - Fixed `python -m qpe` explicit-geometry CLI support to match the documented Python API / changelog contract.
 - Fixed the QPE CLI qubit summary to report the stored system-qubit field correctly.
+- Fixed duplicated solver-side input resolution by routing VQE, QPE, VarQITE, and VarQRTE through a shared `common.problem.resolve_problem(...)` layer.
+- Fixed QPE expert mode to reject partial expert inputs instead of silently falling back when only `hamiltonian` or only `hf_state` is provided.
 
 ### Internal
 
@@ -41,6 +43,7 @@ All notable changes to this project will be documented in this file.
   - analytic `shots=None` execution
   - explicit-geometry CLI invocation
   - nonzero CLI failure status
+- Added direct tests for shared problem resolution, including expert-mode wire normalization and explicit-geometry metadata handling.
 
 ---
 
