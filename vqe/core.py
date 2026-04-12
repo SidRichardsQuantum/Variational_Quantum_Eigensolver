@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from pennylane import numpy as np
 
+from common.units import coordinate_unit_label
+
 from .engine import (
     build_ansatz as engine_build_ansatz,
 )
@@ -66,6 +68,57 @@ def compute_fidelity(pure_state, state_or_rho):
     raise ValueError("Invalid state shape for fidelity computation")
 
 
+def _noise_probs_for_type(noise_type: str, level: float) -> dict[str, float]:
+    level_f = float(level)
+    noise_type_norm = str(noise_type).strip().lower()
+
+    out = {
+        "depolarizing_prob": 0.0,
+        "amplitude_damping_prob": 0.0,
+        "phase_damping_prob": 0.0,
+        "bit_flip_prob": 0.0,
+        "phase_flip_prob": 0.0,
+    }
+
+    if noise_type_norm == "depolarizing":
+        out["depolarizing_prob"] = level_f
+    elif noise_type_norm in {"amplitude", "amplitude_damping"}:
+        out["amplitude_damping_prob"] = level_f
+    elif noise_type_norm in {"phase", "phase_damping"}:
+        out["phase_damping_prob"] = level_f
+    elif noise_type_norm in {"bit", "bit_flip"}:
+        out["bit_flip_prob"] = level_f
+    elif noise_type_norm in {"phase_flip", "phaseflip"}:
+        out["phase_flip_prob"] = level_f
+    elif noise_type_norm == "combined":
+        out["depolarizing_prob"] = level_f
+        out["amplitude_damping_prob"] = level_f
+    else:
+        raise ValueError(
+            "Unknown noise_type "
+            f"{noise_type!r} (use depolarizing, amplitude_damping, phase_damping, "
+            "bit_flip, phase_flip, or combined)."
+        )
+
+    return out
+
+
+def _format_noise_point(noise_kwargs: dict[str, float]) -> str:
+    parts: list[str] = []
+    mapping = (
+        ("depolarizing_prob", "dep"),
+        ("amplitude_damping_prob", "amp"),
+        ("phase_damping_prob", "phase"),
+        ("bit_flip_prob", "bit"),
+        ("phase_flip_prob", "phase_flip"),
+    )
+    for key, label in mapping:
+        val = float(noise_kwargs.get(key, 0.0))
+        if val > 0.0:
+            parts.append(f"{label}={val:g}")
+    return ", ".join(parts)
+
+
 # ================================================================
 # MAIN VQE EXECUTION
 # ================================================================
@@ -80,6 +133,9 @@ def run_vqe(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     force: bool = False,
     symbols=None,
     coordinates=None,
@@ -157,6 +213,9 @@ def run_vqe(
         noisy=bool(noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
         molecule_label=molecule_label,
         charge=charge_out,
         unit=unit_out,
@@ -197,6 +256,9 @@ def run_vqe(
         noisy=bool(cfg.get("noise")),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
         symbols=symbols_out,
         coordinates=coordinates_out,
         charge=charge_out,
@@ -210,6 +272,9 @@ def run_vqe(
         noisy=bool(cfg.get("noise")),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
         symbols=symbols_out,
         coordinates=coordinates_out,
         charge=charge_out,
@@ -253,6 +318,11 @@ def run_vqe(
             molecule_label,
             optimizer=str(optimizer_name),
             ansatz=str(ansatz_name),
+            dep_prob=float(depolarizing_prob),
+            amp_prob=float(amplitude_damping_prob),
+            phase_prob=float(phase_damping_prob),
+            bit_flip_prob=float(bit_flip_prob),
+            phase_flip_prob=float(phase_flip_prob),
         )
 
     # --- Save ---
@@ -285,9 +355,12 @@ def run_vqe_optimizer_comparison(
     noisy: bool = True,
     depolarizing_prob: float = 0.05,
     amplitude_damping_prob: float = 0.05,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     seed: int = 0,
-    mode: str = "convergence",  # "convergence" (legacy) or "noise_stats"
-    noise_type: str = "depolarizing",  # "depolarizing" | "amplitude" | "combined"
+    mode: str = "convergence",
+    noise_type: str = "depolarizing",
     noise_levels=None,
     seeds=None,
     reference: str = "per_seed_noiseless",
@@ -302,7 +375,7 @@ def run_vqe_optimizer_comparison(
 
     This function supports two modes:
 
-    1) mode="convergence" (legacy / backward-compatible)
+    1) mode="convergence"
        - Runs each optimizer once (single seed, single noise point).
        - Returns energy trajectories vs iteration.
 
@@ -317,10 +390,10 @@ def run_vqe_optimizer_comparison(
     ----------
     stepsize : float | dict
     noise_type : str
-        "depolarizing", "amplitude", or "combined".
-        - depolarizing: (p_dep = level, p_amp = 0)
-        - amplitude:    (p_dep = 0,    p_amp = level)
-        - combined:     (p_dep = level, p_amp = level)
+        Built-in channel to sweep in `mode="noise_stats"`.
+        Supported values:
+        `depolarizing`, `amplitude_damping`, `phase_damping`,
+        `bit_flip`, `phase_flip`, `combined`.
     reference : str
         Currently only "per_seed_noiseless" is supported:
         compute noiseless reference energy/state for each seed (and optimizer).
@@ -363,6 +436,9 @@ def run_vqe_optimizer_comparison(
                 noisy=noisy,
                 depolarizing_prob=depolarizing_prob,
                 amplitude_damping_prob=amplitude_damping_prob,
+                phase_damping_prob=phase_damping_prob,
+                bit_flip_prob=bit_flip_prob,
+                phase_flip_prob=phase_flip_prob,
                 mapping=mapping,
                 force=force,
                 unit=unit,
@@ -379,9 +455,13 @@ def run_vqe_optimizer_comparison(
 
             title_noise = ""
             if noisy:
-                title_noise = (
-                    f" (dep={depolarizing_prob}, amp={amplitude_damping_prob})"
-                )
+                title_noise = f" ({_format_noise_point({
+                        'depolarizing_prob': depolarizing_prob,
+                        'amplitude_damping_prob': amplitude_damping_prob,
+                        'phase_damping_prob': phase_damping_prob,
+                        'bit_flip_prob': bit_flip_prob,
+                        'phase_flip_prob': phase_flip_prob,
+                    })})"
             plt.title(f"{molecule} – Optimizer Comparison ({ansatz_name}){title_noise}")
             plt.xlabel("Iteration")
             plt.ylabel("Energy (Ha)")
@@ -428,21 +508,8 @@ def run_vqe_optimizer_comparison(
     else:
         noise_levels = np.asarray(noise_levels)
 
-    # Build dep/amp arrays from noise_type
     noise_type = str(noise_type).lower()
-    if noise_type == "depolarizing":
-        dep_levels = noise_levels
-        amp_levels = np.zeros_like(noise_levels)
-    elif noise_type == "amplitude":
-        dep_levels = np.zeros_like(noise_levels)
-        amp_levels = noise_levels
-    elif noise_type == "combined":
-        dep_levels = noise_levels
-        amp_levels = noise_levels
-    else:
-        raise ValueError(
-            f"Unknown noise_type '{noise_type}' (use depolarizing/amplitude/combined)."
-        )
+    _noise_probs_for_type(noise_type, 0.0)
 
     out = {
         "mode": "noise_stats",
@@ -493,9 +560,8 @@ def run_vqe_optimizer_comparison(
 
         # Noisy sweep
         print("  🔹 Sweeping noise levels...")
-        for p_dep, p_amp in zip(dep_levels, amp_levels):
-            p_dep_f = float(p_dep)
-            p_amp_f = float(p_amp)
+        for level in noise_levels:
+            noise_kwargs = _noise_probs_for_type(noise_type, float(level))
 
             dEs = []
             Fs = []
@@ -511,8 +577,7 @@ def run_vqe_optimizer_comparison(
                     ansatz_name=ansatz_name,
                     optimizer_name=opt_name,
                     noisy=True,
-                    depolarizing_prob=p_dep_f,
-                    amplitude_damping_prob=p_amp_f,
+                    **noise_kwargs,
                     mapping=mapping,
                     force=force,
                     seed=s_int,
@@ -544,7 +609,7 @@ def run_vqe_optimizer_comparison(
             fid_std.append(float(np.std(Fs)))
 
             print(
-                f"    p_dep={p_dep_f:.2f}, p_amp={p_amp_f:.2f}: "
+                f"    {_format_noise_point(noise_kwargs)}: "
                 f"ΔE={deltaE_mean[-1]:.6f} ± {deltaE_std[-1]:.6f}, "
                 f"⟨F⟩={fid_mean[-1]:.4f} ± {fid_std[-1]:.4f}"
             )
@@ -629,9 +694,12 @@ def run_vqe_ansatz_comparison(
     noisy: bool = True,
     depolarizing_prob: float = 0.05,
     amplitude_damping_prob: float = 0.05,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     seed: int = 0,
-    mode: str = "convergence",  # "convergence" (legacy) or "noise_stats"
-    noise_type: str = "depolarizing",  # "depolarizing" | "amplitude" | "combined"
+    mode: str = "convergence",
+    noise_type: str = "depolarizing",
     noise_levels=None,
     seeds=None,
     reference: str = "per_seed_noiseless",
@@ -651,6 +719,7 @@ def run_vqe_ansatz_comparison(
     mode="noise_stats":
         - sweeps noise_levels and averages over seeds for each ansatz
         - computes ΔE (vs per-seed noiseless reference) and fidelity mean/std vs noise
+        - sweeps one built-in channel selected by `noise_type`
     """
     import matplotlib.pyplot as plt
 
@@ -679,6 +748,9 @@ def run_vqe_ansatz_comparison(
                 noisy=noisy,
                 depolarizing_prob=float(depolarizing_prob),
                 amplitude_damping_prob=float(amplitude_damping_prob),
+                phase_damping_prob=float(phase_damping_prob),
+                bit_flip_prob=float(bit_flip_prob),
+                phase_flip_prob=float(phase_flip_prob),
                 mapping=mapping,
                 unit=unit,
                 force=force,
@@ -740,19 +812,7 @@ def run_vqe_ansatz_comparison(
         noise_levels = np.asarray(noise_levels)
 
     noise_type_l = str(noise_type).lower()
-    if noise_type_l == "depolarizing":
-        dep_levels = noise_levels
-        amp_levels = np.zeros_like(noise_levels)
-    elif noise_type_l == "amplitude":
-        dep_levels = np.zeros_like(noise_levels)
-        amp_levels = noise_levels
-    elif noise_type_l == "combined":
-        dep_levels = noise_levels
-        amp_levels = noise_levels
-    else:
-        raise ValueError(
-            f"Unknown noise_type '{noise_type}' (use depolarizing/amplitude/combined)."
-        )
+    _noise_probs_for_type(noise_type_l, 0.0)
 
     out = {
         "mode": "noise_stats",
@@ -802,9 +862,8 @@ def run_vqe_ansatz_comparison(
             ref_state[s_int] = psi
 
         print("  🔹 Sweeping noise levels...")
-        for p_dep, p_amp in zip(dep_levels, amp_levels):
-            p_dep_f = float(p_dep)
-            p_amp_f = float(p_amp)
+        for level in noise_levels:
+            noise_kwargs = _noise_probs_for_type(noise_type_l, float(level))
 
             dEs = []
             Fs = []
@@ -819,8 +878,7 @@ def run_vqe_ansatz_comparison(
                     ansatz_name=ans_name,
                     optimizer_name=optimizer_name,
                     noisy=True,
-                    depolarizing_prob=p_dep_f,
-                    amplitude_damping_prob=p_amp_f,
+                    **noise_kwargs,
                     mapping=mapping,
                     unit=unit,
                     force=force,
@@ -847,7 +905,7 @@ def run_vqe_ansatz_comparison(
             fid_std.append(float(np.std(Fs)))
 
             print(
-                f"    p_dep={p_dep_f:.2f}, p_amp={p_amp_f:.2f}: "
+                f"    {_format_noise_point(noise_kwargs)}: "
                 f"ΔE={deltaE_mean[-1]:.6f} ± {deltaE_std[-1]:.6f}, "
                 f"⟨F⟩={fid_mean[-1]:.4f} ± {fid_std[-1]:.4f}"
             )
@@ -948,19 +1006,8 @@ def run_vqe_multi_seed_noise(
 
     if amplitude_damping_probs is None:
         amplitude_damping_probs = np.zeros_like(depolarizing_probs)
-
-    if noise_type == "depolarizing":
-        amplitude_damping_probs = [0.0] * len(depolarizing_probs)
-
-    elif noise_type == "amplitude":
-        amplitude_damping_probs = depolarizing_probs
-        depolarizing_probs = [0.0] * len(amplitude_damping_probs)
-
-    elif noise_type == "combined":
-        amplitude_damping_probs = depolarizing_probs.copy()
-
-    else:
-        raise ValueError(f"Unknown noise type '{noise_type}'")
+    noise_type_norm = str(noise_type).strip().lower()
+    _noise_probs_for_type(noise_type_norm, 0.0)
 
     print("\n🔹 Computing noiseless reference runs...")
     ref_energies, ref_states = [], []
@@ -993,7 +1040,8 @@ def run_vqe_multi_seed_noise(
     energy_means, energy_stds = [], []
     fidelity_means, fidelity_stds = [], []
 
-    for p_dep, p_amp in zip(depolarizing_probs, amplitude_damping_probs):
+    for level in depolarizing_probs:
+        noise_kwargs = _noise_probs_for_type(noise_type_norm, float(level))
         noisy_energies, fidelities = [], []
         for s in seeds:
             np.random.seed(int(s))
@@ -1005,8 +1053,7 @@ def run_vqe_multi_seed_noise(
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
                 noisy=True,
-                depolarizing_prob=float(p_dep),
-                amplitude_damping_prob=float(p_amp),
+                **noise_kwargs,
                 mapping=mapping,
                 unit=unit,
                 force=force,
@@ -1028,14 +1075,12 @@ def run_vqe_multi_seed_noise(
         fidelity_stds.append(float(np.std(fidelities)))
 
         print(
-            f"Noise p_dep={float(p_dep):.2f}, p_amp={float(p_amp):.2f}: "
+            f"Noise {_format_noise_point(noise_kwargs)}: "
             f"ΔE={energy_means[-1]:.6f} ± {energy_stds[-1]:.6f}, "
             f"⟨F⟩={fidelity_means[-1]:.4f}"
         )
 
-    noise_levels = (
-        amplitude_damping_probs if noise_type == "amplitude" else depolarizing_probs
-    )
+    noise_levels = depolarizing_probs
 
     plot_noise_statistics(
         molecule,
@@ -1046,7 +1091,7 @@ def run_vqe_multi_seed_noise(
         fidelity_stds,
         optimizer_name=optimizer_name,
         ansatz_name=ansatz_name,
-        noise_type=noise_type.capitalize(),
+        noise_type=noise_type_norm,
         show=show,
     )
 
@@ -1129,7 +1174,11 @@ def run_vqe_geometry_scan(
     params, means, stds = zip(*results)
 
     plt.errorbar(params, means, yerr=stds, fmt="o-", capsize=4)
-    plt.xlabel(f"{param_name.capitalize()} (Å or °)")
+    if str(param_name).strip().lower() == "angle":
+        xlabel = f"{param_name.capitalize()} (deg)"
+    else:
+        xlabel = f"{param_name.capitalize()} ({coordinate_unit_label(unit)})"
+    plt.xlabel(xlabel)
     plt.ylabel("Ground-State Energy (Ha)")
     plt.title(
         f"{molecule} Energy vs {param_name.capitalize()} ({ansatz_name}, {optimizer_name})"

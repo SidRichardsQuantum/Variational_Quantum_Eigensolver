@@ -26,6 +26,8 @@ from typing import Any, Callable, Optional, Tuple
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.noise import apply_builtin_noise
+
 
 # =============================================================================
 # DEVICE
@@ -56,6 +58,9 @@ def _apply_noise_layer(
     num_wires: int,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[..., Any]] = None,
 ) -> None:
     """
@@ -63,31 +68,38 @@ def _apply_noise_layer(
 
     Priority:
       1) noise_model(...) if provided
-      2) built-in depolarizing / amplitude damping channels
+      2) built-in single-qubit channels
 
     This is intended for post-evaluation QNodes (default.mixed), not VarQITE updates.
     """
     p_dep = float(depolarizing_prob)
     p_amp = float(amplitude_damping_prob)
+    p_phase = float(phase_damping_prob)
+    p_bit = float(bit_flip_prob)
+    p_phase_flip = float(phase_flip_prob)
 
-    if (p_dep <= 0.0) and (p_amp <= 0.0) and (noise_model is None):
+    if (
+        (p_dep <= 0.0)
+        and (p_amp <= 0.0)
+        and (p_phase <= 0.0)
+        and (p_bit <= 0.0)
+        and (p_phase_flip <= 0.0)
+        and (noise_model is None)
+    ):
         return
 
     if noise_model is not None:
-        noise_model(
-            num_wires=int(num_wires),
-            depolarizing_prob=p_dep,
-            amplitude_damping_prob=p_amp,
-        )
+        noise_model(list(range(int(num_wires))))
         return
 
-    if p_dep > 0.0:
-        for w in range(int(num_wires)):
-            qml.DepolarizingChannel(p_dep, wires=w)
-
-    if p_amp > 0.0:
-        for w in range(int(num_wires)):
-            qml.AmplitudeDamping(p_amp, wires=w)
+    apply_builtin_noise(
+        range(int(num_wires)),
+        depolarizing_prob=p_dep,
+        amplitude_damping_prob=p_amp,
+        phase_damping_prob=p_phase,
+        bit_flip_prob=p_bit,
+        phase_flip_prob=p_phase_flip,
+    )
 
 
 # =============================================================================
@@ -216,6 +228,9 @@ def make_energy_qnode(
     noisy=False,
     depolarizing_prob=0.0,
     amplitude_damping_prob=0.0,
+    phase_damping_prob=0.0,
+    bit_flip_prob=0.0,
+    phase_flip_prob=0.0,
     noise_model=None,
     **_ignored,
 ):
@@ -234,6 +249,9 @@ def make_energy_qnode(
                 num_wires=n,
                 depolarizing_prob=float(depolarizing_prob),
                 amplitude_damping_prob=float(amplitude_damping_prob),
+                phase_damping_prob=float(phase_damping_prob),
+                bit_flip_prob=float(bit_flip_prob),
+                phase_flip_prob=float(phase_flip_prob),
                 noise_model=noise_model,
             )
         return qml.expval(H)
@@ -249,6 +267,9 @@ def make_state_qnode(
     noisy=False,
     depolarizing_prob=0.0,
     amplitude_damping_prob=0.0,
+    phase_damping_prob=0.0,
+    bit_flip_prob=0.0,
+    phase_flip_prob=0.0,
     noise_model=None,
     **_ignored,
 ):
@@ -268,6 +289,9 @@ def make_state_qnode(
                 num_wires=n,
                 depolarizing_prob=float(depolarizing_prob),
                 amplitude_damping_prob=float(amplitude_damping_prob),
+                phase_damping_prob=float(phase_damping_prob),
+                bit_flip_prob=float(bit_flip_prob),
+                phase_flip_prob=float(phase_flip_prob),
                 noise_model=noise_model,
             )
             return qml.density_matrix(wires=list(range(n)))

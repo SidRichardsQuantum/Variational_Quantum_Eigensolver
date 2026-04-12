@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import numpy as np
 
+from common.units import convert_length, normalize_coordinate_unit
 
-def generate_geometry(name: str, param: float):
+
+def generate_geometry(name: str, param: float, *, unit: str = "angstrom"):
     """
     Geometry wrapper.
     Supported conventions:
@@ -25,6 +27,7 @@ def generate_geometry(name: str, param: float):
         raise KeyError("Unknown geometry type: empty name")
 
     up = s.upper().replace(" ", "").replace("-", "_")
+    unit_norm = normalize_coordinate_unit(unit)
 
     if up == "H2_BOND":
         p = float(param)
@@ -49,7 +52,7 @@ def generate_geometry(name: str, param: float):
     if up == "H2O_ANGLE":
         # Angle given in degrees
         theta = np.deg2rad(float(param))
-        bond = 0.958
+        bond = convert_length(0.958, from_unit="angstrom", to_unit=unit_norm)
         return ["O", "H", "H"], np.array(
             [
                 [0.0, 0.0, 0.0],

@@ -109,6 +109,9 @@ def _energy_qnode_factory(
     noisy: bool,
     depolarizing_prob: float,
     amplitude_damping_prob: float,
+    phase_damping_prob: float,
+    bit_flip_prob: float,
+    phase_flip_prob: float,
     noise_model: Optional[Callable[[list[int]], None]],
     diff_method: str,
 ):
@@ -119,6 +122,9 @@ def _energy_qnode_factory(
             bool(noisy),
             float(depolarizing_prob),
             float(amplitude_damping_prob),
+            float(phase_damping_prob),
+            float(bit_flip_prob),
+            float(phase_flip_prob),
             int(num_wires),
             noise_model=noise_model,
         )
@@ -174,6 +180,9 @@ def run_adapt_vqe(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[[list[int]], None]] = None,
     plot: bool = True,
     force: bool = False,
@@ -234,6 +243,9 @@ def run_adapt_vqe(
         noisy=bool(noisy),
         p_dep=float(depolarizing_prob),
         p_amp=float(amplitude_damping_prob),
+        p_phase_damp=float(phase_damping_prob),
+        p_bit_flip=float(bit_flip_prob),
+        p_phase_flip=float(phase_flip_prob),
         model=(None if noise_model is None else "custom"),
     )
     effective_noisy = bool(noise)
@@ -241,6 +253,9 @@ def run_adapt_vqe(
     if not bool(effective_noisy):
         depolarizing_prob = 0.0
         amplitude_damping_prob = 0.0
+        phase_damping_prob = 0.0
+        bit_flip_prob = 0.0
+        phase_flip_prob = 0.0
 
     # Config + caching
     cfg = make_run_config_dict(
@@ -256,6 +271,9 @@ def run_adapt_vqe(
         noisy=bool(effective_noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
         molecule_label=str(molecule).strip(),
     )
     cfg["adapt_pool"] = str(pool).strip().lower()
@@ -310,6 +328,9 @@ def run_adapt_vqe(
             noisy=bool(effective_noisy),
             depolarizing_prob=float(depolarizing_prob),
             amplitude_damping_prob=float(amplitude_damping_prob),
+            phase_damping_prob=float(phase_damping_prob),
+            bit_flip_prob=float(bit_flip_prob),
+            phase_flip_prob=float(phase_flip_prob),
             noise_model=noise_model,
             diff_method=diff_method,
         )
@@ -348,6 +369,9 @@ def run_adapt_vqe(
                 noisy=bool(effective_noisy),
                 depolarizing_prob=float(depolarizing_prob),
                 amplitude_damping_prob=float(amplitude_damping_prob),
+                phase_damping_prob=float(phase_damping_prob),
+                bit_flip_prob=float(bit_flip_prob),
+                phase_flip_prob=float(phase_flip_prob),
                 noise_model=noise_model,
                 diff_method=diff_method,
             )
@@ -399,7 +423,7 @@ def run_adapt_vqe(
             from common.plotting import build_filename, save_plot
 
             plt.figure(figsize=(8, 5))
-            plt.plot(range(len(energies_outer)), energies_outer, marker="o")
+            plt.plot(range(len(energies_outer)), energies_outer, lw=2)
             plt.xlabel("ADAPT iteration")
             plt.ylabel("Energy (Ha)")
             plt.grid(True, alpha=0.35)

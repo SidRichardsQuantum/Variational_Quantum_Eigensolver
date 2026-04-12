@@ -9,6 +9,7 @@ Every molecule entry contains:
     • coordinates  (np.ndarray)
     • charge       (int)
     • basis        (str)
+    • unit         (stored coordinate unit; registry values use angstrom)
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ MOLECULES = {
         ),
         "charge": 0,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     "H3+": {
         "symbols": ["H", "H", "H"],
@@ -38,6 +40,7 @@ MOLECULES = {
         ),
         "charge": +1,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     "LiH": {
         "symbols": ["Li", "H"],
@@ -49,6 +52,7 @@ MOLECULES = {
         ),
         "charge": 0,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     "H2O": {
         "symbols": ["O", "H", "H"],
@@ -61,6 +65,7 @@ MOLECULES = {
         ),
         "charge": 0,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     # ------------------------------------------------------
     # NEW MOLECULES (BeH2, H4-chain, HeH+)
@@ -76,6 +81,7 @@ MOLECULES = {
         ),
         "charge": +1,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     "BeH2": {
         "symbols": ["Be", "H", "H"],
@@ -89,6 +95,7 @@ MOLECULES = {
         ),
         "charge": 0,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
     "H4": {
         "symbols": ["H", "H", "H", "H"],
@@ -103,6 +110,7 @@ MOLECULES = {
         ),
         "charge": 0,
         "basis": "STO-3G",
+        "unit": "angstrom",
     },
 }
 

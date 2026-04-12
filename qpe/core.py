@@ -188,6 +188,9 @@ def run_qpe(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     force: bool = False,
     symbols=None,
     coordinates=None,
@@ -212,6 +215,7 @@ def run_qpe(
 
     ensure_dirs()
     np.random.seed(int(seed))
+    cache_enabled = hamiltonian is None and hf_state is None
 
     mapping_norm = str(mapping).strip().lower()
     basis_norm = str(basis).strip().lower()
@@ -285,6 +289,9 @@ def run_qpe(
         noisy=bool(noisy),
         p_dep=float(depolarizing_prob),
         p_amp=float(amplitude_damping_prob),
+        p_phase_damp=float(phase_damping_prob),
+        p_bit_flip=float(bit_flip_prob),
+        p_phase_flip=float(phase_flip_prob),
         model=None,
     )
 
@@ -293,9 +300,13 @@ def run_qpe(
     # -------------------------
     # Cache lookup
     # -------------------------
-    if not force:
+    if cache_enabled and not force:
         cached = load_qpe_result(
             molecule=molecule_label,
+            symbols=list(symbols_out),
+            geometry=np.array(coordinates_out, dtype=float),
+            basis=str(basis_out),
+            charge=int(charge_out),
             n_ancilla=int(n_ancilla),
             t=float(t),
             seed=int(seed),
@@ -398,10 +409,10 @@ def run_qpe(
     }
 
     if plot:
-        try:
-            plot_qpe_distribution(counts, title=f"QPE counts: {molecule_label}")
-        except NameError:
-            pass
+        from qpe.visualize import plot_qpe_distribution
 
-    save_qpe_result(result)
+        plot_qpe_distribution(result, show=False, save=True)
+
+    if cache_enabled:
+        save_qpe_result(result)
     return result

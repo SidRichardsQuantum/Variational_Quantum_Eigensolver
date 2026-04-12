@@ -39,6 +39,8 @@ from typing import Callable, Iterable, Optional
 
 import pennylane as qml
 
+from common.noise import apply_builtin_noise
+
 from .ansatz import get_ansatz, init_params
 from .optimizer import get_optimizer
 
@@ -65,22 +67,31 @@ def make_device(num_wires: int, noisy: bool = False):
 def _apply_legacy_noise_channels(
     depolarizing_prob: float,
     amplitude_damping_prob: float,
+    phase_damping_prob: float,
+    bit_flip_prob: float,
+    phase_flip_prob: float,
     wires: list[int],
 ):
     """
     Apply the legacy built-in noise channels, if probabilities are > 0.
     """
-    for w in wires:
-        if depolarizing_prob and depolarizing_prob > 0.0:
-            qml.DepolarizingChannel(float(depolarizing_prob), wires=w)
-        if amplitude_damping_prob and amplitude_damping_prob > 0.0:
-            qml.AmplitudeDamping(float(amplitude_damping_prob), wires=w)
+    apply_builtin_noise(
+        wires,
+        depolarizing_prob=float(depolarizing_prob),
+        amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
+    )
 
 
 def apply_optional_noise(
     noisy: bool,
     depolarizing_prob: float,
     amplitude_damping_prob: float,
+    phase_damping_prob: float,
+    bit_flip_prob: float,
+    phase_flip_prob: float,
     num_wires: int,
     *,
     noise_model: Optional[Callable[[list[int]], None]] = None,
@@ -117,9 +128,15 @@ def apply_optional_noise(
 
     wires = list(range(int(num_wires)))
 
-    # Legacy built-ins
-    _apply_legacy_noise_channels(depolarizing_prob, amplitude_damping_prob, wires)
-
+    # Built-in per-wire channels
+    _apply_legacy_noise_channels(
+        depolarizing_prob,
+        amplitude_damping_prob,
+        phase_damping_prob,
+        bit_flip_prob,
+        phase_flip_prob,
+        wires,
+    )
     # Extensible user-provided noise model
     if noise_model is not None:
         noise_model(wires)
@@ -259,6 +276,9 @@ def make_energy_qnode(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
@@ -290,6 +310,9 @@ def make_energy_qnode(
             noisy,
             depolarizing_prob,
             amplitude_damping_prob,
+            phase_damping_prob,
+            bit_flip_prob,
+            phase_flip_prob,
             num_wires,
             noise_model=noise_model,
         )
@@ -306,6 +329,9 @@ def make_state_qnode(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
@@ -340,6 +366,9 @@ def make_state_qnode(
             noisy,
             depolarizing_prob,
             amplitude_damping_prob,
+            phase_damping_prob,
+            bit_flip_prob,
+            phase_flip_prob,
             num_wires,
             noise_model=noise_model,
         )
@@ -356,6 +385,9 @@ def make_overlap00_fn(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
@@ -391,6 +423,9 @@ def make_overlap00_fn(
             noisy,
             depolarizing_prob,
             amplitude_damping_prob,
+            phase_damping_prob,
+            bit_flip_prob,
+            phase_flip_prob,
             num_wires,
             noise_model=noise_model,
         )

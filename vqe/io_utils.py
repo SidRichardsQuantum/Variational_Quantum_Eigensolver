@@ -44,6 +44,9 @@ def make_run_config_dict(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     molecule_label: str | None = None,
     charge: int = 0,
     unit: str = "angstrom",
@@ -60,6 +63,9 @@ def make_run_config_dict(
         noisy=bool(noisy),
         p_dep=float(depolarizing_prob),
         p_amp=float(amplitude_damping_prob),
+        p_phase_damp=float(phase_damping_prob),
+        p_bit_flip=float(bit_flip_prob),
+        p_phase_flip=float(phase_flip_prob),
         model=None,
     )
 
@@ -148,6 +154,9 @@ def make_filename_prefix(
     noise = cfg.get("noise", {}) or {}
     p_dep = float((noise or {}).get("p_dep", 0.0))
     p_amp = float((noise or {}).get("p_amp", 0.0))
+    p_phase = float((noise or {}).get("p_phase_damp", 0.0))
+    p_bit = float((noise or {}).get("p_bit_flip", 0.0))
+    p_phase_flip = float((noise or {}).get("p_phase_flip", 0.0))
 
     parts: list[str] = [
         format_molecule_name(mol),
@@ -158,18 +167,35 @@ def make_filename_prefix(
     if algo_tok is not None:
         parts.append(algo_tok)
 
-    parts.append("noisy" if (p_dep > 0.0 or p_amp > 0.0) else "noiseless")
-
-    noise_png = build_filename(
-        topic="x",
-        dep=(p_dep if p_dep > 0.0 else None),
-        amp=(p_amp if p_amp > 0.0 else None),
-        noise_scan=False,
-        multi_seed=False,
+    parts.append(
+        "noisy"
+        if (
+            p_dep > 0.0
+            or p_amp > 0.0
+            or p_phase > 0.0
+            or p_bit > 0.0
+            or p_phase_flip > 0.0
+        )
+        else "noiseless"
     )
-    noise_mid = noise_png.removesuffix(".png")
-    if noise_mid != "x":
-        parts.append(noise_mid)
+
+    if p_dep > 0.0 or p_amp > 0.0:
+        noise_png = build_filename(
+            topic="x",
+            dep=(p_dep if p_dep > 0.0 else None),
+            amp=(p_amp if p_amp > 0.0 else None),
+            noise_scan=False,
+            multi_seed=False,
+        )
+        noise_mid = noise_png.removesuffix(".png")
+        if noise_mid != "x":
+            parts.append(noise_mid)
+    if p_phase > 0.0:
+        parts.append(f"phase{slug_token(p_phase)}")
+    if p_bit > 0.0:
+        parts.append(f"bit{slug_token(p_bit)}")
+    if p_phase_flip > 0.0:
+        parts.append(f"phaseflip{slug_token(p_phase_flip)}")
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())

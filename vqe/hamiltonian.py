@@ -40,7 +40,7 @@ MOLECULES = _COMMON_MOLECULES
 # Compatibility: parametric geometry generation
 # ---------------------------------------------------------------------
 def generate_geometry(
-    molecule: str, param_value: float
+    molecule: str, param_value: float, *, unit: str = "angstrom"
 ) -> Tuple[list[str], np.ndarray]:
     """
     Compatibility wrapper.
@@ -48,7 +48,7 @@ def generate_geometry(
     Delegates to common.geometry.generate_geometry (single source of truth).
     """
     name = str(molecule).strip()
-    return _common_generate_geometry(name, float(param_value))
+    return _common_generate_geometry(name, float(param_value), unit=str(unit))
 
 
 def build_hamiltonian(

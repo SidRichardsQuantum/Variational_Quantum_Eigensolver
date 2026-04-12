@@ -80,20 +80,27 @@ def canonical_noise(
     noisy: bool,
     p_dep: float = 0.0,
     p_amp: float = 0.0,
+    p_phase_damp: float = 0.0,
+    p_bit_flip: float = 0.0,
+    p_phase_flip: float = 0.0,
     model: str | None = None,
 ) -> Dict[str, Any]:
     if not bool(noisy):
         return {}
-    p_dep = float(p_dep or 0.0)
-    p_amp = float(p_amp or 0.0)
-    m = None if model is None else str(model).strip()
-    if (p_dep == 0.0) and (p_amp == 0.0) and (m in {None, ""}):
-        return {}
-    return {
-        "p_dep": p_dep,
-        "p_amp": p_amp,
-        "model": (None if (m in {None, ""}) else m),
+    vals = {
+        "p_dep": float(p_dep or 0.0),
+        "p_amp": float(p_amp or 0.0),
+        "p_phase_damp": float(p_phase_damp or 0.0),
+        "p_bit_flip": float(p_bit_flip or 0.0),
+        "p_phase_flip": float(p_phase_flip or 0.0),
     }
+    m = None if model is None else str(model).strip()
+    out = {k: v for k, v in vals.items() if v != 0.0}
+    if (not out) and (m in {None, ""}):
+        return {}
+    if m not in {None, ""}:
+        out["model"] = m
+    return out
 
 
 def canonical_geometry(coordinates: Any, ndigits: int = 8) -> Any:

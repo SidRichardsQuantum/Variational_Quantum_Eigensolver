@@ -214,6 +214,9 @@ def run_ssvqe(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model: Optional[Callable[[list[int]], None]] = None,
     symbols=None,
     coordinates=None,
@@ -353,6 +356,9 @@ def run_ssvqe(
         noisy=bool(noisy),
         p_dep=float(depolarizing_prob),
         p_amp=float(amplitude_damping_prob),
+        p_phase_damp=float(phase_damping_prob),
+        p_bit_flip=float(bit_flip_prob),
+        p_phase_flip=float(phase_flip_prob),
         model=(None if noise_model is None else "custom"),
     )
     effective_noisy = bool(noise)
@@ -385,6 +391,9 @@ def run_ssvqe(
             bool(effective_noisy),
             float(depolarizing_prob),
             float(amplitude_damping_prob),
+            float(phase_damping_prob),
+            float(bit_flip_prob),
+            float(phase_flip_prob),
             int(num_wires),
             noise_model=noise_model,
         )
@@ -404,6 +413,9 @@ def run_ssvqe(
         noisy=bool(effective_noisy),
         depolarizing_prob=float(depolarizing_prob),
         amplitude_damping_prob=float(amplitude_damping_prob),
+        phase_damping_prob=float(phase_damping_prob),
+        bit_flip_prob=float(bit_flip_prob),
+        phase_flip_prob=float(phase_flip_prob),
         molecule_label=molecule,
     )
     cfg["num_states"] = int(num_states)

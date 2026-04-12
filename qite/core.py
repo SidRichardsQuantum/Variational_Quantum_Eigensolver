@@ -85,6 +85,9 @@ def run_qite(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model=None,
 ) -> Dict[str, Any]:
     """
@@ -116,6 +119,9 @@ def run_qite(
         bool(noisy)
         or (float(depolarizing_prob) != 0.0)
         or (float(amplitude_damping_prob) != 0.0)
+        or (float(phase_damping_prob) != 0.0)
+        or (float(bit_flip_prob) != 0.0)
+        or (float(phase_flip_prob) != 0.0)
         or (noise_model is not None)
     ):
         raise ValueError(
@@ -178,22 +184,25 @@ def run_qite(
         symbols=symbols_out,
         coordinates=np.array(coordinates_out, dtype=float),
         basis=str(basis_out),
+        charge=int(charge_out),
+        unit=str(unit_out),
         seed=int(seed),
         mapping=str(mapping_out),
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         dtau=float(dtau),
         steps=int(steps),
         molecule_label=molecule_label,
-        ansatz_desc=str(ansatz_name),
+        ansatz_name=str(ansatz_name),
         noise_model_name=None,
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
-        unit=str(unit_out),
-        charge=int(charge_out),
     )
 
     sig = run_signature(cfg)
@@ -235,6 +244,9 @@ def run_qite(
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         noise_model=None,
     )
 
@@ -245,6 +257,9 @@ def run_qite(
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         noise_model=None,
     )
 
@@ -348,6 +363,9 @@ def run_qrte(
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
     amplitude_damping_prob: float = 0.0,
+    phase_damping_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     noise_model=None,
     initial_params=None,
 ) -> Dict[str, Any]:
@@ -364,6 +382,9 @@ def run_qrte(
         bool(noisy)
         or (float(depolarizing_prob) != 0.0)
         or (float(amplitude_damping_prob) != 0.0)
+        or (float(phase_damping_prob) != 0.0)
+        or (float(bit_flip_prob) != 0.0)
+        or (float(phase_flip_prob) != 0.0)
         or (noise_model is not None)
     ):
         raise ValueError(
@@ -452,22 +473,25 @@ def run_qrte(
         symbols=symbols_out,
         coordinates=np.array(coordinates_out, dtype=float),
         basis=str(basis_out),
+        charge=int(charge_out),
+        unit=str(unit_out),
         seed=int(seed),
         mapping=str(mapping_out),
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         dtau=float(dt),
         steps=int(steps),
         molecule_label=molecule_label,
-        ansatz_desc=str(ansatz_name),
+        ansatz_name=str(ansatz_name),
         noise_model_name=None,
         fd_eps=float(fd_eps),
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
-        unit=str(unit_out),
-        charge=int(charge_out),
     )
     cfg["time_mode"] = "real"
     cfg["initialization"] = init_mode
@@ -501,6 +525,9 @@ def run_qrte(
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         noise_model=None,
     )
 
@@ -511,6 +538,9 @@ def run_qrte(
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         noise_model=None,
     )
 

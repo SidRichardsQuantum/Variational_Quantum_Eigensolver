@@ -36,48 +36,40 @@ def make_run_config_dict(
     symbols,
     coordinates,
     basis,
+    charge: int,
+    unit: str,
     seed: int,
     mapping: str,
     noisy: bool,
     depolarizing_prob: float,
     amplitude_damping_prob: float,
+    phase_damping_prob: float,
+    bit_flip_prob: float,
+    phase_flip_prob: float,
     dtau: float,
     steps: int,
     molecule_label: str,
-    ansatz_name: str | None = None,
-    ansatz: str | None = None,
-    ansatz_desc: str | None = None,
+    ansatz_name: str,
     noise_model_name: str | None = None,
-    # VarQITE numerics (optional; included if provided)
     fd_eps: float | None = None,
     reg: float | None = None,
     solver: str | None = None,
     pinv_rcond: float | None = None,
-    **_ignored,
 ):
     """
     Build a stable, JSON-serialisable config dict for caching.
 
     Notes
     -----
-    - We accept several aliases (ansatz_name/ansatz/ansatz_desc).
-    - We ignore unknown fields so qite.core can evolve without breaking caching.
     - VarQITE numerics are included when provided so they participate in caching.
     """
-    ansatz_label = (
-        ansatz_name
-        if ansatz_name is not None
-        else (
-            ansatz
-            if ansatz is not None
-            else (ansatz_desc if ansatz_desc is not None else "")
-        )
-    )
-
     noise = canonical_noise(
         noisy=bool(noisy),
         p_dep=float(depolarizing_prob),
         p_amp=float(amplitude_damping_prob),
+        p_phase_damp=float(phase_damping_prob),
+        p_bit_flip=float(bit_flip_prob),
+        p_phase_flip=float(phase_flip_prob),
         model=noise_model_name,
     )
 
@@ -86,13 +78,15 @@ def make_run_config_dict(
         "symbols": list(symbols),
         "geometry": canonical_geometry(coordinates, ndigits=8),
         "basis": str(basis).strip().lower(),
+        "charge": int(charge),
+        "unit": str(unit).strip().lower(),
         "mapping": str(mapping).strip().lower(),
         "seed": int(seed),
         "noisy": bool(bool(noise)),
         "noise": noise,
         "dtau": float(dtau),
         "steps": int(steps),
-        "ansatz": str(ansatz_label),
+        "ansatz": str(ansatz_name),
     }
 
     # Optional VarQITE numerics (kept explicit for stable cache keys)
@@ -166,6 +160,9 @@ def make_filename_prefix(
     noise = cfg.get("noise", {}) or {}
     p_dep = float(noise.get("p_dep", 0.0))
     p_amp = float(noise.get("p_amp", 0.0))
+    p_phase = float(noise.get("p_phase_damp", 0.0))
+    p_bit = float(noise.get("p_bit_flip", 0.0))
+    p_phase_flip = float(noise.get("p_phase_flip", 0.0))
 
     parts: list[str] = [
         algo_tag,
@@ -178,16 +175,23 @@ def make_filename_prefix(
     ]
     from common.plotting import build_filename
 
-    noise_png = build_filename(
-        topic="x",
-        dep=(p_dep if p_dep > 0.0 else None),
-        amp=(p_amp if p_amp > 0.0 else None),
-        noise_scan=False,
-        multi_seed=False,
-    )
-    noise_mid = noise_png.removesuffix(".png")
-    if noise_mid != "x":
-        parts.append(noise_mid)
+    if p_dep > 0.0 or p_amp > 0.0:
+        noise_png = build_filename(
+            topic="x",
+            dep=(p_dep if p_dep > 0.0 else None),
+            amp=(p_amp if p_amp > 0.0 else None),
+            noise_scan=False,
+            multi_seed=False,
+        )
+        noise_mid = noise_png.removesuffix(".png")
+        if noise_mid != "x":
+            parts.append(noise_mid)
+    if p_phase > 0.0:
+        parts.append(f"phase{format_token(p_phase)}")
+    if p_bit > 0.0:
+        parts.append(f"bit{format_token(p_bit)}")
+    if p_phase_flip > 0.0:
+        parts.append(f"phaseflip{format_token(p_phase_flip)}")
 
     parts.append(f"s{int(seed)}")
     parts.append(str(hash_str).strip())

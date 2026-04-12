@@ -161,6 +161,9 @@ def handle_special_modes(args) -> bool:
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
+            phase_damping_prob=float(args.phase_damping_prob),
+            bit_flip_prob=float(args.bit_flip_prob),
+            phase_flip_prob=float(args.phase_flip_prob),
             noise_model=None,
             symbols=symbols,
             coordinates=coordinates,
@@ -314,6 +317,9 @@ def handle_special_modes(args) -> bool:
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
+            phase_damping_prob=float(args.phase_damping_prob),
+            bit_flip_prob=float(args.bit_flip_prob),
+            phase_flip_prob=float(args.phase_flip_prob),
             noise_model=None,
             symbols=symbols,
             coordinates=coordinates,
@@ -358,6 +364,9 @@ def handle_special_modes(args) -> bool:
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
+            phase_damping_prob=float(args.phase_damping_prob),
+            bit_flip_prob=float(args.bit_flip_prob),
+            phase_flip_prob=float(args.phase_flip_prob),
             mapping=str(args.mapping),
             plot=bool(args.plot),
             force=bool(args.force),
@@ -428,6 +437,9 @@ def handle_special_modes(args) -> bool:
             noisy=args.noisy,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
+            phase_damping_prob=args.phase_damping_prob,
+            bit_flip_prob=args.bit_flip_prob,
+            phase_flip_prob=args.phase_flip_prob,
             mapping=args.mapping,
         )
         return True
@@ -445,6 +457,9 @@ def handle_special_modes(args) -> bool:
             noisy=args.noisy,
             depolarizing_prob=args.depolarizing_prob,
             amplitude_damping_prob=args.amplitude_damping_prob,
+            phase_damping_prob=args.phase_damping_prob,
+            bit_flip_prob=args.bit_flip_prob,
+            phase_flip_prob=args.phase_flip_prob,
             mapping=args.mapping,
         )
         return True
@@ -511,6 +526,9 @@ def handle_special_modes(args) -> bool:
             noisy=True,
             depolarizing_prob=float(args.depolarizing_prob),
             amplitude_damping_prob=float(args.amplitude_damping_prob),
+            phase_damping_prob=float(args.phase_damping_prob),
+            bit_flip_prob=float(args.bit_flip_prob),
+            phase_flip_prob=float(args.phase_flip_prob),
             symbols=symbols,
             coordinates=coordinates,
             basis=str(args.basis),
@@ -585,7 +603,7 @@ def main() -> None:
         "--unit",
         type=str,
         default="angstrom",
-        help="Coordinate unit passed through to Hamiltonian construction (e.g. angstrom, bohr).",
+        help="Coordinate input unit for geometry values (allowed: angstrom, bohr). Energies are always reported in Hartree (Ha).",
     )
     core.add_argument(
         "--symbols",
@@ -621,6 +639,9 @@ def main() -> None:
     noise.add_argument("--noisy", action="store_true", help="Enable noise")
     noise.add_argument("--depolarizing-prob", type=float, default=0.0)
     noise.add_argument("--amplitude-damping-prob", type=float, default=0.0)
+    noise.add_argument("--phase-damping-prob", type=float, default=0.0)
+    noise.add_argument("--bit-flip-prob", type=float, default=0.0)
+    noise.add_argument("--phase-flip-prob", type=float, default=0.0)
 
     # ------------------------------------------------------------------
     # Experiment modes
@@ -633,7 +654,14 @@ def main() -> None:
     exp.add_argument(
         "--noise-type",
         type=str,
-        choices=["depolarizing", "amplitude", "combined"],
+        choices=[
+            "depolarizing",
+            "amplitude_damping",
+            "phase_damping",
+            "bit_flip",
+            "phase_flip",
+            "combined",
+        ],
         default="depolarizing",
     )
     exp.add_argument("--mapping-comparison", action="store_true")
@@ -955,6 +983,9 @@ def main() -> None:
         noisy=bool(args.noisy),
         depolarizing_prob=float(args.depolarizing_prob),
         amplitude_damping_prob=float(args.amplitude_damping_prob),
+        phase_damping_prob=float(args.phase_damping_prob),
+        bit_flip_prob=float(args.bit_flip_prob),
+        phase_flip_prob=float(args.phase_flip_prob),
         force=bool(args.force),
         symbols=symbols,
         coordinates=coordinates,

@@ -58,7 +58,7 @@ def parse_args():
         "--unit",
         type=str,
         default="angstrom",
-        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
+        help="Coordinate input unit for geometry values (allowed: angstrom, bohr). Energies are always reported in Hartree (Ha).",
     )
 
     parser.add_argument(
@@ -92,10 +92,25 @@ def parse_args():
     # Noise model
     parser.add_argument("--noisy", action="store_true", help="Enable noise model")
     parser.add_argument(
-        "--p-dep", type=float, default=0.0, help="Depolarizing probability"
+        "--depolarizing-prob", type=float, default=0.0, help="Depolarizing probability"
     )
     parser.add_argument(
-        "--p-amp", type=float, default=0.0, help="Amplitude damping probability"
+        "--amplitude-damping-prob",
+        type=float,
+        default=0.0,
+        help="Amplitude damping probability",
+    )
+    parser.add_argument(
+        "--phase-damping-prob",
+        type=float,
+        default=0.0,
+        help="Phase damping probability",
+    )
+    parser.add_argument(
+        "--bit-flip-prob", type=float, default=0.0, help="Bit-flip probability"
+    )
+    parser.add_argument(
+        "--phase-flip-prob", type=float, default=0.0, help="Phase-flip probability"
     )
 
     # Plotting
@@ -146,8 +161,11 @@ def main():
         shots=int(args.shots),
         plot=False,
         noisy=bool(args.noisy),
-        depolarizing_prob=float(args.p_dep),
-        amplitude_damping_prob=float(args.p_amp),
+        depolarizing_prob=float(args.depolarizing_prob),
+        amplitude_damping_prob=float(args.amplitude_damping_prob),
+        phase_damping_prob=float(args.phase_damping_prob),
+        bit_flip_prob=float(args.bit_flip_prob),
+        phase_flip_prob=float(args.phase_flip_prob),
         force=bool(args.force),
         mapping=str(args.mapping),
         unit=str(args.unit),

@@ -20,6 +20,7 @@ from common.naming import format_molecule_name
 from common.paths import results_dir
 from common.persist import (
     atomic_write_json,
+    canonical_geometry,
     canonical_noise,
     read_json,
     stable_hash_cfg,
@@ -36,6 +37,10 @@ def ensure_dirs() -> None:
 def signature_hash(
     *,
     molecule: str,
+    symbols: list[str],
+    geometry,
+    basis: str,
+    charge: int,
     n_ancilla: int,
     t: float,
     seed: int = 0,
@@ -49,11 +54,18 @@ def signature_hash(
         noisy=True,
         p_dep=float((noise or {}).get("p_dep", 0.0)),
         p_amp=float((noise or {}).get("p_amp", 0.0)),
+        p_phase_damp=float((noise or {}).get("p_phase_damp", 0.0)),
+        p_bit_flip=float((noise or {}).get("p_bit_flip", 0.0)),
+        p_phase_flip=float((noise or {}).get("p_phase_flip", 0.0)),
         model=None,
     )
 
     cfg = {
         "molecule": format_molecule_name(molecule),
+        "symbols": list(symbols),
+        "geometry": canonical_geometry(geometry, ndigits=8),
+        "basis": str(basis).strip().lower(),
+        "charge": int(charge),
         "n_ancilla": int(n_ancilla),
         "t": float(t),
         "seed": int(seed),
@@ -84,10 +96,16 @@ def cache_path(
         noisy=True,
         p_dep=float((noise or {}).get("p_dep", 0.0)),
         p_amp=float((noise or {}).get("p_amp", 0.0)),
+        p_phase_damp=float((noise or {}).get("p_phase_damp", 0.0)),
+        p_bit_flip=float((noise or {}).get("p_bit_flip", 0.0)),
+        p_phase_flip=float((noise or {}).get("p_phase_flip", 0.0)),
         model=None,
     )
     p_dep = float(nz.get("p_dep", 0.0))
     p_amp = float(nz.get("p_amp", 0.0))
+    p_phase = float(nz.get("p_phase_damp", 0.0))
+    p_bit = float(nz.get("p_bit_flip", 0.0))
+    p_phase_flip = float(nz.get("p_phase_flip", 0.0))
 
     fname = build_filename(
         topic="qpe",
@@ -100,6 +118,15 @@ def cache_path(
         seed=int(seed),
         tag=str(key).strip(),
     )
+    extra_noise = []
+    if p_phase > 0.0:
+        extra_noise.append(f"phase{p_phase:g}")
+    if p_bit > 0.0:
+        extra_noise.append(f"bit{p_bit:g}")
+    if p_phase_flip > 0.0:
+        extra_noise.append(f"phaseflip{p_phase_flip:g}")
+    if extra_noise:
+        fname = fname.removesuffix(".png") + "_" + "_".join(extra_noise) + ".png"
 
     fname = fname.removesuffix(".png") + ".json"
     return RESULTS_DIR / f"{mol}_{fname}"
@@ -113,6 +140,10 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
 
     key = signature_hash(
         molecule=result["molecule"],
+        symbols=result["symbols"],
+        geometry=result["geometry"],
+        basis=result["basis"],
+        charge=int(result["charge"]),
         n_ancilla=int(result.get("n_ancilla", 0)),
         t=float(result["t"]),
         seed=seed,
@@ -141,6 +172,10 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
 def load_qpe_result(
     *,
     molecule: str,
+    symbols: list[str],
+    geometry,
+    basis: str,
+    charge: int,
     n_ancilla: int,
     t: float,
     seed: int,
@@ -152,6 +187,10 @@ def load_qpe_result(
 ) -> Optional[Dict[str, Any]]:
     key = signature_hash(
         molecule=molecule,
+        symbols=symbols,
+        geometry=geometry,
+        basis=basis,
+        charge=int(charge),
         n_ancilla=int(n_ancilla),
         t=float(t),
         seed=int(seed),
@@ -191,8 +230,12 @@ def save_qpe_plot(
 def normalize_noise(noise: Optional[Dict[str, float]]) -> Dict[str, float]:
     if not noise:
         return {}
-    p_dep = float(noise.get("p_dep", 0.0))
-    p_amp = float(noise.get("p_amp", 0.0))
-    if (p_dep == 0.0) and (p_amp == 0.0):
-        return {}
-    return {"p_dep": p_dep, "p_amp": p_amp}
+    return canonical_noise(
+        noisy=True,
+        p_dep=float(noise.get("p_dep", 0.0)),
+        p_amp=float(noise.get("p_amp", 0.0)),
+        p_phase_damp=float(noise.get("p_phase_damp", 0.0)),
+        p_bit_flip=float(noise.get("p_bit_flip", 0.0)),
+        p_phase_flip=float(noise.get("p_phase_flip", 0.0)),
+        model=None,
+    )

@@ -62,6 +62,8 @@ def test_qite_run_signature_stable_across_semantic_equivalents() -> None:
         "symbols": ["H", "H"],
         "coordinates": np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]], dtype=float),
         "basis": "sto-3g",
+        "charge": 0,
+        "unit": "angstrom",
         "seed": 0,
         "mapping": "jordan_wigner",
         "noisy": False,
@@ -133,11 +135,16 @@ def test_qite_cache_roundtrip() -> None:
         symbols=["H", "H"],
         coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
         basis="sto-3g",
+        charge=0,
+        unit="angstrom",
         seed=0,
         mapping="jordan_wigner",
         noisy=False,
         depolarizing_prob=0.0,
         amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
         dtau=0.1,
         steps=10,
         molecule_label="H2",
@@ -171,6 +178,10 @@ def test_qite_cache_roundtrip() -> None:
 def test_qpe_cache_roundtrip() -> None:
     key = qpe_signature_hash(
         molecule="H2",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
         n_ancilla=4,
         t=1.0,
         seed=0,
@@ -201,3 +212,151 @@ def test_qpe_cache_roundtrip() -> None:
     loaded = read_json(path)
 
     assert loaded == payload
+
+
+def test_qite_run_signature_changes_with_charge_and_unit() -> None:
+    cfg = qite_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        unit="angstrom",
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
+        dtau=0.1,
+        steps=10,
+        molecule_label="H2",
+        ansatz_name="UCCSD",
+    )
+    cfg_charge = copy.deepcopy(cfg)
+    cfg_charge["charge"] = 1
+
+    cfg_unit = copy.deepcopy(cfg)
+    cfg_unit["unit"] = "bohr"
+
+    assert qite_run_signature(cfg) != qite_run_signature(cfg_charge)
+    assert qite_run_signature(cfg) != qite_run_signature(cfg_unit)
+
+
+def test_qpe_signature_changes_with_geometry_metadata() -> None:
+    base = qpe_signature_hash(
+        molecule="custom",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_amp": 0.0},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+    changed_geometry = qpe_signature_hash(
+        molecule="custom",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 1.20]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_amp": 0.0},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+    changed_charge = qpe_signature_hash(
+        molecule="custom",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=1,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_amp": 0.0},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+
+    assert base != changed_geometry
+    assert base != changed_charge
+
+
+def test_qpe_signature_changes_with_extended_noise_fields() -> None:
+    base = qpe_signature_hash(
+        molecule="H2",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+    changed_phase = qpe_signature_hash(
+        molecule="H2",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_phase_damp": 0.02},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+    changed_bit = qpe_signature_hash(
+        molecule="H2",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_bit_flip": 0.02},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+    changed_phase_flip = qpe_signature_hash(
+        molecule="H2",
+        symbols=["H", "H"],
+        geometry=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        n_ancilla=4,
+        t=1.0,
+        seed=0,
+        shots=1000,
+        noise={"p_dep": 0.1, "p_phase_flip": 0.02},
+        trotter_steps=2,
+        mapping="jordan_wigner",
+        unit="angstrom",
+    )
+
+    assert base != changed_phase
+    assert base != changed_bit
+    assert base != changed_phase_flip

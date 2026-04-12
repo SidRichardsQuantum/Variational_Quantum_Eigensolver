@@ -21,6 +21,7 @@ from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 
+from common.noise import format_noise_summary, format_noise_tag
 from common.plotting import build_filename, format_molecule_title, save_plot
 
 
@@ -361,6 +362,9 @@ def plot_convergence(
     ansatz: str = "UCCSD",
     dep_prob: float = 0.0,
     amp_prob: float = 0.0,
+    phase_prob: float = 0.0,
+    bit_flip_prob: float = 0.0,
+    phase_flip_prob: float = 0.0,
     seed: int | None = None,
     show: bool = True,
 ):
@@ -370,6 +374,13 @@ def plot_convergence(
     plt.plot(steps, energies_noiseless, label="Noiseless", lw=2)
 
     noisy = energies_noisy is not None
+    noise = {
+        "p_dep": float(dep_prob),
+        "p_amp": float(amp_prob),
+        "p_phase_damp": float(phase_prob),
+        "p_bit_flip": float(bit_flip_prob),
+        "p_phase_flip": float(phase_flip_prob),
+    }
     if noisy:
         plt.plot(
             range(len(energies_noisy)),
@@ -380,10 +391,11 @@ def plot_convergence(
         )
 
     if noisy:
+        noise_summary = format_noise_summary(noise)
         title = _safe_title(
             f"{molecule_title}",
             f"VQE Convergence ({optimizer}, {ansatz})",
-            f"noise(p_dep={float(dep_prob):g}, p_amp={float(amp_prob):g})",
+            (f"noise({noise_summary})" if noise_summary else None),
         )
     else:
         title = _safe_title(
@@ -405,6 +417,7 @@ def plot_convergence(
         dep=dep_prob if noisy else None,
         amp=amp_prob if noisy else None,
         noise_scan=False,
+        tag=(format_noise_tag(noise) or None) if noisy else None,
         multi_seed=False,
     )
     save_plot(fname, kind="vqe", molecule=molecule, show=show)

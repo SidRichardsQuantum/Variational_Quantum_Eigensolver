@@ -22,6 +22,7 @@ from pennylane import qchem
 
 from common.geometry import generate_geometry
 from common.molecules import get_molecule_config
+from common.units import convert_coordinates, convert_length, normalize_coordinate_unit
 
 
 def _normalise_static_key(name: str) -> str:
@@ -124,7 +125,8 @@ def build_molecular_hamiltonian(
         If the installed PennyLane version does not support mapping=, we fall back
         gracefully to the default (typically Jordan–Wigner).
     unit:
-        Passed through to qchem.molecular_hamiltonian.
+        Coordinate unit for `coordinates`. Supported values are `angstrom` and `bohr`.
+        This affects geometry only. Energies returned by downstream solvers remain in Hartree.
     method_fallback:
         If True, retry with method="openfermion" if primary backend fails.
 
@@ -132,6 +134,7 @@ def build_molecular_hamiltonian(
     -------
     (H, n_qubits)
     """
+    unit_norm = normalize_coordinate_unit(unit)
     coords = np.array(coordinates, dtype=float)
     mapping_kw = None if mapping is None else str(mapping).strip().lower()
 
@@ -142,7 +145,7 @@ def build_molecular_hamiltonian(
             coordinates=coords,
             charge=int(charge),
             basis=basis,
-            unit=unit,
+            unit=unit_norm,
         )
         if mapping_kw is not None:
             kwargs["mapping"] = mapping_kw
@@ -159,7 +162,7 @@ def build_molecular_hamiltonian(
                     coordinates=coords,
                     charge=int(charge),
                     basis=basis,
-                    unit=unit,
+                    unit=unit_norm,
                 )
                 H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
                 return H, int(n_qubits)
@@ -186,7 +189,7 @@ def build_molecular_hamiltonian(
             coordinates=coords,
             charge=int(charge),
             basis=basis,
-            unit=unit,
+            unit=unit_norm,
             method="openfermion",
         )
         if mapping_kw is not None:
@@ -261,6 +264,8 @@ def build_hamiltonian(
 
     Notes
     -----
+    - `unit` controls coordinate input/output units only (`angstrom` or `bohr`).
+      Hamiltonian eigenvalues and solver energies remain in Hartree (Ha).
     - This function intentionally does NOT treat non-string `molecule` as a registry key.
       Tests often pass atoms/coords positionally; that is handled here by interpreting
       (molecule, coordinates) as (symbols, coordinates) when `molecule` is a sequence.
@@ -273,7 +278,7 @@ def build_hamiltonian(
     With return_metadata=True:
         (H, n_qubits, hf_state, symbols, coordinates, basis, charge, unit_out)
     """
-    unit_norm = str(unit).strip().lower()
+    unit_norm = normalize_coordinate_unit(unit)
     mapping_norm = str(mapping).strip().lower()
 
     # ------------------------------------------------------------------
@@ -353,6 +358,17 @@ def build_hamiltonian(
     if not mol:
         raise ValueError("molecule must be a non-empty string")
 
+    if basis is not None:
+        raise ValueError(
+            "Registry mode does not accept `basis`. Use explicit geometry mode "
+            "with `symbols`, `coordinates`, `charge`, and `basis`."
+        )
+    if charge is not None:
+        raise ValueError(
+            "Registry mode does not accept `charge`. Use explicit geometry mode "
+            "with `symbols`, `coordinates`, `charge`, and `basis`."
+        )
+
     up = mol.upper()
 
     # Parametric tags: choose a default parameter
@@ -364,14 +380,25 @@ def build_hamiltonian(
         else:
             default_param = 0.74
 
-        sym, coords = generate_geometry(mol, float(default_param))
+        if "BOND" in up:
+            default_param = convert_length(
+                float(default_param),
+                from_unit="angstrom",
+                to_unit=unit_norm,
+            )
+
+        sym, coords = generate_geometry(mol, float(default_param), unit=unit_norm)
         chg = +1 if up.startswith(("H3+", "H3PLUS", "H3_PLUS")) else 0
         bas = "sto-3g"
     else:
         key = _normalise_static_key(mol)
         cfg = get_molecule_config(key)
         sym = list(cfg["symbols"])
-        coords = np.array(cfg["coordinates"], dtype=float)
+        coords = convert_coordinates(
+            cfg["coordinates"],
+            from_unit=str(cfg.get("unit", "angstrom")),
+            to_unit=unit_norm,
+        )
         chg = int(cfg["charge"])
         bas = str(cfg["basis"]).strip().lower()
 

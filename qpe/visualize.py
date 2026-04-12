@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Sequence
 import matplotlib.pyplot as plt
 
 from common.naming import format_molecule_name, format_token
+from common.noise import format_noise_summary, format_noise_tag
 from common.plotting import (
     build_filename,
     format_molecule_title,
@@ -19,13 +20,23 @@ from common.plotting import (
 )
 
 
+def _display_bits(bits: str) -> str:
+    """
+    Format computational basis states with qubit 0 on the right.
+
+    Internal strings may follow wire order; for user-facing ket labels we reverse
+    the bitstring so displayed states increase as |00>, |01>, |10>, |11>, ...
+    """
+    return str(bits)[::-1]
+
+
 def _ket(bits: str) -> str:
-    return f"|{bits}⟩"
+    return f"|{_display_bits(bits)}⟩"
 
 
 def _bitstring_key(bits: str) -> int:
-    """Numeric key for sorting bitstrings like '0011' in ascending binary order."""
-    return int(bits, 2)
+    """Numeric key for sorting displayed states in ascending binary order."""
+    return int(_display_bits(bits), 2)
 
 
 def _sort_items(
@@ -89,8 +100,9 @@ def plot_qpe_distribution(
     plt.ylabel("Probability", fontsize=11)
 
     noise_suffix = ""
-    if p_dep > 0 or p_amp > 0:
-        noise_suffix = f" • noise(p_dep={p_dep}, p_amp={p_amp})"
+    noise_summary = format_noise_summary(noise)
+    if noise_summary:
+        noise_suffix = f" • noise({noise_summary})"
 
     t_suffix = ""
     if t_val is not None:
@@ -113,6 +125,7 @@ def plot_qpe_distribution(
             amp=p_amp if p_amp > 0 else None,
             noise_scan=False,
             noise_type=infer_noise_type(p_dep, p_amp),
+            tag=(format_noise_tag(noise) or None),
             multi_seed=False,
         )
         save_plot(fname, kind="qpe", molecule=molecule, show=show)

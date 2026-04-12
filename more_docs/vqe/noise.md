@@ -6,7 +6,7 @@ This document describes how noise is modeled and applied in this repository, inc
 
 - supported noise channels
 - how noise is injected into circuits
-- the dual interface (legacy vs extensible)
+- the built-in and extensible interfaces
 - effects on different algorithm families
 
 Noise is implemented centrally in `vqe.engine` and is used by VQE and related workflows.
@@ -35,7 +35,7 @@ This models imperfect gate execution and environmental decoherence.
 
 ## Supported Noise Channels
 
-Two built-in noise channels are supported:
+Five built-in single-qubit noise channels are supported:
 
 ### Depolarizing Noise
 
@@ -94,19 +94,58 @@ Properties:
 
 ---
 
+### Phase Damping
+
+Models dephasing without population relaxation.
+
+Properties:
+
+- suppresses phase coherence
+- leaves computational-basis populations unchanged
+- useful as a complement to amplitude damping
+
+---
+
+### Bit Flip
+
+Applies Pauli-X flips with probability $p_{\mathrm{bit}}$.
+
+Properties:
+
+- swaps computational-basis populations
+- simple Pauli error model
+- useful for robustness studies
+
+---
+
+### Phase Flip
+
+Applies Pauli-Z flips with probability $p_{\mathrm{phase\_flip}}$.
+
+Properties:
+
+- flips relative phase without changing populations
+- simple Pauli dephasing model
+- useful for coherence-sensitive circuits
+
+---
+
 ## Noise Interfaces
 
 This repository supports **two noise interfaces**.
 
 ---
 
-### 1. Legacy interface (CLI-friendly)
+### 1. Built-in interface (CLI-friendly)
 
 Controlled via flags:
 
 - `--noisy`
 - `--depolarizing-prob`
 - `--amplitude-damping-prob`
+- `--phase-damping-prob`
+- `--bit-flip-prob`
+- `--phase-flip-prob`
 
 Example:
 
@@ -117,7 +156,7 @@ vqe -m H2 --noisy --depolarizing-prob 0.02
 Behaviour:
 
 * noise applied independently to each qubit
-* both channels can be combined
+* any subset of built-in channels can be combined
 * ignored if `--noisy` is not set
 
 ---
@@ -157,13 +196,10 @@ Behaviour:
 
 If both interfaces are used:
 
-* legacy depolarizing / amplitude damping are applied
+* built-in configured channels are applied first
 * then `noise_model` is applied
 
-This ensures:
-
-* backward compatibility
-* full extensibility
+This allows explicit package-supported channels plus arbitrary extra PennyLane channels.
 
 ---
 

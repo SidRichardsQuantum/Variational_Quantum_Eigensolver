@@ -108,12 +108,18 @@ def _noise_tokens(
             suffix = "dep"
         elif nt in {"amplitude", "amp", "amplitude_damping"}:
             suffix = "amp"
+        elif nt in {"phase", "phase_damping"}:
+            suffix = "phase"
+        elif nt in {"bit", "bit_flip"}:
+            suffix = "bit"
+        elif nt in {"phase_flip", "phaseflip"}:
+            suffix = "phaseflip"
         elif nt in {"combined", "both"}:
             suffix = "combined"
         else:
             raise ValueError(
                 "noise_scan=True requires noise_type in "
-                "{depolarizing, amplitude, combined} "
+                "{depolarizing, amplitude, phase_damping, bit_flip, phase_flip, combined} "
                 f"(got {noise_type!r})"
             )
         return [f"noise_scan_{suffix}"]

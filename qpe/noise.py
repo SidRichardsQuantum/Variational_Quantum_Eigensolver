@@ -6,23 +6,27 @@ Noise utility functions for Quantum Phase Estimation (QPE) circuits.
 Currently supports:
   • Depolarizing channel
   • Amplitude damping channel
-
-Both can be applied together to all wires in a circuit segment.
+  • Phase damping channel
+  • Bit-flip channel
+  • Phase-flip channel
 """
 
 from __future__ import annotations
 
 from typing import Iterable
 
-import pennylane as qml
+from common.noise import apply_builtin_noise
 
 
 def apply_noise_all(
     wires: Iterable[int],
     p_dep: float = 0.0,
     p_amp: float = 0.0,
+    p_phase_damp: float = 0.0,
+    p_bit_flip: float = 0.0,
+    p_phase_flip: float = 0.0,
 ) -> None:
-    """Apply depolarizing and/or amplitude damping noise to the given wires.
+    """Apply built-in single-qubit noise channels to the given wires.
 
     This function is intended to be called *inside* a QNode, typically
     after a unitary operation or ansatz to simulate mixed noise channels.
@@ -40,11 +44,11 @@ def apply_noise_all(
     -------
     >>> apply_noise_all([0, 1, 2], p_dep=0.02, p_amp=0.01)
     """
-    if p_dep <= 0.0 and p_amp <= 0.0:
-        return
-
-    for w in wires:
-        if p_dep > 0.0:
-            qml.DepolarizingChannel(p_dep, wires=w)
-        if p_amp > 0.0:
-            qml.AmplitudeDamping(p_amp, wires=w)
+    apply_builtin_noise(
+        wires,
+        depolarizing_prob=float(p_dep),
+        amplitude_damping_prob=float(p_amp),
+        phase_damping_prob=float(p_phase_damp),
+        bit_flip_prob=float(p_bit_flip),
+        phase_flip_prob=float(p_phase_flip),
+    )

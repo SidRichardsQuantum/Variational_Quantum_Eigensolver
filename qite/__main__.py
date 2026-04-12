@@ -128,6 +128,32 @@ def _validated_geometry_inputs(
     return symbols, coordinates
 
 
+def _builtin_noise_from_args(args) -> dict[str, float]:
+    return {
+        "depolarizing": float(args.depolarizing_prob),
+        "amplitude_damping": float(args.amplitude_damping_prob),
+        "phase_damping": float(args.phase_damping_prob),
+        "bit_flip": float(args.bit_flip_prob),
+        "phase_flip": float(args.phase_flip_prob),
+    }
+
+
+def _format_noise_summary(noise: dict[str, float]) -> str:
+    labels = {
+        "depolarizing": "dep",
+        "amplitude_damping": "amp",
+        "phase_damping": "phase",
+        "bit_flip": "bit",
+        "phase_flip": "phase_flip",
+    }
+    parts = []
+    for key, label in labels.items():
+        val = float(noise.get(key, 0.0))
+        if val > 0.0:
+            parts.append(f"{label}={val:g}")
+    return ", ".join(parts)
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="qite",
@@ -167,7 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--unit",
         type=str,
         default="angstrom",
-        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
+        help="Coordinate input unit for geometry values (allowed: angstrom, bohr). Energies are always reported in Hartree (Ha).",
     )
 
     run_p.add_argument("--plot", action="store_true", help="Generate plots.")
@@ -212,7 +238,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--unit",
         type=str,
         default="angstrom",
-        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
+        help="Coordinate input unit for geometry values (allowed: angstrom, bohr). Energies are always reported in Hartree (Ha).",
     )
     qrte_p.add_argument("--plot", action="store_true", help="Generate plots.")
     qrte_p.add_argument("--no-plot", action="store_true", help="Disable plots.")
@@ -264,21 +290,49 @@ def build_parser() -> argparse.ArgumentParser:
         "--unit",
         type=str,
         default="angstrom",
-        help="Coordinate unit passed through to Hamiltonian construction (e.g., angstrom, bohr)",
+        help="Coordinate input unit for geometry values (allowed: angstrom, bohr). Energies are always reported in Hartree (Ha).",
     )
 
     ev_p.add_argument(
-        "--dep", type=float, default=0.0, help="Depolarizing probability."
+        "--depolarizing-prob", type=float, default=0.0, help="Depolarizing probability."
     )
     ev_p.add_argument(
-        "--amp", type=float, default=0.0, help="Amplitude damping probability."
+        "--amplitude-damping-prob",
+        type=float,
+        default=0.0,
+        help="Amplitude damping probability.",
+    )
+    ev_p.add_argument(
+        "--phase-damping-prob",
+        type=float,
+        default=0.0,
+        help="Phase damping probability.",
+    )
+    ev_p.add_argument(
+        "--bit-flip-prob", type=float, default=0.0, help="Bit-flip probability."
+    )
+    ev_p.add_argument(
+        "--phase-flip-prob", type=float, default=0.0, help="Phase-flip probability."
     )
 
     ev_p.add_argument(
-        "--sweep-dep",
+        "--sweep-noise-type",
+        type=str,
+        default="depolarizing",
+        choices=[
+            "depolarizing",
+            "amplitude_damping",
+            "phase_damping",
+            "bit_flip",
+            "phase_flip",
+        ],
+        help="Built-in noise channel to sweep in multi-seed mode.",
+    )
+    ev_p.add_argument(
+        "--sweep-levels",
         type=str,
         default=None,
-        help="Comma-separated depolarizing levels for a sweep (e.g. 0,0.02,0.04).",
+        help="Comma-separated probability levels for the selected sweep noise type (e.g. 0,0.02,0.04).",
     )
     ev_p.add_argument(
         "--seeds",
@@ -396,6 +450,9 @@ def _noisy_eval_energy_and_diag(
     theta: np.ndarray,
     dep: float,
     amp: float,
+    phase: float,
+    bit: float,
+    phase_flip: float,
 ):
     """
     Evaluate Tr[rho H] under noise on default.mixed and also return diag(rho).
@@ -422,6 +479,9 @@ def _noisy_eval_energy_and_diag(
         noisy=True,
         depolarizing_prob=float(dep),
         amplitude_damping_prob=float(amp),
+        phase_damping_prob=float(phase),
+        bit_flip_prob=float(bit),
+        phase_flip_prob=float(phase_flip),
         noise_model=None,
     )
 
@@ -432,6 +492,9 @@ def _noisy_eval_energy_and_diag(
         noisy=True,
         depolarizing_prob=float(dep),
         amplitude_damping_prob=float(amp),
+        phase_damping_prob=float(phase),
+        bit_flip_prob=float(bit),
+        phase_flip_prob=float(phase_flip),
         noise_model=None,
     )
 
@@ -555,10 +618,14 @@ def eval_noise(args) -> dict:
         )
     )
 
-    sweep_levels = _parse_float_list(getattr(args, "sweep_dep", None))
+    sweep_levels = _parse_float_list(getattr(args, "sweep_levels", None))
+    sweep_noise_type = (
+        str(getattr(args, "sweep_noise_type", "depolarizing")).strip().lower()
+    )
     seeds = _parse_int_list(getattr(args, "seeds", None))
     if seeds is None:
         seeds = list(range(5))
+    base_noise = _builtin_noise_from_args(args)
 
     def _get_noiseless_record(seed: int) -> dict:
         return run_qite(
@@ -600,8 +667,11 @@ def eval_noise(args) -> dict:
             ansatz=str(args.ansatz),
             seed=int(args.seed),
             theta=theta,
-            dep=float(args.dep),
-            amp=float(args.amp),
+            dep=float(base_noise["depolarizing"]),
+            amp=float(base_noise["amplitude_damping"]),
+            phase=float(base_noise["phase_damping"]),
+            bit=float(base_noise["bit_flip"]),
+            phase_flip=float(base_noise["phase_flip"]),
         )
 
         return {
@@ -615,8 +685,11 @@ def eval_noise(args) -> dict:
             "basis": str(basis),
             "varqite_energy_noiseless": float(res["energy"]),
             "noisy_energy": float(E_val),
-            "dep": float(args.dep),
-            "amp": float(args.amp),
+            "dep": float(base_noise["depolarizing"]),
+            "amp": float(base_noise["amplitude_damping"]),
+            "phase": float(base_noise["phase_damping"]),
+            "bit_flip": float(base_noise["bit_flip"]),
+            "phase_flip": float(base_noise["phase_flip"]),
             "diag": diag.tolist(),
         }
 
@@ -629,6 +702,8 @@ def eval_noise(args) -> dict:
     per_level: list[dict] = []
 
     for p in sweep_levels:
+        sweep_noise = dict(base_noise)
+        sweep_noise[sweep_noise_type] = float(p)
         Es: list[float] = []
         for sd in seeds:
             r = per_seed_noiseless[int(sd)]
@@ -646,8 +721,11 @@ def eval_noise(args) -> dict:
                 ansatz=str(args.ansatz),
                 seed=int(sd),
                 theta=th,
-                dep=float(p),
-                amp=float(args.amp),
+                dep=float(sweep_noise["depolarizing"]),
+                amp=float(sweep_noise["amplitude_damping"]),
+                phase=float(sweep_noise["phase_damping"]),
+                bit=float(sweep_noise["bit_flip"]),
+                phase_flip=float(sweep_noise["phase_flip"]),
             )
             Es.append(float(E_val))
 
@@ -659,7 +737,7 @@ def eval_noise(args) -> dict:
         stds.append(std)
         per_level.append(
             {
-                "dep": float(p),
+                "probability": float(p),
                 "mean": mean,
                 "std": std,
                 "values": [float(x) for x in Es],
@@ -667,7 +745,7 @@ def eval_noise(args) -> dict:
         )
 
     return {
-        "mode": "sweep_dep",
+        "mode": "sweep_noise",
         "molecule": str(args.molecule).strip() or "molecule",
         "ansatz": str(args.ansatz),
         "mapping": str(mapping_out),
@@ -675,8 +753,9 @@ def eval_noise(args) -> dict:
         "charge": int(charge),
         "basis": str(basis),
         "seeds": [int(s) for s in seeds],
-        "amp": float(args.amp),
-        "dep_levels": [float(x) for x in sweep_levels],
+        "base_noise": base_noise,
+        "sweep_noise_type": sweep_noise_type,
+        "sweep_levels": [float(x) for x in sweep_levels],
         "means": means,
         "stds": stds,
         "per_level": per_level,
@@ -699,13 +778,21 @@ def _print_pretty_eval(out: dict) -> None:
             f"• Noiseless VarQITE energy: {out.get('varqite_energy_noiseless'):+.10f} Ha"
         )
         print(f"• Noisy energy Tr[ρH]:      {out.get('noisy_energy'):+.10f} Ha")
-        print(f"• Noise: dep={out.get('dep')}, amp={out.get('amp')}")
+        print(
+            "• Noise: "
+            f"dep={out.get('dep')}, "
+            f"amp={out.get('amp')}, "
+            f"phase={out.get('phase')}, "
+            f"bit={out.get('bit_flip')}, "
+            f"phase_flip={out.get('phase_flip')}"
+        )
         return
 
     print(f"• Seeds:    {out.get('seeds')}")
-    print(f"• Amp:      {out.get('amp')}")
-    print("• Dep sweep (mean ± std):")
-    for p, m, s in zip(out["dep_levels"], out["means"], out["stds"]):
+    print(f"• Sweep:    {out.get('sweep_noise_type')}")
+    print(f"• Base:     {_format_noise_summary(out.get('base_noise', {})) or 'none'}")
+    print("• Noise sweep (mean ± std):")
+    for p, m, s in zip(out["sweep_levels"], out["means"], out["stds"]):
         print(f"  p={p:0.3f} -> {m:+.10f} ± {s:.10f} Ha")
 
 
