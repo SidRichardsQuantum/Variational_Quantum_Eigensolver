@@ -455,13 +455,14 @@ def run_vqe_optimizer_comparison(
 
             title_noise = ""
             if noisy:
-                title_noise = f" ({_format_noise_point({
-                        'depolarizing_prob': depolarizing_prob,
-                        'amplitude_damping_prob': amplitude_damping_prob,
-                        'phase_damping_prob': phase_damping_prob,
-                        'bit_flip_prob': bit_flip_prob,
-                        'phase_flip_prob': phase_flip_prob,
-                    })})"
+                noise_point = {
+                    "depolarizing_prob": depolarizing_prob,
+                    "amplitude_damping_prob": amplitude_damping_prob,
+                    "phase_damping_prob": phase_damping_prob,
+                    "bit_flip_prob": bit_flip_prob,
+                    "phase_flip_prob": phase_flip_prob,
+                }
+                title_noise = f" ({_format_noise_point(noise_point)})"
             plt.title(f"{molecule} – Optimizer Comparison ({ansatz_name}){title_noise}")
             plt.xlabel("Iteration")
             plt.ylabel("Energy (Ha)")
