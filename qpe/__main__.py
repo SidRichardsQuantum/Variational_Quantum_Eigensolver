@@ -18,9 +18,70 @@ from __future__ import annotations
 import argparse
 import time
 
+import numpy as np
+
 from qpe.core import run_qpe
 from qpe.io_utils import ensure_dirs
 from qpe.visualize import plot_qpe_distribution
+
+
+def _parse_symbols(s: str | None) -> list[str] | None:
+    if s is None or str(s).strip() == "":
+        return None
+    return [tok.strip() for tok in str(s).split(",") if tok.strip()]
+
+
+def _parse_coordinates(s: str | None) -> np.ndarray | None:
+    if s is None or str(s).strip() == "":
+        return None
+
+    rows: list[list[float]] = []
+    for chunk in str(s).split(";"):
+        part = chunk.strip()
+        if not part:
+            continue
+
+        if "," in part:
+            vals = [x.strip() for x in part.split(",") if x.strip()]
+        else:
+            vals = [x.strip() for x in part.split() if x.strip()]
+
+        if len(vals) != 3:
+            raise ValueError(
+                "Each coordinate row must contain exactly 3 values. "
+                "Example: --coordinates '0,0,0; 0,0,0.74'"
+            )
+
+        rows.append([float(v) for v in vals])
+
+    if not rows:
+        return None
+
+    arr = np.asarray(rows, dtype=float)
+    if arr.ndim != 2 or arr.shape[1] != 3:
+        raise ValueError("Coordinates must parse to an array of shape (N, 3).")
+    return arr
+
+
+def _validated_geometry_inputs(
+    args: argparse.Namespace,
+) -> tuple[list[str] | None, np.ndarray | None]:
+    symbols = _parse_symbols(getattr(args, "symbols", None))
+    coordinates = _parse_coordinates(getattr(args, "coordinates", None))
+
+    if (symbols is None) ^ (coordinates is None):
+        raise ValueError(
+            "Explicit geometry mode requires both --symbols and --coordinates."
+        )
+
+    if symbols is not None and coordinates is not None:
+        if len(symbols) != int(len(coordinates)):
+            raise ValueError(
+                f"Mismatch between symbols ({len(symbols)}) and coordinate rows "
+                f"({len(coordinates)})."
+            )
+
+    return symbols, coordinates
 
 
 # ---------------------------------------------------------------------
@@ -43,8 +104,33 @@ def parse_args():
     parser.add_argument(
         "-m",
         "--molecule",
-        required=True,
+        default="H2",
         help="Molecule identifier (static registry key or parametric tag, e.g. H2, LiH, H2O_ANGLE, H2_BOND)",
+    )
+
+    parser.add_argument(
+        "--symbols",
+        type=str,
+        default=None,
+        help="Comma-separated atomic symbols for explicit geometry mode, e.g. 'H,H'",
+    )
+    parser.add_argument(
+        "--coordinates",
+        type=str,
+        default=None,
+        help="Semicolon-separated xyz rows for explicit geometry mode, e.g. '0,0,0; 0,0,0.74'",
+    )
+    parser.add_argument(
+        "--basis",
+        type=str,
+        default="sto-3g",
+        help="Basis set for explicit geometry mode",
+    )
+    parser.add_argument(
+        "--charge",
+        type=int,
+        default=0,
+        help="Total molecular charge for explicit geometry mode",
     )
 
     parser.add_argument(
@@ -134,9 +220,19 @@ def parse_args():
 def main():
     args = parse_args()
     ensure_dirs()
+    symbols, coordinates = _validated_geometry_inputs(args)
+    molecule_label = (
+        str(args.molecule).strip()
+        if symbols is None
+        else (str(args.molecule).strip() or "molecule")
+    )
 
     print("\n🧮  QPE Simulation")
-    print(f"• Molecule:   {args.molecule}")
+    print(f"• Molecule:   {molecule_label}")
+    if symbols is not None and coordinates is not None:
+        print(f"• Symbols:    {','.join(symbols)}")
+        print(f"• Charge:     {int(args.charge)}")
+        print(f"• Basis:      {args.basis}")
     print(f"• Mapping:    {args.mapping}")
     print(f"• Unit:       {args.unit}")
     print(f"• Ancillas:   {args.ancillas}")
@@ -153,7 +249,7 @@ def main():
 
     # Let qpe.core handle caching + saving (single responsibility)
     result = run_qpe(
-        molecule=str(args.molecule),
+        molecule=molecule_label,
         seed=int(args.seed),
         n_ancilla=int(args.ancillas),
         t=float(args.t),
@@ -167,6 +263,10 @@ def main():
         bit_flip_prob=float(args.bit_flip_prob),
         phase_flip_prob=float(args.phase_flip_prob),
         force=bool(args.force),
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=str(args.basis),
+        charge=int(args.charge),
         mapping=str(args.mapping),
         unit=str(args.unit),
     )
@@ -184,7 +284,7 @@ def main():
     if elapsed:
         print(f"⏱  Elapsed          : {elapsed:.2f}s")
 
-    sys_n = int(result.get("system_qubits", -1))
+    sys_n = int(result.get("num_qubits", -1))
     if sys_n >= 0:
         print(f"Total qubits        : system={sys_n}, ancillas={args.ancillas}")
     else:
@@ -204,5 +304,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n⏹  QPE simulation interrupted.")
+        raise SystemExit(130)
     except Exception as e:
         print(f"\n❌ Error: {e}\n")
+        raise SystemExit(1)

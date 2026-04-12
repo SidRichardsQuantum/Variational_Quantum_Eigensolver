@@ -40,9 +40,11 @@ def _normalise_static_key(name: str) -> str:
 
     up = s.upper().replace(" ", "").replace("-", "_")
 
-    # Canonicalise H3+ aliases
+    # Canonicalise simple ionic aliases
     if up in {"H3+", "H3PLUS", "H3_PLUS"}:
         return "H3+"
+    if up in {"H5+", "H5PLUS", "H5_PLUS"}:
+        return "H5+"
 
     # Preserve + for other ions if user included it
     # but normalise plain molecule strings by stripping underscores
@@ -51,6 +53,10 @@ def _normalise_static_key(name: str) -> str:
     # Common simple molecules
     if s2.upper() == "H2":
         return "H2"
+    if s2.upper() == "H6":
+        return "H6"
+    if s2.upper() == "HE2":
+        return "He2"
     if s2.upper() == "LIH":
         return "LiH"
     if s2.upper() == "H2O":

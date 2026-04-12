@@ -25,7 +25,18 @@ def test_molecule_registry_integrity() -> None:
 
 
 def test_expected_molecules_exist() -> None:
-    for name in ["H2", "LiH", "H2O", "H3+", "BeH2", "H4", "HeH+"]:
+    for name in [
+        "H2",
+        "H3+",
+        "He2",
+        "LiH",
+        "H2O",
+        "BeH2",
+        "H4",
+        "H5+",
+        "H6",
+        "HeH+",
+    ]:
         assert name in MOLECULES
 
 

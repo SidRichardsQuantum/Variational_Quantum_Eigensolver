@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.10] – April 12, 2026
+
+### Added
+
+- **Benchmark roadmap for notebooks**
+
+  Added a notebook-facing benchmark roadmap to clarify the highest-value next additions for:
+
+  - reproducibility studies
+  - scaling comparisons
+  - QPE calibration sweeps
+  - cross-method comparisons
+  - noise robustness studies
+
+- **New benchmark notebooks**
+
+  - `notebooks/benchmarks/qpe/H2/Calibration_Sweep.ipynb` — calibrates QPE energy quality against ancilla count, evolution time, Trotter steps, and shots, with explicit phase / aliasing diagnostics
+  - `notebooks/benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb` — compares VQE, QPE, and VarQITE on a shared H2 Hamiltonian using public package APIs
+
+- **Improved analysis notebooks**
+
+  - `notebooks/vqe/H2O/Bond_Angle.ipynb` now performs a coarse-to-refined angle scan, shows the scan tables directly, and estimates the optimum angle from a local quadratic fit instead of only choosing the lowest sampled point
+
+### Fixed
+
+- Fixed `run_qpe(..., shots=None)` so analytic QPE mode now returns probabilities instead of failing on sample-based measurement requests.
+- Fixed `python -m qpe` to return a nonzero exit code on failure so CI and shell workflows can detect errors reliably.
+- Fixed `python -m qpe` explicit-geometry CLI support to match the documented Python API / changelog contract.
+- Fixed the QPE CLI qubit summary to report the stored system-qubit field correctly.
+
+### Internal
+
+- Expanded QPE regression coverage for:
+
+  - analytic `shots=None` execution
+  - explicit-geometry CLI invocation
+  - nonzero CLI failure status
+
+---
+
 ## [0.3.8] – April 11, 2026
 
 ### Added

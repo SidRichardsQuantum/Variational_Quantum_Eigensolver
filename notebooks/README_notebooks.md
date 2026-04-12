@@ -16,6 +16,7 @@ For the main project docs, see:
 - **[README.md](../README.md)** — project overview and quickstart
 - **[USAGE.md](../USAGE.md)** — CLI and Python workflows
 - **[THEORY.md](../THEORY.md)** — algorithms and methodology
+- **[BENCHMARK_ROADMAP.md](./BENCHMARK_ROADMAP.md)** — recommended next benchmark / research notebooks
 
 ---
 
@@ -47,6 +48,7 @@ notebooks/
 ├── README_notebooks.md
 │
 ├── benchmarks/
+│   ├── comparisons/
 │   ├── qite/
 │   ├── qpe/
 │   └── vqe/
@@ -133,7 +135,7 @@ H2O is included primarily to demonstrate a bond-angle scan workflow.
 
 | Notebook           | Purpose                                              | Style          |
 | ------------------ | ---------------------------------------------------- | -------------- |
-| `Bond_Angle.ipynb` | H–O–H angle scan using the package geometry-scan API | Package client |
+| `Bond_Angle.ipynb` | Two-stage H–O–H angle scan with local refinement and geometry visualization using the package geometry-scan API | Package client |
 
 ---
 
@@ -211,6 +213,15 @@ Path: `notebooks/benchmarks/qpe/H2/`
 | Notebook | Purpose | Style |
 | -------- | ------- | ----- |
 | `benchmarks/qpe/H2/Noisy.ipynb` | Noisy QPE distribution and multi-seed noise sweep | Package client |
+| `benchmarks/qpe/H2/Calibration_Sweep.ipynb` | Diagnostic QPE calibration sweep with analytic baselines, phase-bin diagnostics, and aliasing / branch-selection checks against an exact H2 reference | Mixed |
+
+### Cross-Method Benchmarks
+
+Path: `notebooks/benchmarks/comparisons/H2/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb` | Compare VQE, QPE, and VarQITE on one shared H2 Hamiltonian and exact reference | Mixed |
 
 ### QITE / VarQRTE Benchmarks
 
@@ -224,6 +235,7 @@ Notes:
 
 * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` is the main small-system correctness notebook for VarQRTE: it compares the variational trajectory against exact real-time evolution of the same post-quench initial state
 * benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the algorithm-specific package-client notebooks
+* the benchmark backlog is tracked in `notebooks/BENCHMARK_ROADMAP.md`
 
 ---
 

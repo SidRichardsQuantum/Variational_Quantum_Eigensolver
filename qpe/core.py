@@ -333,6 +333,8 @@ def run_qpe(
     wire_map = {i: system_wires[i] for i in range(num_qubits)}
     H_sys = H.map_wires(wire_map)
 
+    analytic_mode = shots_i is None
+
     @qml.qnode(dev)
     def circuit():
         qml.BasisState(np.array(hf_bits, dtype=int), wires=system_wires)
@@ -353,27 +355,38 @@ def run_qpe(
             )
 
         inverse_qft(ancilla_wires)
+        if analytic_mode:
+            return qml.probs(wires=ancilla_wires)
         return qml.sample(wires=ancilla_wires)
 
     if shots_i is not None:
         circuit = qml.set_shots(circuit, shots=shots_i)
 
-    samples = np.array(circuit(), dtype=int)
-    samples = np.atleast_2d(samples)
+    if analytic_mode:
+        prob_vector = np.array(circuit(), dtype=float).reshape(-1)
+        probs = {
+            format(idx, f"0{int(n_ancilla)}b"): float(prob)
+            for idx, prob in enumerate(prob_vector)
+            if float(prob) > 0.0
+        }
+        counts = dict(probs)
+    else:
+        samples = np.array(circuit(), dtype=int)
+        samples = np.atleast_2d(samples)
 
-    bitstrings = ["".join(str(int(b)) for b in s) for s in samples]
-    counts = dict(Counter(bitstrings))
-    probs = {b: c / len(bitstrings) for b, c in counts.items()}
+        bitstrings = ["".join(str(int(b)) for b in s) for s in samples]
+        counts = dict(Counter(bitstrings))
+        probs = {b: c / len(bitstrings) for b, c in counts.items()}
 
     E_hf = hartree_fock_energy(H, hf_bits)
 
     rows = []
-    for b, c in counts.items():
+    for b, weight in probs.items():
         ph_m = bitstring_to_phase(b, msb_first=True)
         ph_l = bitstring_to_phase(b, msb_first=False)
         e_m = phase_to_energy_unwrapped(ph_m, float(t), ref_energy=E_hf)
         e_l = phase_to_energy_unwrapped(ph_l, float(t), ref_energy=E_hf)
-        rows.append((b, c, ph_m, ph_l, e_m, e_l))
+        rows.append((b, float(weight), ph_m, ph_l, e_m, e_l))
 
     if not rows:
         raise RuntimeError("QPE returned no measurement outcomes.")

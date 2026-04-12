@@ -42,6 +42,18 @@ MOLECULES = {
         "basis": "STO-3G",
         "unit": "angstrom",
     },
+    "He2": {
+        "symbols": ["He", "He"],
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.50],
+            ]
+        ),
+        "charge": 0,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
     "LiH": {
         "symbols": ["Li", "H"],
         "coordinates": np.array(
@@ -106,6 +118,39 @@ MOLECULES = {
                 [1.0, 0.0, 0.0],
                 [2.0, 0.0, 0.0],
                 [3.0, 0.0, 0.0],
+            ]
+        ),
+        "charge": 0,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H5+": {
+        "symbols": ["H", "H", "H", "H", "H"],
+        # Linear H5+ chain, equally spaced at 1.0 Å
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0],
+                [3.0, 0.0, 0.0],
+                [4.0, 0.0, 0.0],
+            ]
+        ),
+        "charge": +1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H6": {
+        "symbols": ["H", "H", "H", "H", "H", "H"],
+        # Linear H6 chain, equally spaced at 1.0 Å
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0],
+                [3.0, 0.0, 0.0],
+                [4.0, 0.0, 0.0],
+                [5.0, 0.0, 0.0],
             ]
         ),
         "charge": 0,

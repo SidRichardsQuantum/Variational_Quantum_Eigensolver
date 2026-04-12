@@ -21,7 +21,7 @@ def test_build_hamiltonian_h2() -> None:
 
 
 def test_build_hamiltonian_selected_registry_molecules() -> None:
-    for name in ["H2", "H3+", "LiH", "BeH2", "HeH+"]:
+    for name in ["H2", "H3+", "He2", "H5+", "H6", "LiH", "BeH2", "HeH+"]:
         cfg = get_molecule_config(name)
         hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
 
