@@ -15,12 +15,16 @@ import os
 import re
 from typing import Optional
 
-import matplotlib.pyplot as plt
-
 from common.naming import format_token
 from common.paths import images_dir
 
 _SUB_RE = re.compile(r"([A-Za-z])(\d+)")
+
+
+def _pyplot():
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def slug_token(val: object) -> str:
@@ -197,6 +201,7 @@ def save_plot(
     molecule: Optional[str] = None,
     show: bool = True,
 ) -> str:
+    plt = _pyplot()
     target_dir = ensure_plot_dirs(kind=kind, molecule=molecule)
 
     if not filename.lower().endswith(".png"):

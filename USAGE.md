@@ -127,9 +127,9 @@ vqe --molecule H2
 
 vqe -m H2 --lr-vqe --lr-k 4
 
-qpe --molecule H2 --ancillas 4
+qpe --molecule H2 --ancillas 4 --shots 1000 --trotter-steps 2
 
-qite run --molecule H2 --steps 50 --dtau 0.2
+qite run --molecule H2 --steps 75 --dtau 0.2
 
 qite run-qrte --molecule H2 --steps 20 --dt 0.05
 ```
@@ -199,7 +199,7 @@ Defaults:
 
 - ansatz → `UCCSD`
 - optimizer → `Adam`
-- steps → `50`
+- steps → `75`
 
 Equivalent Python:
 
@@ -388,6 +388,15 @@ from qpe.core import run_qpe
 qpe --molecule H2 --ancillas 4
 ```
 
+Baseline defaults:
+
+- `n_ancilla=4`
+- `t=1.0`
+- `trotter_steps=2`
+- `shots=1000`
+
+These defaults are calibrated against `H2` and should be treated as baseline small-molecule settings, not universally optimized values for every chemistry problem.
+
 Equivalent Python:
 
 ```python
@@ -432,6 +441,7 @@ Notes:
 - QPE expert mode requires both `hamiltonian` and `hf_state`
 - `system_qubits` defaults to the `hf_state` length when omitted, but cannot be smaller than the Hamiltonian wire count
 - prebuilt-Hamiltonian QPE runs bypass cache lookup / save paths
+- for finite-shot QPE, `seed` is still meaningful because sampling is stochastic; in analytic mode (`shots=None`) it is effectively irrelevant
 
 ---
 
@@ -490,7 +500,7 @@ from qite.core import run_qite, run_qrte
 ```bash
 qite run \
   --molecule H2 \
-  --steps 50 \
+  --steps 75 \
   --dtau 0.2
 ```
 
@@ -501,7 +511,7 @@ from qite.core import run_qite
 
 res = run_qite(
     molecule="H2",
-    steps=50,
+    steps=75,
     dtau=0.2,
 )
 

@@ -16,8 +16,6 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-import matplotlib.pyplot as plt
-
 from common.naming import format_token
 from common.plotting import (
     build_filename,
@@ -25,6 +23,12 @@ from common.plotting import (
     infer_noise_type,
     save_plot,
 )
+
+
+def _pyplot():
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def _safe_title(*parts: object) -> str:
@@ -51,6 +55,7 @@ def plot_convergence(
     amp_prob: float = 0.0,
     noise_type: Optional[str] = None,
 ) -> None:
+    plt = _pyplot()
     """
     Plot energy convergence vs iteration.
 
@@ -120,6 +125,7 @@ def plot_noise_statistics(
     show: bool = True,
     save: bool = True,
 ) -> None:
+    plt = _pyplot()
     """
     Plot ΔE and (optionally) fidelity vs noise level.
 
@@ -235,6 +241,7 @@ def plot_diagnostics(
     show: bool = True,
     save: bool = True,
 ) -> None:
+    plt = _pyplot()
     """
     Generic single-curve diagnostic plot (e.g., residual norms, step sizes, etc.).
     """

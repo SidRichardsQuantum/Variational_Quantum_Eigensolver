@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import matplotlib
-import pytest
+import os
 
-matplotlib.use("Agg")
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/mplconfig")
+os.environ.setdefault("MPLBACKEND", "Agg")
+
+import pytest
 
 
 @pytest.fixture(autouse=True)

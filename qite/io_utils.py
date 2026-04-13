@@ -23,6 +23,7 @@ from common.persist import (
     read_json,
     stable_hash_cfg,
 )
+from vqe.ansatz import canonicalize_ansatz_name
 
 RESULTS_DIR: Path = results_dir("qite")
 
@@ -92,7 +93,7 @@ def make_run_config_dict(
         "noise": noise,
         "dtau": float(dtau),
         "steps": int(steps),
-        "ansatz": str(ansatz_name),
+        "ansatz": canonicalize_ansatz_name(ansatz_name),
     }
 
     # Optional VarQITE numerics (kept explicit for stable cache keys)

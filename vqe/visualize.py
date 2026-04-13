@@ -19,14 +19,18 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-import matplotlib.pyplot as plt
-
 from common.noise import format_noise_summary, format_noise_tag
 from common.plotting import build_filename, format_molecule_title, save_plot
 
 
 def _safe_title(*parts):
     return " — ".join([str(p) for p in parts if p is not None])
+
+
+def _pyplot():
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def plot_lr_vqe_spectrum(
@@ -368,6 +372,7 @@ def plot_convergence(
     seed: int | None = None,
     show: bool = True,
 ):
+    plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     steps = range(len(energies_noiseless))
@@ -430,6 +435,7 @@ def plot_optimizer_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     min_len = min(len(v) for v in results.values())
@@ -460,6 +466,7 @@ def plot_ansatz_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
     min_len = min(len(v) for v in results.values())
@@ -495,6 +502,7 @@ def plot_noise_statistics(
     noise_type: str = "Depolarizing",
     show: bool = True,
 ):
+    plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
 
@@ -551,6 +559,7 @@ def plot_multi_state_convergence(
     state_labels: Optional[Sequence[str]] = None,
     order: Optional[Sequence[int]] = None,
 ):
+    plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
 
     if optimizer_name is not None:

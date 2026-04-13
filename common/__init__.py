@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
+from . import mpl_env as _mpl_env  # noqa: F401
+
 try:
     __version__ = _pkg_version("vqe-pennylane")
 except PackageNotFoundError:  # pragma: no cover
@@ -26,25 +28,25 @@ except PackageNotFoundError:  # pragma: no cover
 
 
 # Molecule data + helpers
-from .molecules import MOLECULES, get_molecule_config  # noqa: F401
+from .molecules import MOLECULES, get_molecule_config  # noqa: F401, E402
 
 # Geometry (bond length, angle scans, parametrized coordinates)
-from .geometry import generate_geometry  # noqa: F401
+from .geometry import generate_geometry  # noqa: F401, E402
 
 # Hamiltonian construction (PennyLane + OpenFermion fallback)
-from .hamiltonian import build_hamiltonian, get_exact_spectrum  # noqa: F401
-from .problem import ResolvedProblem, resolve_problem  # noqa: F401
+from .hamiltonian import build_hamiltonian, get_exact_spectrum  # noqa: F401, E402
+from .problem import ResolvedProblem, resolve_problem  # noqa: F401, E402
 
 # Molecule visualization
 from .molecule_viz import (
     plot_molecule,
     infer_bonds,
     infer_angles_from_bonds,
-)  # noqa: F401
+)  # noqa: F401, E402
 
 # Plotting utilities shared across VQE + QPE
-from .plotting import build_filename, save_plot  # noqa: F401
-from .naming import format_molecule_name, format_token  # noqa: F401
+from .plotting import build_filename, save_plot  # noqa: F401, E402
+from .naming import format_molecule_name, format_token  # noqa: F401, E402
 
 __all__ = [
     # Molecules

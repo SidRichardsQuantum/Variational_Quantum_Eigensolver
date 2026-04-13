@@ -130,6 +130,83 @@ def test_vqe_cache_roundtrip() -> None:
     assert loaded == record
 
 
+def test_vqe_run_signature_normalizes_alias_names() -> None:
+    adam_canonical = vqe_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        ansatz_desc="UCCSD",
+        optimizer_name="Adam",
+        stepsize=0.2,
+        max_iterations=5,
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        molecule_label="H2",
+    )
+    gradient_alias = vqe_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        ansatz_desc="ucc sd",
+        optimizer_name="gradient descent",
+        stepsize=0.2,
+        max_iterations=5,
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        molecule_label="H2",
+    )
+
+    gradient_canonical = vqe_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        ansatz_desc="UCCSD",
+        optimizer_name="GradientDescent",
+        stepsize=0.2,
+        max_iterations=5,
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        molecule_label="H2",
+    )
+
+    adam_alias = vqe_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        ansatz_desc="UCC-SD",
+        optimizer_name="adam",
+        stepsize=0.2,
+        max_iterations=5,
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        molecule_label="H2",
+    )
+
+    assert adam_canonical["ansatz"] == gradient_alias["ansatz"] == "UCCSD"
+    assert gradient_canonical["ansatz"] == "UCCSD"
+    assert (
+        gradient_canonical["optimizer"]["name"] == gradient_alias["optimizer"]["name"]
+    )
+    assert gradient_alias["optimizer"]["name"] == "GradientDescent"
+    assert (
+        adam_canonical["optimizer"]["name"] == adam_alias["optimizer"]["name"] == "Adam"
+    )
+    assert vqe_run_signature(gradient_canonical) == vqe_run_signature(gradient_alias)
+    assert vqe_run_signature(adam_canonical) == vqe_run_signature(adam_alias)
+
+
 def test_qite_cache_roundtrip() -> None:
     cfg = qite_make_run_config_dict(
         symbols=["H", "H"],
@@ -173,6 +250,50 @@ def test_qite_cache_roundtrip() -> None:
 
     assert loaded is not None
     assert loaded == record
+
+
+def test_qite_run_signature_normalizes_ansatz_alias_names() -> None:
+    canonical = qite_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        unit="angstrom",
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
+        dtau=0.2,
+        steps=75,
+        molecule_label="H2",
+        ansatz_name="UCCSD",
+    )
+    alias = qite_make_run_config_dict(
+        symbols=["H", "H"],
+        coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.74]],
+        basis="sto-3g",
+        charge=0,
+        unit="angstrom",
+        seed=0,
+        mapping="jordan_wigner",
+        noisy=False,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
+        dtau=0.2,
+        steps=75,
+        molecule_label="H2",
+        ansatz_name="ucc sd",
+    )
+
+    assert canonical["ansatz"] == alias["ansatz"] == "UCCSD"
+    assert qite_run_signature(canonical) == qite_run_signature(alias)
 
 
 def test_qpe_cache_roundtrip() -> None:

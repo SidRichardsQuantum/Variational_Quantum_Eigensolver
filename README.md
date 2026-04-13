@@ -97,7 +97,7 @@ from qite import run_qite, run_qrte
 vqe_res = run_vqe(molecule="H2")
 print("VQE:", vqe_res["energy"])
 
-qite_res = run_qite(molecule="H2", steps=50, dtau=0.2)
+qite_res = run_qite(molecule="H2", steps=75, dtau=0.2)
 print("VarQITE:", qite_res["energy"])
 
 qrte_res = run_qrte(molecule="H2", steps=20, dt=0.05)
@@ -119,8 +119,8 @@ CLI:
 
 ```bash
 python -m vqe -m H2
-python -m qpe --molecule H2 --ancillas 4 --shots 2000
-python -m qite run --molecule H2 --steps 50 --dtau 0.2
+python -m qpe --molecule H2 --ancillas 4 --shots 1000 --trotter-steps 2
+python -m qite run --molecule H2 --steps 75 --dtau 0.2
 python -m qite run-qrte --molecule H2 --steps 20 --dt 0.05
 ```
 
@@ -172,6 +172,15 @@ Use it for:
 - phase-to-energy estimation
 - ancilla / shot studies
 - controlled time-evolution experiments
+
+Default QPE settings are H2-calibrated baseline defaults:
+
+- `n_ancilla=4`
+- `t=1.0`
+- `trotter_steps=2`
+- `shots=1000`
+
+They are intended as good small-molecule starting values, not globally optimized settings for every molecule.
 
 ### `qite`
 
@@ -249,6 +258,8 @@ General behavior:
 - run configurations are hashed deterministically
 - matching runs reuse cached JSON records
 - `--force` recomputes instead of loading cache
+
+For sampled QPE runs with finite `shots`, `seed` still matters because the measured bitstring distribution is stochastic. In analytic mode (`shots=None`), the seed is effectively irrelevant.
 
 ## Notebooks
 

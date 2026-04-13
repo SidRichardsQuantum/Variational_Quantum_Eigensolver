@@ -49,6 +49,7 @@ notebooks/
 │
 ├── benchmarks/
 │   ├── comparisons/
+│   ├── defaults/
 │   ├── qite/
 │   ├── qpe/
 │   └── vqe/
@@ -59,11 +60,7 @@ notebooks/
 │
 ├── vqe/
 │   ├── H2/
-│   ├── H2O/
-│   └── H3plus/
-│
-├── qpe/
-│   └── H2/
+│   └── H2O/
 │
 └── qite/
     └── H2/
@@ -98,7 +95,6 @@ H2 is the main educational benchmark in this repository: small enough to run qui
 
 | Notebook      | Purpose                                                              | Style          |
 | ------------- | -------------------------------------------------------------------- | -------------- |
-| `Bond_Length.ipynb` | H2 bond-length scan using the package geometry-scan API         | Package client |
 | `QSE.ipynb`         | QSE spectrum from a converged VQE reference vs exact eigenvalues | Package client |
 | `EOM_QSE.ipynb`     | EOM-QSE roots from a converged VQE reference vs exact eigenvalues | Package client |
 | `LR_VQE.ipynb`      | LR-VQE tangent-space excitations vs exact eigenvalues            | Package client |
@@ -112,18 +108,6 @@ Notes:
 * `EOM_QSE.ipynb` studies a generally non-Hermitian reduced problem and uses physical-root selection heuristics.
 * `LR_VQE.ipynb` demonstrates the tangent-space **Tamm-Dancoff approximation (TDA)**.
 * `EOM_VQE.ipynb` demonstrates the **full-response** tangent-space workflow.
-
----
-
-### H3plus
-
-Path: `notebooks/vqe/H3plus/`
-
-H3plus is used as a larger benchmark than H2 while still keeping notebook runtimes practical.
-
-| Notebook          | Purpose                                                      | Style          |
-| ----------------- | ------------------------------------------------------------ | -------------- |
-| `Adapt.ipynb`     | ADAPT-VQE convergence and operator-growth workflow on H3plus | Package client |
 
 ---
 
@@ -141,22 +125,7 @@ H2O is included primarily to demonstrate a bond-angle scan workflow.
 
 ## QPE Notebooks
 
-### H2
-
-Path: `notebooks/qpe/H2/`
-
-These notebooks demonstrate the QPE pipeline on H2, including:
-
-* controlled time evolution
-* inverse QFT on ancillas
-* phase-to-energy recovery
-* optional noise studies and sweeps
-
-| Notebook          | Purpose                                           | Style          |
-| ----------------- | ------------------------------------------------- | -------------- |
-| `Noiseless.ipynb` | Noiseless QPE distribution and ancilla sweep      | Package client |
-
-All QPE notebooks are package clients built on the `qpe` module and shared chemistry infrastructure.
+QPE introductory material now lives in `notebooks/getting_started/`, while QPE benchmarking and calibration workflows live under `notebooks/benchmarks/qpe/`.
 
 ---
 
@@ -170,7 +139,6 @@ VarQITE and VarQRTE are demonstrated on H2 as package-client workflows.
 
 | Notebook                           | Purpose                    | Style          |
 | ---------------------------------- | -------------------------- | -------------- |
-| `Noiseless.ipynb`                  | Noiseless VarQITE on H2    | Package client |
 | `Real_Time.ipynb`                  | Noiseless VarQRTE on H2    | Package client |
 | `getting_started/13_getting_started_qrte_h2.ipynb` | Prepared-state VarQRTE intro on H2 | Package client |
 
@@ -203,8 +171,8 @@ Paths:
 | `benchmarks/vqe/H2/Noisy_Optimizer_Convergence.ipynb` | Compare noisy H2 optimizer convergence traces | Package client |
 | `benchmarks/vqe/H2/SSVQE_Comparisons.ipynb` | Noiseless SSVQE sweeps across ansatz / optimizer choices | Package client |
 | `benchmarks/vqe/H2/VQD_Comparisons.ipynb` | Noiseless VQD sweeps across ansatz / optimizer choices | Package client |
-| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb` | Noiseless H3plus ansatz comparison for UCC-S / UCC-D / UCCSD | Package client |
-| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb` | Noisy H3plus ansatz comparison for UCC-S / UCC-D / UCCSD | Package client |
+| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb` | Noiseless H3plus ansatz comparison for UCCS / UCCD / UCCSD | Package client |
+| `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb` | Noisy H3plus ansatz comparison for UCCS / UCCD / UCCSD | Package client |
 
 ### QPE Benchmarks
 
@@ -222,6 +190,18 @@ Path: `notebooks/benchmarks/comparisons/H2/`
 | Notebook | Purpose | Style |
 | -------- | ------- | ----- |
 | `benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb` | Compare VQE, QPE, and VarQITE on one shared H2 Hamiltonian and exact reference | Mixed |
+| `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb` | Measure seed spread, cache timing, and noisy-vs-noiseless variance on one shared H2 problem | Mixed |
+| `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb` | Compare runtime, qubit count, exact-energy error, and proxy-size metrics across H2, LiH, and BeH2 | Mixed |
+
+### Default Calibration Benchmarks
+
+Path: `notebooks/benchmarks/defaults/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/defaults/VQE_Default_Calibration.ipynb` | Calibrate robust VQE defaults across ansatz, optimizer, stepsize, step budget, and seeds | Mixed |
+| `benchmarks/defaults/VarQITE_Default_Calibration.ipynb` | Calibrate robust VarQITE defaults across ansatz, `dtau`, step budget, and seeds | Mixed |
+| `benchmarks/defaults/QPE_Default_Calibration.ipynb` | Calibrate baseline QPE defaults across ancillas, evolution time, Trotter depth, shots, and seeds | Mixed |
 
 ### QITE / VarQRTE Benchmarks
 
@@ -234,7 +214,7 @@ Path: `notebooks/benchmarks/qite/H2/`
 Notes:
 
 * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` is the main small-system correctness notebook for VarQRTE: it compares the variational trajectory against exact real-time evolution of the same post-quench initial state
-* benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the algorithm-specific package-client notebooks
+* benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the specialized algorithm notebooks that remain under `notebooks/vqe/` and `notebooks/qite/`
 * the benchmark backlog is tracked in `notebooks/BENCHMARK_ROADMAP.md`
 
 ---
@@ -248,15 +228,21 @@ Notes:
 2. **Core VQE workflow**
 
    * `getting_started/01_getting_started_vqe_h2.ipynb`
-   * `vqe/H2/Bond_Length.ipynb`
+   * `getting_started/09_bond_scan_h2.ipynb`
 
 3. **Noise studies**
 
-   * `getting_started/12_noise_scan_h2.ipynb`
+   * `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb`
    * `benchmarks/vqe/H2/Noise_Scan.ipynb`
    * `benchmarks/qpe/H2/Noisy.ipynb`
 
-4. **Excited-state methods**
+4. **Default calibration**
+
+   * `benchmarks/defaults/VQE_Default_Calibration.ipynb`
+   * `benchmarks/defaults/VarQITE_Default_Calibration.ipynb`
+   * `benchmarks/defaults/QPE_Default_Calibration.ipynb`
+
+5. **Excited-state methods**
 
    * `vqe/H2/QSE.ipynb`
    * `vqe/H2/EOM_QSE.ipynb`
@@ -265,16 +251,17 @@ Notes:
    * `vqe/H2/SSVQE.ipynb`
    * `vqe/H2/VQD.ipynb`
 
-5. **Larger systems and geometry**
+6. **Larger systems and geometry**
 
-   * `vqe/H3plus/Adapt.ipynb`
+   * `getting_started/11_adapt_vqe_h3plus.ipynb`
+   * `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
    * `vqe/H2O/Bond_Angle.ipynb`
 
-6. **Projected dynamics**
+7. **Projected dynamics**
 
-   * `qite/H2/Noiseless.ipynb`
+   * `getting_started/06_getting_started_qite_h2.ipynb`
    * `getting_started/13_getting_started_qrte_h2.ipynb`
    * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
    * `qite/H2/Real_Time.ipynb`

@@ -209,6 +209,8 @@ def build_ansatz(
                 )
 
             return ansatz_fn, init_params
+    except ValueError:
+        raise
     except Exception:
         # Fall back below.
         pass

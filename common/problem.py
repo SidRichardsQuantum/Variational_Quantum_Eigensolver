@@ -5,11 +5,15 @@ common.problem
 Shared problem-resolution helpers for chemistry and expert-mode workflows.
 """
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
+from . import mpl_env as _mpl_env  # noqa: F401
+
 import pennylane as qml
 
 from .hamiltonian import build_hamiltonian, resolve_active_space

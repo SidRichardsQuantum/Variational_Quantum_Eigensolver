@@ -181,7 +181,7 @@ def run_qpe(
     seed: int = 0,
     n_ancilla: int = 4,
     t: float = 1.0,
-    trotter_steps: int = 1,
+    trotter_steps: int = 2,
     shots: int | None = 1000,
     plot: bool = True,
     noisy: bool = False,

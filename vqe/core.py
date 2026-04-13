@@ -124,7 +124,7 @@ def _format_noise_point(noise_kwargs: dict[str, float]) -> str:
 def run_vqe(
     molecule: str = "H2",
     seed: int = 0,
-    steps: int = 50,
+    steps: int = 75,
     stepsize: float = 0.2,
     plot: bool = True,
     ansatz_name: str = "UCCSD",

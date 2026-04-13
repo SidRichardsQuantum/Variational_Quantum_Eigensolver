@@ -4,6 +4,98 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.12] - April 13, 2026
+
+### Added
+
+- **Reproducibility and scaling benchmark notebooks**
+
+  Added benchmark notebooks for:
+
+  - H2 reproducibility, including seed spread, cache timing, and noisy-vs-noiseless comparisons
+  - multi-molecule scaling across H2, LiH, and BeH2
+
+- **Default-calibration benchmark notebooks**
+
+  Added dedicated notebooks to calibrate package defaults for:
+
+  - VQE
+  - VarQITE
+  - QPE
+
+  These notebooks are intended to be kept as benchmark artifacts so future default changes can be justified from recorded sweeps rather than one-off intuition.
+
+### Changed
+
+- **Solver defaults are now benchmark-backed**
+
+  Updated default settings to match the current calibration work:
+
+  - `run_vqe(...)`: `ansatz_name="UCCSD"`, `optimizer_name="Adam"`, `stepsize=0.2`, `steps=75`
+  - `run_qite(...)`: `ansatz_name="UCCSD"`, `dtau=0.2`, `steps=75`
+  - `run_qpe(...)`: `n_ancilla=4`, `t=1.0`, `trotter_steps=2`, `shots=1000`
+
+  QPE defaults are documented as H2-calibrated baseline defaults: good small-molecule starting values, not globally optimized settings for every chemistry problem.
+
+- **Notebook organization and guidance refined**
+
+  Updated notebook indexes, roadmap notes, and comparison notebooks to reflect:
+
+  - the new benchmark / default-calibration coverage
+  - pruning of redundant notebooks
+  - clearer distinctions between introductory, benchmark, and specialized workflows
+
+- **Canonical ansatz registry exposed**
+
+  `vqe.ansatz.ANSATZES` now exposes only canonical UCC names (`UCCS`, `UCCD`, `UCCSD`) instead of duplicate alias entries.
+
+### Fixed
+
+- Fixed invalid ansatz handling so unsupported ansatz names fail immediately instead of silently falling back in VarQITE-related workflows.
+- Fixed package-side Matplotlib environment setup to reduce writable-config warnings and avoid eager Matplotlib imports on ordinary package import paths.
+- Fixed the H2 ansatz-comparison notebook to use the canonical ansatz registry cleanly and improved its plotting readability.
+
+---
+
+## [0.3.11] - April 13, 2026
+
+### Added
+
+- **Non-molecule / expert-mode qubit Hamiltonian support**
+
+  Added direct Hamiltonian workflows across the public Python APIs so algorithm benchmarking no longer has to go through the chemistry pipeline:
+
+  - `run_vqe(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+  - `run_qite(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+  - `run_qrte(..., hamiltonian=H, num_qubits=..., reference_state=...)`
+  - `run_qpe(..., hamiltonian=H, hf_state=..., system_qubits=...)`
+
+- **Shared problem-resolution layer**
+
+  Added `common.problem.resolve_problem(...)` as the central input-normalization path for molecule, explicit-geometry, and expert-mode runs.
+
+- **Result-path override support**
+
+  Added `VQE_PENNYLANE_DATA_DIR` support so tests and scripted runs can redirect generated `results/` and `images/` artifacts to a separate writable root.
+
+### Changed
+
+- **Documentation updated for expert mode**
+
+  `README.md`, `USAGE.md`, and architecture notes now describe the non-molecule workflows and the shared problem-resolution model explicitly.
+
+- **Solver internals simplified around shared inputs**
+
+  VQE, QPE, VarQITE, and VarQRTE now rely more consistently on the common resolution / metadata path instead of maintaining parallel per-solver input handling.
+
+### Fixed
+
+- Fixed wire-normalization and reference-state handling for direct Hamiltonian workflows so non-consecutive / non-integer operator wires are accepted consistently.
+- Fixed cache-signature and output-metadata handling to include the resolved shared problem fields consistently across supported workflows.
+- Expanded regression coverage for expert-mode execution, run signatures, cache behavior, and public API expectations.
+
+---
+
 ## [0.3.10] – April 12, 2026
 
 ### Added

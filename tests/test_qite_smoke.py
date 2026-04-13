@@ -61,6 +61,19 @@ def test_qite_rejects_noisy_optimization() -> None:
         )
 
 
+def test_qite_rejects_unknown_ansatz_name() -> None:
+    with pytest.raises(ValueError, match="Unknown ansatz"):
+        run_qite(
+            molecule="H2",
+            ansatz_name="Adam",
+            steps=1,
+            dtau=0.2,
+            force=True,
+            plot=False,
+            show=False,
+        )
+
+
 def test_qite_charged_uccsd_smoke() -> None:
     res = run_qite(
         molecule="H3+",

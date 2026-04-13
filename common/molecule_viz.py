@@ -12,10 +12,12 @@ Designed for small molecules used in this repo (H2, LiH, H2O, H3+).
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
+
+if TYPE_CHECKING:
+    import matplotlib.pyplot as plt
 
 _COVALENT_RADII: Dict[str, float] = {
     "H": 0.31,
@@ -32,6 +34,12 @@ _ELEMENT_COLORS: Dict[str, str] = {
     "Be": "#E3E324",
     "O": "#FFFFFF",
 }
+
+
+def _pyplot():
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def _as_xyz(coords: np.ndarray) -> np.ndarray:
@@ -149,6 +157,8 @@ def plot_molecule(
     # If anything else was passed, fail loudly
     if kwargs:
         raise TypeError(f"Unexpected keyword arguments: {sorted(kwargs.keys())}")
+
+    plt = _pyplot()
 
     xyz = _as_xyz(coords)
     n = len(symbols)

@@ -67,7 +67,7 @@ def run_qite(
     molecule: str = "H2",
     *,
     seed: int = 0,
-    steps: int = 50,
+    steps: int = 75,
     dtau: float = 0.2,
     plot: bool = True,
     ansatz_name: str = "UCCSD",

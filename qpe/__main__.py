@@ -10,7 +10,7 @@ This CLI mirrors the VQE CLI philosophy:
     • single Hamiltonian pipeline via qpe.hamiltonian (which delegates to common)
 
 Example:
-    python -m qpe --molecule H2 --ancillas 4 --t 1.0 --shots 2000
+    python -m qpe --molecule H2 --ancillas 4 --t 1.0 --shots 1000
 """
 
 from __future__ import annotations
@@ -183,7 +183,7 @@ def parse_args():
     parser.add_argument(
         "--shots",
         type=int,
-        default=2000,
+        default=1000,
         help="Number of measurement shots",
     )
 

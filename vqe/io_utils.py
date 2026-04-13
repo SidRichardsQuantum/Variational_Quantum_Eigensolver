@@ -23,6 +23,8 @@ from common.persist import (
     read_json,
     stable_hash_cfg,
 )
+from vqe.ansatz import canonicalize_ansatz_name
+from vqe.optimizer import canonicalize_optimizer_name
 
 RESULTS_DIR: Path = results_dir("vqe")
 
@@ -86,9 +88,9 @@ def make_run_config_dict(
         "seed": int(seed),
         "noisy": bool(bool(noise)),
         "noise": noise,
-        "ansatz": str(ansatz_desc),
+        "ansatz": canonicalize_ansatz_name(ansatz_desc),
         "optimizer": {
-            "name": str(optimizer_name),
+            "name": canonicalize_optimizer_name(optimizer_name),
             "stepsize": float(stepsize),
             "iterations_planned": int(max_iterations),
         },

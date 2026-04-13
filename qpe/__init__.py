@@ -20,6 +20,8 @@ Primary user-facing API:
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
+from common import mpl_env as _mpl_env  # noqa: F401
+
 try:
     __version__ = _pkg_version("vqe-pennylane")
 except PackageNotFoundError:  # pragma: no cover
@@ -33,27 +35,27 @@ __docformat__ = "restructuredtext"
 # ---------------------------------------------------------------------
 from .hamiltonian import (  # noqa: F401
     build_hamiltonian,
-)
+)  # noqa: E402
 
 from .core import (  # noqa: F401
     run_qpe,
     bitstring_to_phase,
     phase_to_energy_unwrapped,
     hartree_fock_energy,
-)
+)  # noqa: E402
 
 from .visualize import (  # noqa: F401
     plot_qpe_distribution,
     plot_qpe_sweep,
-)
+)  # noqa: E402
 
 from .io_utils import (  # noqa: F401
     save_qpe_result,
     load_qpe_result,
     signature_hash,
-)
+)  # noqa: E402
 
-from .noise import apply_noise_all  # noqa: F401
+from .noise import apply_noise_all  # noqa: F401, E402
 
 # ---------------------------------------------------------------------
 # Public API Surface

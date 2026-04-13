@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
+from common import mpl_env as _mpl_env  # noqa: F401
+
 # Version ----------------------------------------------------------------------
 try:
     __version__ = _pkg_version("vqe-pennylane")
@@ -45,7 +47,7 @@ from .adapt import run_adapt_vqe  # noqa: E402
 from .ansatz import ANSATZES, get_ansatz, init_params  # noqa: E402
 
 # Optimizers -------------------------------------------------------------------
-from .optimizer import get_optimizer  # noqa: E402
+from .optimizer import get_optimizer, OPTIMIZERS  # noqa: E402
 
 # Hamiltonian & geometry --------------------------------------------------------
 from .hamiltonian import build_hamiltonian, generate_geometry  # noqa: E402
@@ -71,9 +73,9 @@ from .visualize import (  # noqa: E402
 from .ssvqe import run_ssvqe  # noqa: E402
 from .vqd import run_vqd  # noqa: E402
 from .qse import run_qse  # noqa: E402
-from .lr_vqe import run_lr_vqe
-from .eom_vqe import run_eom_vqe
-from .eom_qse import run_eom_qse
+from .lr_vqe import run_lr_vqe  # noqa: E402
+from .eom_vqe import run_eom_vqe  # noqa: E402
+from .eom_qse import run_eom_qse  # noqa: E402
 
 __all__ = [
     # Package metadata
@@ -97,6 +99,7 @@ __all__ = [
     "get_ansatz",
     "init_params",
     "get_optimizer",
+    "OPTIMIZERS",
     # Hamiltonian / geometry
     "build_hamiltonian",
     "generate_geometry",

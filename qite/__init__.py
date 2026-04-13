@@ -21,6 +21,8 @@ from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 
+from common import mpl_env as _mpl_env  # noqa: F401
+
 # ---------------------------------------------------------------------
 # Version
 # ---------------------------------------------------------------------

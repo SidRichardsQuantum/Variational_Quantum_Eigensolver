@@ -12,11 +12,15 @@ Design goals
 4) Hartree–Fock state utilities separated from Hamiltonian construction.
 """
 
+# ruff: noqa: I001
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
+from common import mpl_env as _mpl_env  # noqa: F401
+
 import pennylane as qml
 from pennylane import qchem
 

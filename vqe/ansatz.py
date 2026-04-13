@@ -12,8 +12,8 @@ Includes
 - Hardware-efficient template:
     * StronglyEntanglingLayers
 - Chemistry-inspired UCC family:
-    * UCC-S     (singles only)
-    * UCC-D     (doubles only)
+    * UCCS      (singles only)
+    * UCCD      (doubles only)
     * UCCSD     (singles + doubles)
 
 All chemistry ansatzes are constructed to mirror the legacy
@@ -345,7 +345,7 @@ def uccd_ansatz(
     prepare_reference: bool = True,
 ):
     """
-    UCC-D / UCCD: doubles-only UCC ansatz.
+    UCCD: doubles-only UCC ansatz.
 
     Designed to mirror the LiH notebook behaviour where we used
     `excitation_ansatz(..., excitation_type="double")` with zero initial params.
@@ -395,7 +395,7 @@ def uccs_ansatz(
     prepare_reference: bool = True,
 ):
     """
-    UCC-S: singles-only UCC ansatz.
+    UCCS: singles-only UCC ansatz.
 
     Matches the structure of UCCSD/UCCD and the legacy
     `excitation_ansatz(..., excitation_type="single")` behaviour.
@@ -431,12 +431,42 @@ ANSATZES = {
     "Minimal": minimal,
     "StronglyEntanglingLayers": hardware_efficient_ansatz,
     "UCCSD": uccsd_ansatz,
-    "UCC-SD": uccsd_ansatz,  # alias
-    "UCC-D": uccd_ansatz,
-    "UCCD": uccd_ansatz,  # alias
-    "UCC-S": uccs_ansatz,
-    "UCCS": uccs_ansatz,  # alias
+    "UCCD": uccd_ansatz,
+    "UCCS": uccs_ansatz,
 }
+
+_ANSATZ_ALIASES = {
+    "UCC-SD": "UCCSD",
+    "UCC-D": "UCCD",
+    "UCC-S": "UCCS",
+}
+
+
+def _normalize_ansatz_key(name: str) -> str:
+    return "".join(ch for ch in str(name).strip().lower() if ch not in " _-")
+
+
+def canonicalize_ansatz_name(name: str) -> str:
+    """Map case/spacing variants and legacy aliases to canonical registry names."""
+    normalized = str(name).strip()
+    normalized_key = _normalize_ansatz_key(normalized)
+
+    lookup = {
+        _normalize_ansatz_key("TwoQubit-RY-CNOT"): "TwoQubit-RY-CNOT",
+        _normalize_ansatz_key("RY-CZ"): "RY-CZ",
+        _normalize_ansatz_key("Minimal"): "Minimal",
+        _normalize_ansatz_key("StronglyEntanglingLayers"): "StronglyEntanglingLayers",
+        _normalize_ansatz_key("UCCSD"): "UCCSD",
+        _normalize_ansatz_key("UCCD"): "UCCD",
+        _normalize_ansatz_key("UCCS"): "UCCS",
+        _normalize_ansatz_key("UCC-SD"): "UCCSD",
+        _normalize_ansatz_key("UCC-D"): "UCCD",
+        _normalize_ansatz_key("UCC-S"): "UCCS",
+    }
+
+    if normalized in _ANSATZ_ALIASES:
+        return _ANSATZ_ALIASES[normalized]
+    return lookup.get(normalized_key, normalized)
 
 
 def get_ansatz(name: str):
@@ -445,6 +475,8 @@ def get_ansatz(name: str):
 
     This is the entry point used by `vqe.engine.build_ansatz(...)`.
     """
+    name = canonicalize_ansatz_name(name)
+
     if name not in ANSATZES:
         available = ", ".join(sorted(ANSATZES.keys()))
         raise ValueError(f"Unknown ansatz '{name}'. Available: {available}")
@@ -481,7 +513,7 @@ def init_params(
     - StronglyEntanglingLayers
         * params.shape = (1, num_wires, 3), normal with width ~ π
 
-    - UCC family (UCC-S / UCC-D / UCCSD and aliases)
+    - UCC family (UCCS / UCCD / UCCSD)
         * **All zeros**, starting from θ = 0 as in the original chemistry notebooks.
           The length of the vector is determined from the excitation lists.
 
@@ -492,7 +524,7 @@ def init_params(
     """
     np.random.seed(seed)
 
-    ansatz_name = str(ansatz_name).strip()
+    ansatz_name = canonicalize_ansatz_name(ansatz_name)
 
     # --- Toy ansatzes --------------------------------------------------------
     if ansatz_name == "TwoQubit-RY-CNOT":
@@ -513,7 +545,7 @@ def init_params(
         # 1 layer, 3 parameters per wire
         vals = np.random.normal(loc=0.0, scale=np.pi, size=(1, num_wires, 3))
 
-    elif ansatz_name in ["UCCSD", "UCC-SD", "UCC-D", "UCCD", "UCC-S", "UCCS"]:
+    elif ansatz_name in ["UCCSD", "UCCD", "UCCS"]:
         if symbols is None or coordinates is None:
             raise ValueError(
                 f"Ansatz '{ansatz_name}' requires symbols/coordinates "
@@ -530,16 +562,16 @@ def init_params(
             active_orbitals=active_orbitals,
         )
 
-        if ansatz_name in ["UCC-D", "UCCD"]:
+        if ansatz_name == "UCCD":
             # doubles-only
             vals = np.zeros(len(doubles))
 
-        elif ansatz_name in ["UCC-S", "UCCS"]:
+        elif ansatz_name == "UCCS":
             # singles-only
             vals = np.zeros(len(singles))
 
         else:
-            # UCCSD / UCC-SD: singles + doubles
+            # UCCSD: singles + doubles
             vals = np.zeros(len(singles) + len(doubles))
 
     else:

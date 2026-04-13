@@ -184,7 +184,7 @@ def build_parser() -> argparse.ArgumentParser:
     run_p = sub.add_parser("run", help="Run true VarQITE (noiseless; cached).")
     run_p.add_argument("--molecule", type=str, default="H2")
     run_p.add_argument("--ansatz", type=str, default="UCCSD")
-    run_p.add_argument("--steps", type=int, default=50)
+    run_p.add_argument("--steps", type=int, default=75)
     run_p.add_argument("--dtau", type=float, default=0.2)
     run_p.add_argument("--seed", type=int, default=0)
 
@@ -283,7 +283,7 @@ def build_parser() -> argparse.ArgumentParser:
     ev_p.add_argument(
         "--steps",
         type=int,
-        default=50,
+        default=75,
         help="VarQITE steps used to converge parameters.",
     )
     ev_p.add_argument("--dtau", type=float, default=0.2)

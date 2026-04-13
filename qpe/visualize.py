@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence
 
-import matplotlib.pyplot as plt
-
 from common.naming import format_molecule_name, format_token
 from common.noise import format_noise_summary, format_noise_tag
 from common.plotting import (
@@ -18,6 +16,12 @@ from common.plotting import (
     infer_noise_type,
     save_plot,
 )
+
+
+def _pyplot():
+    import matplotlib.pyplot as plt
+
+    return plt
 
 
 def _display_bits(bits: str) -> str:
@@ -76,6 +80,7 @@ def plot_qpe_distribution(
     show: bool = True,
     save: bool = True,
 ) -> None:
+    plt = _pyplot()
     probs = result.get("probs", {})
     if not probs:
         print("⚠️ No probability data found in QPE result — skipping plot.")
@@ -153,6 +158,7 @@ def plot_qpe_sweep(
     save: bool = True,
     seed: int = 0,
 ) -> None:
+    plt = _pyplot()
     mol_raw = str(molecule)
     molecule = format_molecule_name(mol_raw)
     molecule_title = format_molecule_title(mol_raw)

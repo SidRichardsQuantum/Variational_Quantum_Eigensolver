@@ -652,7 +652,7 @@ def main() -> None:
         "-s",
         "--steps",
         type=int,
-        default=50,
+        default=75,
         help="Number of optimization iterations",
     )
     core.add_argument(

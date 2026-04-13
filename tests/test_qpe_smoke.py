@@ -3,10 +3,9 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import numpy as np
-import matplotlib.pyplot as plt
 import pennylane as qml
 import pytest
+import numpy as np
 
 import qpe.io_utils as qpe_io_utils
 from common.hamiltonian import build_hamiltonian
@@ -149,6 +148,8 @@ def test_qpe_rejects_partial_expert_mode() -> None:
 
 
 def test_qpe_distribution_displays_right_to_left_kets(monkeypatch) -> None:
+    import matplotlib.pyplot as plt
+
     result = {
         "molecule": "H2",
         "n_ancilla": 2,
