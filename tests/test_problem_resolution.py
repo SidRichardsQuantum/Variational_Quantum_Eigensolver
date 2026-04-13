@@ -41,6 +41,14 @@ def test_resolve_problem_explicit_geometry_mode_returns_metadata() -> None:
     assert problem.reference_state is not None
 
 
+def test_resolve_problem_registry_mode_uses_registry_multiplicity() -> None:
+    problem = resolve_problem(molecule="H2+")
+
+    assert problem.cacheable is True
+    assert problem.multiplicity == 2
+    assert int(np.sum(problem.reference_state)) == 1
+
+
 def test_resolve_problem_rejects_reference_without_hamiltonian() -> None:
     with pytest.raises(ValueError, match="reference_state is only supported"):
         resolve_problem(molecule="H2", reference_state=[1, 1])

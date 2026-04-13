@@ -34,6 +34,9 @@ def test_qpe_minimal_smoke() -> None:
     assert isinstance(res, dict)
     assert "phase" in res
     assert "probs" in res
+    assert "runtime_s" in res
+    assert "compute_runtime_s" in res
+    assert "cache_hit" in res
 
 
 def test_qpe_probability_dict_has_mass() -> None:
@@ -138,6 +141,31 @@ def test_qpe_hamiltonian_override_bypasses_cache_and_plotting(monkeypatch) -> No
 
     assert isinstance(res, dict)
     assert "phase" in res
+
+
+def test_qpe_cache_hit_reports_cached_timing_metadata() -> None:
+    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
+
+    cfg = dict(
+        symbols=["H", "H"],
+        coordinates=coords,
+        charge=0,
+        basis="sto-3g",
+        n_ancilla=1,
+        shots=100,
+        plot=False,
+        seed=222,
+    )
+
+    fresh = run_qpe(force=True, **cfg)
+    cached = run_qpe(force=False, **cfg)
+
+    assert fresh["cache_hit"] is False
+    assert cached["cache_hit"] is True
+    assert np.isclose(
+        float(cached["compute_runtime_s"]),
+        float(fresh["compute_runtime_s"]),
+    )
 
 
 def test_qpe_rejects_partial_expert_mode() -> None:

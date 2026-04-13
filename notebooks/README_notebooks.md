@@ -192,6 +192,9 @@ Path: `notebooks/benchmarks/comparisons/H2/`
 | `benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb` | Compare VQE, QPE, and VarQITE on one shared H2 Hamiltonian and exact reference | Mixed |
 | `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb` | Measure seed spread, cache timing, and noisy-vs-noiseless variance on one shared H2 problem | Mixed |
 | `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb` | Compare runtime, qubit count, exact-energy error, and proxy-size metrics across H2, LiH, and BeH2 | Mixed |
+| `benchmarks/comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb` | Benchmark small-system VQE across the supported sub-12-qubit registry molecules with exact-ground error and runtime summaries | Mixed |
+| `benchmarks/comparisons/multi_molecule/Hydrogen_Family_VQE_Benchmark.ipynb` | Benchmark VQE across neutral and charged small hydrogen systems through the standard molecule pipeline with registry-backed multiplicity defaults and same-electron-sector exact references | Mixed |
+| `benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb` | Summarize the built-in chemistry registry with charge, multiplicity, qubit count, term count, and exact-ground reference energy using the shared registry-coverage helper | Mixed |
 
 ### Default Calibration Benchmarks
 
@@ -255,6 +258,7 @@ Notes:
 
    * `getting_started/10_adapt_vqe_h3plus.ipynb`
    * `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb`
+   * `benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
    * `vqe/H2O/Bond_Angle.ipynb`

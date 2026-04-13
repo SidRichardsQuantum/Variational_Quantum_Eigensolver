@@ -8,6 +8,7 @@ Every molecule entry contains:
     • symbols      (list[str])
     • coordinates  (np.ndarray)
     • charge       (int)
+    • multiplicity (int, optional; defaults to singlet)
     • basis        (str)
     • unit         (stored coordinate unit; registry values use angstrom)
 """
@@ -26,6 +27,199 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H": {
+        "symbols": ["H"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "He": {
+        "symbols": ["He"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "He+": {
+        "symbols": ["He"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "Li": {
+        "symbols": ["Li"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "Li+": {
+        "symbols": ["Li"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "Be": {
+        "symbols": ["Be"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "Be+": {
+        "symbols": ["Be"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "B": {
+        "symbols": ["B"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "B+": {
+        "symbols": ["B"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "C": {
+        "symbols": ["C"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 3,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "C+": {
+        "symbols": ["C"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "N": {
+        "symbols": ["N"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 4,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "N+": {
+        "symbols": ["N"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 3,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "O": {
+        "symbols": ["O"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 3,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "O+": {
+        "symbols": ["O"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 4,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "F": {
+        "symbols": ["F"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "F+": {
+        "symbols": ["F"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": +1,
+        "multiplicity": 3,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "Ne": {
+        "symbols": ["Ne"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": 0,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H-": {
+        "symbols": ["H"],
+        "coordinates": np.array([[0.0, 0.0, 0.0]]),
+        "charge": -1,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H2+": {
+        "symbols": ["H", "H"],
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.7414],
+            ]
+        ),
+        "charge": +1,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H2-": {
+        "symbols": ["H", "H"],
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.7414],
+            ]
+        ),
+        "charge": -1,
+        "multiplicity": 2,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H3": {
+        "symbols": ["H", "H", "H"],
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.872],
+                [0.755, 0.0, 0.436],
+            ]
+        ),
+        "charge": 0,
+        "multiplicity": 2,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -39,6 +233,7 @@ MOLECULES = {
             ]
         ),
         "charge": +1,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -51,6 +246,7 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -63,6 +259,7 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -76,6 +273,7 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -92,6 +290,7 @@ MOLECULES = {
             ]
         ),
         "charge": +1,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -106,6 +305,7 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -121,6 +321,22 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
+        "basis": "STO-3G",
+        "unit": "angstrom",
+    },
+    "H4+": {
+        "symbols": ["H", "H", "H", "H"],
+        "coordinates": np.array(
+            [
+                [0.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [2.0, 0.0, 0.0],
+                [3.0, 0.0, 0.0],
+            ]
+        ),
+        "charge": +1,
+        "multiplicity": 2,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -137,6 +353,7 @@ MOLECULES = {
             ]
         ),
         "charge": +1,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },
@@ -154,6 +371,7 @@ MOLECULES = {
             ]
         ),
         "charge": 0,
+        "multiplicity": 1,
         "basis": "STO-3G",
         "unit": "angstrom",
     },

@@ -15,6 +15,7 @@ It does **not**:
 
 from __future__ import annotations
 
+import time
 from collections import Counter
 from typing import Any, Dict, Optional
 
@@ -211,6 +212,7 @@ def run_qpe(
     - explicit geometry mode via `symbols=..., coordinates=..., charge=..., basis=...`
     - optional expert override via precomputed `hamiltonian` and `hf_state`
     """
+    start_time = time.perf_counter()
     # Local import to keep qpe.core usable without I/O side effects at import time
     from qpe.io_utils import ensure_dirs, load_qpe_result, save_qpe_result
 
@@ -288,7 +290,14 @@ def run_qpe(
             active_orbitals=resolved_active_orbitals,
         )
         if cached is not None:
-            return cached
+            res = dict(cached)
+            cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
+            res["compute_runtime_s"] = (
+                None if cached_compute is None else float(cached_compute)
+            )
+            res["runtime_s"] = float(time.perf_counter() - start_time)
+            res["cache_hit"] = True
+            return res
 
     # -------------------------
     # Compute
@@ -369,6 +378,7 @@ def run_qpe(
     best_energy = min(candidate_Es, key=lambda x: abs(x - E_hf))
     best_phase = best_row[2] if best_energy == best_row[4] else best_row[3]
 
+    compute_runtime_s = float(time.perf_counter() - start_time)
     result: Dict[str, Any] = {
         "molecule": molecule_label,
         "symbols": list(symbols_out),
@@ -392,6 +402,9 @@ def run_qpe(
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
         "num_qubits": int(qubits),
+        "runtime_s": compute_runtime_s,
+        "compute_runtime_s": compute_runtime_s,
+        "cache_hit": False,
     }
 
     if plot:

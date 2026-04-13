@@ -172,6 +172,7 @@ def _call_ansatz(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     reference_state=None,
@@ -207,6 +208,8 @@ def _call_ansatz(
         kwargs["coordinates"] = coordinates
     if "charge" in supported:
         kwargs["charge"] = int(charge)
+    if "multiplicity" in supported:
+        kwargs["multiplicity"] = int(multiplicity)
     if "active_electrons" in supported:
         kwargs["active_electrons"] = active_electrons
     if "active_orbitals" in supported:
@@ -229,6 +232,7 @@ def build_ansatz(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    multiplicity: int = 1,
     reference_state=None,
     basis: str = "sto-3g",
     active_electrons: int | None = None,
@@ -254,6 +258,7 @@ def build_ansatz(
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=int(multiplicity),
         basis=basis,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
@@ -304,6 +309,7 @@ def make_energy_qnode(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    multiplicity: int = 1,
     reference_state=None,
     basis: str = "sto-3g",
     active_electrons: int | None = None,
@@ -328,6 +334,7 @@ def make_energy_qnode(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            multiplicity=int(multiplicity),
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
             reference_state=reference_state,
@@ -363,6 +370,7 @@ def make_state_qnode(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    multiplicity: int = 1,
     reference_state=None,
     basis: str = "sto-3g",
     active_electrons: int | None = None,
@@ -390,6 +398,7 @@ def make_state_qnode(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            multiplicity=int(multiplicity),
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
             reference_state=reference_state,

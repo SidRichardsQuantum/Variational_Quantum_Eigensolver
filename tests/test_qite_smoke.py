@@ -26,6 +26,9 @@ def test_qite_minimal_smoke() -> None:
     assert "energies" in res
     assert "num_qubits" in res
     assert "varqite" in res
+    assert "runtime_s" in res
+    assert "compute_runtime_s" in res
+    assert "cache_hit" in res
 
     assert np.isfinite(float(res["energy"]))
     assert len(res["energies"]) >= 1
@@ -189,6 +192,9 @@ def test_qrte_minimal_smoke() -> None:
     assert "params_history" in res
     assert "num_qubits" in res
     assert "varqrte" in res
+    assert "runtime_s" in res
+    assert "compute_runtime_s" in res
+    assert "cache_hit" in res
 
     assert np.isfinite(float(res["energy"]))
     assert len(res["energies"]) >= 1
@@ -196,6 +202,28 @@ def test_qrte_minimal_smoke() -> None:
     assert len(res["params_history"]) == len(res["energies"])
     assert abs(float(res["times"][-1]) - 0.2) < 1e-12
     assert int(res["num_qubits"]) > 0
+
+
+def test_qite_cache_hit_reports_cached_timing_metadata() -> None:
+    cfg = dict(
+        molecule="H2",
+        ansatz_name="UCCSD",
+        steps=1,
+        dtau=0.2,
+        plot=False,
+        show=False,
+        seed=321,
+    )
+
+    fresh = run_qite(force=True, **cfg)
+    cached = run_qite(force=False, **cfg)
+
+    assert fresh["cache_hit"] is False
+    assert cached["cache_hit"] is True
+    assert np.isclose(
+        float(cached["compute_runtime_s"]),
+        float(fresh["compute_runtime_s"]),
+    )
 
 
 def test_qrte_rejects_noisy_optimization() -> None:

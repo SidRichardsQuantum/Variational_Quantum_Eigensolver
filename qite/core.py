@@ -18,6 +18,7 @@ Noise is supported only in the CLI's post-evaluation mode (see qite.__main__).
 
 from __future__ import annotations
 
+import time
 from typing import Any, Dict
 
 import pennylane as qml
@@ -118,6 +119,7 @@ def run_qite(
             "varqite": {...},
         }
     """
+    start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))
 
@@ -204,12 +206,18 @@ def run_qite(
         if not force:
             record = load_run_record(prefix)
             if record is not None:
-                res = record["result"]
+                res = dict(record["result"])
                 if "final_params" not in res or "final_params_shape" not in res:
                     raise KeyError(
                         "Cached VarQITE record is missing final parameters. "
                         "Re-run with force=True to refresh the cache."
                     )
+                cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
+                res["compute_runtime_s"] = (
+                    None if cached_compute is None else float(cached_compute)
+                )
+                res["runtime_s"] = float(time.perf_counter() - start_time)
+                res["cache_hit"] = True
                 return res
 
     # --- Device, ansatz, QNodes ---
@@ -302,6 +310,7 @@ def run_qite(
 
     # --- Save ---
     params_arr = np.array(params)
+    compute_runtime_s = float(time.perf_counter() - start_time)
     result = {
         "molecule": str(molecule_label),
         "mapping": str(mapping_out),
@@ -326,6 +335,9 @@ def run_qite(
             "solver": str(solver),
             "pinv_rcond": float(pinv_rcond),
         },
+        "runtime_s": compute_runtime_s,
+        "compute_runtime_s": compute_runtime_s,
+        "cache_hit": False,
     }
 
     record = {"config": cfg, "result": result}
@@ -376,6 +388,7 @@ def run_qrte(
     VarQRTE uses the real-time McLachlan projected update on a pure-state ansatz.
     Noisy/mixed-state optimization is intentionally not supported here.
     """
+    start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))
 
@@ -498,12 +511,18 @@ def run_qrte(
         if not force:
             record = load_run_record(prefix)
             if record is not None:
-                res = record["result"]
+                res = dict(record["result"])
                 if "final_params" not in res or "final_params_shape" not in res:
                     raise KeyError(
                         "Cached VarQRTE record is missing final parameters. "
                         "Re-run with force=True to refresh the cache."
                     )
+                cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
+                res["compute_runtime_s"] = (
+                    None if cached_compute is None else float(cached_compute)
+                )
+                res["runtime_s"] = float(time.perf_counter() - start_time)
+                res["cache_hit"] = True
                 return res
 
     energy_qnode = make_energy_qnode(
@@ -581,6 +600,7 @@ def run_qrte(
         )
 
     params_arr = np.array(params)
+    compute_runtime_s = float(time.perf_counter() - start_time)
     result = {
         "molecule": str(molecule_label),
         "mapping": str(mapping_out),
@@ -608,6 +628,9 @@ def run_qrte(
             "solver": str(solver),
             "pinv_rcond": float(pinv_rcond),
         },
+        "runtime_s": compute_runtime_s,
+        "compute_runtime_s": compute_runtime_s,
+        "cache_hit": False,
     }
 
     record = {"config": cfg, "result": result}

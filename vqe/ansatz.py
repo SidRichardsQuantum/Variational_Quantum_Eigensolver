@@ -118,6 +118,7 @@ def _ucc_cache_key(
     coordinates,
     basis: str,
     charge: int,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
 ):
@@ -128,6 +129,7 @@ def _ucc_cache_key(
         tuple(coords),
         basis.upper(),
         int(charge),
+        int(multiplicity),
         None if active_electrons is None else int(active_electrons),
         None if active_orbitals is None else int(active_orbitals),
     )
@@ -138,6 +140,7 @@ def _build_ucc_data(
     coordinates,
     basis: str = "STO-3G",
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
 ):
@@ -164,6 +167,7 @@ def _build_ucc_data(
         coordinates,
         basis,
         charge_int,
+        int(multiplicity),
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
     )
@@ -173,9 +177,29 @@ def _build_ucc_data(
 
     if key not in _build_ucc_data._cache:
         try:
-            mol = qchem.Molecule(symbols, coordinates, charge=charge_int, basis=basis)
+            mol = qchem.Molecule(
+                symbols,
+                coordinates,
+                charge=charge_int,
+                mult=int(multiplicity),
+                basis_name=basis,
+            )
         except TypeError:
-            mol = qchem.Molecule(symbols, coordinates, charge=charge_int)
+            try:
+                mol = qchem.Molecule(
+                    symbols,
+                    coordinates,
+                    charge=charge_int,
+                    mult=int(multiplicity),
+                    basis=basis,
+                )
+            except TypeError:
+                mol = qchem.Molecule(
+                    symbols,
+                    coordinates,
+                    charge=charge_int,
+                    mult=int(multiplicity),
+                )
 
         if active_electrons is None and active_orbitals is None:
             electrons = int(mol.n_electrons)
@@ -184,7 +208,7 @@ def _build_ucc_data(
             core, active = qchem.active_space(
                 int(mol.n_electrons),
                 int(mol.n_orbitals),
-                mult=1,
+                mult=int(multiplicity),
                 active_electrons=(
                     None if active_electrons is None else int(active_electrons)
                 ),
@@ -282,6 +306,7 @@ def uccsd_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     reference_state=None,
@@ -314,6 +339,7 @@ def uccsd_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
     )
@@ -339,6 +365,7 @@ def uccd_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     reference_state=None,
@@ -364,6 +391,7 @@ def uccd_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
     )
@@ -389,6 +417,7 @@ def uccs_ansatz(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     reference_state=None,
@@ -405,6 +434,7 @@ def uccs_ansatz(
         coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
     )
@@ -495,6 +525,7 @@ def init_params(
     coordinates=None,
     basis: str = "STO-3G",
     charge: int = 0,
+    multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     seed: int = 0,
@@ -558,6 +589,7 @@ def init_params(
             coordinates,
             basis=basis,
             charge=charge,
+            multiplicity=multiplicity,
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
         )

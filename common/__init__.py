@@ -34,7 +34,11 @@ from .molecules import MOLECULES, get_molecule_config  # noqa: F401, E402
 from .geometry import generate_geometry  # noqa: F401, E402
 
 # Hamiltonian construction (PennyLane + OpenFermion fallback)
-from .hamiltonian import build_hamiltonian, get_exact_spectrum  # noqa: F401, E402
+from .hamiltonian import (  # noqa: F401, E402
+    build_hamiltonian,
+    get_exact_spectrum,
+    summarize_registry_coverage,
+)
 from .problem import ResolvedProblem, resolve_problem  # noqa: F401, E402
 
 # Molecule visualization
@@ -57,6 +61,7 @@ __all__ = [
     # Hamiltonian
     "build_hamiltonian",
     "get_exact_spectrum",
+    "summarize_registry_coverage",
     "ResolvedProblem",
     "resolve_problem",
     # Plotting

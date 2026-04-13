@@ -148,6 +148,7 @@ For dynamics:
 Includes:
 
 - `run_vqe`
+- `run_vqe_low_qubit_benchmark`
 - `run_adapt_vqe`
 - `run_lr_vqe`
 - `run_eom_vqe`
@@ -159,6 +160,7 @@ Includes:
 Use it for:
 
 - ground-state optimization
+- low-qubit multi-molecule benchmarking
 - excited-state studies
 - ansatz / optimizer / mapping comparisons
 - geometry scans
@@ -224,6 +226,38 @@ Main shared modules:
 - `common/persist.py`
 - `common/plotting.py`
 - `common/paths.py`
+
+Useful shared helpers:
+
+- `build_hamiltonian(...)`
+- `get_exact_spectrum(...)`
+- `summarize_registry_coverage(...)`
+
+## Supported Molecule Inputs
+
+For standard chemistry workflows, prefer the shared molecule pipeline over expert-mode Hamiltonian inputs.
+
+Built-in registry molecules currently include:
+
+- `H`, `H-`, `H2`, `H2+`, `H2-`, `H3`, `H3+`, `H4`, `H4+`, `H5+`, `H6`
+- `He`, `He+`, `He2`, `HeH+`
+- `Li`, `Li+`, `LiH`
+- `Be`, `Be+`, `BeH2`
+- `B`, `B+`, `C`, `C+`, `N`, `N+`, `O`, `O+`, `F`, `F+`, `Ne`
+- `H2O`
+
+If a target system is not in the registry, use explicit geometry inputs such as
+`symbols=...`, `coordinates=...`, `charge=...`, `multiplicity=...`, and `basis=...`.
+That keeps the run on the standard chemistry path and avoids expert mode unless you
+already have a prebuilt qubit Hamiltonian.
+
+For a ready-made inventory of the built-in registry, use:
+
+```python
+from common import summarize_registry_coverage
+
+rows = summarize_registry_coverage()
+```
 
 ## Non-Molecule Mode
 

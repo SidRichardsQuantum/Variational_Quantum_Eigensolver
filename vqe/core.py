@@ -13,9 +13,12 @@ Includes:
 
 from __future__ import annotations
 
+import time
+
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.molecules import MOLECULES
 from common.problem import resolve_problem
 from common.units import coordinate_unit_label
 
@@ -119,6 +122,54 @@ def _format_noise_point(noise_kwargs: dict[str, float]) -> str:
     return ", ".join(parts)
 
 
+def _hamiltonian_term_count(H: qml.Hamiltonian) -> int | None:
+    try:
+        return int(len(H.ops))
+    except Exception:
+        pass
+
+    try:
+        return int(len(H))
+    except Exception:
+        return None
+
+
+def _select_low_qubit_molecules(
+    *,
+    molecules=None,
+    max_qubits: int,
+    mapping: str,
+    unit: str,
+):
+    names = list(molecules) if molecules is not None else list(MOLECULES.keys())
+    selected: list[dict[str, object]] = []
+
+    for mol in names:
+        problem = resolve_problem(molecule=str(mol), mapping=mapping, unit=unit)
+        qubits = int(problem.num_qubits)
+        if qubits > int(max_qubits):
+            continue
+
+        H = problem.hamiltonian
+        matrix = np.asarray(
+            qml.matrix(H, wire_order=list(range(qubits))),
+            dtype=complex,
+        )
+        exact_eigs = np.linalg.eigvalsh(matrix)
+
+        selected.append(
+            {
+                "molecule": str(mol),
+                "num_qubits": qubits,
+                "exact_ground_energy": float(np.min(exact_eigs).real),
+                "hamiltonian_terms": _hamiltonian_term_count(H),
+            }
+        )
+
+    selected.sort(key=lambda row: (int(row["num_qubits"]), str(row["molecule"])))
+    return selected
+
+
 # ================================================================
 # MAIN VQE EXECUTION
 # ================================================================
@@ -141,6 +192,7 @@ def run_vqe(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     unit: str = "angstrom",
     mapping: str = "jordan_wigner",
     active_electrons: int | None = None,
@@ -149,6 +201,7 @@ def run_vqe(
     num_qubits: int | None = None,
     reference_state=None,
 ):
+    start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))
     resolved_stepsize = (
@@ -164,6 +217,7 @@ def run_vqe(
         coordinates=coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         mapping=mapping,
         unit=unit,
         active_electrons=active_electrons,
@@ -180,6 +234,7 @@ def run_vqe(
     coordinates_out = problem.coordinates
     basis_out = problem.basis
     charge_out = problem.charge
+    multiplicity_out = problem.multiplicity
     unit_out = problem.unit
     resolved_active_electrons = problem.active_electrons
     resolved_active_orbitals = problem.active_orbitals
@@ -208,6 +263,7 @@ def run_vqe(
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
     )
+    cfg["multiplicity"] = int(multiplicity_out)
 
     prefix = None
     if cache_enabled:
@@ -223,7 +279,16 @@ def run_vqe(
         if not force:
             record = load_run_record(prefix)
             if record is not None:
-                return record["result"]
+                cached = dict(record["result"])
+                cached_compute = cached.get(
+                    "compute_runtime_s", cached.get("runtime_s")
+                )
+                cached["compute_runtime_s"] = (
+                    None if cached_compute is None else float(cached_compute)
+                )
+                cached["runtime_s"] = float(time.perf_counter() - start_time)
+                cached["cache_hit"] = True
+                return cached
 
     # --- Device, ansatz, optim, QNodes ---
     dev = make_device(int(qubits), noisy=bool(cfg.get("noise")))
@@ -235,6 +300,7 @@ def run_vqe(
         symbols=symbols_out,
         coordinates=coordinates_out,
         charge=charge_out,
+        multiplicity=multiplicity_out,
         basis=basis_out,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
@@ -255,6 +321,7 @@ def run_vqe(
         symbols=symbols_out,
         coordinates=coordinates_out,
         charge=charge_out,
+        multiplicity=multiplicity_out,
         basis=basis_out,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
@@ -274,6 +341,7 @@ def run_vqe(
         symbols=symbols_out,
         coordinates=coordinates_out,
         charge=charge_out,
+        multiplicity=multiplicity_out,
         basis=basis_out,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
@@ -324,6 +392,7 @@ def run_vqe(
         )
 
     # --- Save ---
+    compute_runtime_s = float(time.perf_counter() - start_time)
     result = {
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],
@@ -335,6 +404,9 @@ def run_vqe(
         "active_orbitals": resolved_active_orbitals,
         "final_params": final_params,
         "params_history": params_history,
+        "runtime_s": compute_runtime_s,
+        "compute_runtime_s": compute_runtime_s,
+        "cache_hit": False,
     }
 
     if cache_enabled and prefix is not None:
@@ -1109,6 +1181,183 @@ def run_vqe_multi_seed_noise(
     )
 
     print(f"\n✅ Multi-seed noise study complete for {molecule}")
+
+
+def run_vqe_low_qubit_benchmark(
+    molecules=None,
+    max_qubits: int = 10,
+    ansatz_name: str = "UCCSD",
+    optimizer_name: str = "Adam",
+    steps: int = 75,
+    stepsize=None,
+    seeds=None,
+    force: bool = False,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
+    skip_failures: bool = True,
+    show: bool = True,
+):
+    """
+    Benchmark noiseless VQE across supported low-qubit registry molecules.
+
+    The benchmark auto-selects molecules whose resolved qubit count is
+    ``<= max_qubits`` unless ``molecules`` is provided explicitly. It reports
+    mean / standard deviation for runtime and absolute error against an exact
+    diagonalization of the same qubit Hamiltonian.
+    """
+    import matplotlib.pyplot as plt
+
+    from common.plotting import build_filename, format_molecule_title, save_plot
+
+    ensure_dirs()
+
+    if seeds is None:
+        seeds = [0, 1, 2]
+
+    resolved_stepsize = (
+        get_optimizer_stepsize(optimizer_name) if stepsize is None else float(stepsize)
+    )
+    benchmark_specs = _select_low_qubit_molecules(
+        molecules=molecules,
+        max_qubits=int(max_qubits),
+        mapping=str(mapping),
+        unit=str(unit),
+    )
+    if not benchmark_specs:
+        raise ValueError(
+            "No molecules matched the requested low-qubit benchmark filter "
+            f"(max_qubits={int(max_qubits)})."
+        )
+
+    rows: list[dict[str, object]] = []
+    skipped: list[dict[str, str]] = []
+    print(
+        "\n🔹 Running low-qubit VQE benchmark "
+        f"(max_qubits={int(max_qubits)}, ansatz={ansatz_name}, optimizer={optimizer_name})"
+    )
+
+    for spec in benchmark_specs:
+        molecule = str(spec["molecule"])
+        exact_ground = float(spec["exact_ground_energy"])
+        runtimes: list[float] = []
+        energies: list[float] = []
+        param_counts: list[int] = []
+
+        print(
+            f"\n⚙️ Benchmarking {molecule} "
+            f"({int(spec['num_qubits'])} qubits, exact={exact_ground:.8f} Ha)"
+        )
+
+        try:
+            for seed in seeds:
+                t0 = time.perf_counter()
+                res = run_vqe(
+                    molecule=molecule,
+                    seed=int(seed),
+                    steps=int(steps),
+                    stepsize=resolved_stepsize,
+                    plot=False,
+                    ansatz_name=ansatz_name,
+                    optimizer_name=optimizer_name,
+                    noisy=False,
+                    force=force,
+                    mapping=mapping,
+                    unit=unit,
+                )
+                runtimes.append(
+                    float(res.get("compute_runtime_s", time.perf_counter() - t0))
+                )
+                energies.append(float(res["energy"]))
+                param_counts.append(len(res.get("final_params", [])))
+        except Exception as exc:
+            if not skip_failures:
+                raise
+            note = {"molecule": molecule, "reason": f"{type(exc).__name__}: {exc}"}
+            skipped.append(note)
+            print(f"  ↷ Skipped: {note['reason']}")
+            continue
+
+        energy_arr = np.asarray(energies, dtype=float)
+        runtime_arr = np.asarray(runtimes, dtype=float)
+        abs_error_arr = np.abs(energy_arr - exact_ground)
+        row = {
+            "molecule": molecule,
+            "num_qubits": int(spec["num_qubits"]),
+            "hamiltonian_terms": spec["hamiltonian_terms"],
+            "exact_ground_energy": exact_ground,
+            "seeds": [int(s) for s in seeds],
+            "energy_mean": float(np.mean(energy_arr)),
+            "energy_std": float(np.std(energy_arr)),
+            "abs_error_mean": float(np.mean(abs_error_arr)),
+            "abs_error_std": float(np.std(abs_error_arr)),
+            "runtime_mean_s": float(np.mean(runtime_arr)),
+            "runtime_std_s": float(np.std(runtime_arr)),
+            "parameter_count": int(max(param_counts) if param_counts else 0),
+        }
+        rows.append(row)
+
+        print(
+            "  → "
+            f"E = {row['energy_mean']:.8f} ± {row['energy_std']:.2e} Ha, "
+            f"|Δ| = {row['abs_error_mean']:.2e} ± {row['abs_error_std']:.2e} Ha, "
+            f"t = {row['runtime_mean_s']:.3f} ± {row['runtime_std_s']:.3f} s"
+        )
+
+    if not rows:
+        raise ValueError(
+            "Low-qubit benchmark produced no successful runs. "
+            "Adjust the molecule list, ansatz, or set skip_failures=False to inspect the first error."
+        )
+
+    labels = [format_molecule_title(str(row["molecule"])) for row in rows]
+    runtime_means = [float(row["runtime_mean_s"]) for row in rows]
+    runtime_stds = [float(row["runtime_std_s"]) for row in rows]
+    error_means = [float(row["abs_error_mean"]) for row in rows]
+    error_stds = [float(row["abs_error_std"]) for row in rows]
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
+
+    axes[0].bar(labels, runtime_means, yerr=runtime_stds, capsize=4, alpha=0.85)
+    axes[0].set_title("Low-qubit VQE benchmark: runtime")
+    axes[0].set_ylabel("Runtime (s)")
+    axes[0].grid(True, axis="y", alpha=0.3)
+
+    axes[1].bar(labels, error_means, yerr=error_stds, capsize=4, alpha=0.85)
+    axes[1].set_title("Low-qubit VQE benchmark: absolute error")
+    axes[1].set_ylabel("|E_VQE - E_exact| (Ha)")
+    axes[1].grid(True, axis="y", alpha=0.3)
+
+    title = (
+        f"Low-qubit molecule benchmark ({ansatz_name}, {optimizer_name}, "
+        f"max_qubits={int(max_qubits)})"
+    )
+    fig.suptitle(title)
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+
+    fname = build_filename(
+        topic="low_qubit_benchmark",
+        ansatz=ansatz_name,
+        optimizer=optimizer_name,
+        mapping=mapping,
+        multi_seed=True,
+        tag=f"max{int(max_qubits)}q",
+    )
+    plot_path = save_plot(fname, kind="vqe", molecule="multi_molecule", show=show)
+
+    print(f"\n✅ Low-qubit VQE benchmark complete for {len(rows)} molecule(s)")
+    return {
+        "rows": rows,
+        "skipped": skipped,
+        "plot_path": plot_path,
+        "max_qubits": int(max_qubits),
+        "ansatz_name": str(ansatz_name),
+        "optimizer_name": str(optimizer_name),
+        "steps": int(steps),
+        "stepsize": float(resolved_stepsize),
+        "mapping": str(mapping).strip().lower(),
+        "unit": str(unit).strip().lower(),
+        "skip_failures": bool(skip_failures),
+    }
 
 
 # ================================================================

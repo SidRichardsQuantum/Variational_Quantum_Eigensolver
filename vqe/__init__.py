@@ -35,6 +35,7 @@ from .core import (  # noqa: E402
     run_vqe,
     run_vqe_ansatz_comparison,
     run_vqe_geometry_scan,
+    run_vqe_low_qubit_benchmark,
     run_vqe_mapping_comparison,
     run_vqe_multi_seed_noise,
     run_vqe_optimizer_comparison,
@@ -86,6 +87,7 @@ __all__ = [
     "run_vqe_ansatz_comparison",
     "run_vqe_multi_seed_noise",
     "run_vqe_geometry_scan",
+    "run_vqe_low_qubit_benchmark",
     "run_vqe_mapping_comparison",
     # Excited-state methods
     "run_ssvqe",

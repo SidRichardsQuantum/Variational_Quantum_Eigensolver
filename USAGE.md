@@ -37,6 +37,12 @@ Lower-level chemistry contract:
 H, n_qubits, hf_state = build_hamiltonian(...)
 ```
 
+Registry-inventory helper:
+
+```python
+rows = summarize_registry_coverage(...)
+```
+
 High-level shared resolver:
 
 ```python
@@ -47,6 +53,7 @@ from:
 
 ```python
 from common.problem import resolve_problem
+from common import summarize_registry_coverage
 ```
 
 Implications:
@@ -57,6 +64,98 @@ Implications:
 - unified caching and output structure
 
 There is also an expert-mode path for prebuilt qubit Hamiltonians when you do not want molecule or geometry inputs.
+
+## Supported Molecule Inputs
+
+The shared chemistry pipeline accepts three input styles.
+
+### 1. Registry molecule names
+
+Use `molecule="..."` with the built-in molecule registry when a named system is already supported.
+
+Current registry molecules:
+
+- `H`
+- `H-`
+- `He`
+- `He+`
+- `B`
+- `B+`
+- `C`
+- `C+`
+- `H2`
+- `H2+`
+- `H2-`
+- `H3`
+- `H3+`
+- `N`
+- `N+`
+- `O`
+- `O+`
+- `F`
+- `F+`
+- `Ne`
+- `Li`
+- `Li+`
+- `H4`
+- `H4+`
+- `H5+`
+- `H6`
+- `Be`
+- `Be+`
+- `He2`
+- `HeH+`
+- `LiH`
+- `H2O`
+- `BeH2`
+
+Several common aliases are normalized automatically, for example:
+
+- `h2` -> `H2`
+- `H3PLUS` -> `H3+`
+- `H2_PLUS` -> `H2+`
+- `H4PLUS` -> `H4+`
+
+### 2. Parametric geometry tags
+
+Use `molecule="..."` with a geometry tag when you want a generated structure rather than a fixed registry entry.
+
+Supported geometry tags:
+
+- `H2_BOND`
+- `H3+_BOND`
+- `LiH_BOND`
+- `H2O_ANGLE`
+
+These are intended for scans and geometry studies.
+
+### 3. Explicit geometry mode
+
+Use explicit molecular data when the target system is not in the registry:
+
+```python
+from common.hamiltonian import build_hamiltonian
+
+H, n_qubits, hf_state = build_hamiltonian(
+    symbols=["H", "H"],
+    coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]],
+    charge=0,
+    multiplicity=1,
+    basis="sto-3g",
+)
+```
+
+This same explicit-geometry input style is supported by the high-level runners such as `run_vqe(...)`, `run_qpe(...)`, `run_qite(...)`, and `run_qrte(...)`.
+
+If `molecule="..."` is not a supported registry key or geometry tag, the builder raises a `KeyError`. In that case, use explicit geometry mode instead of expert mode whenever possible.
+
+To inspect the currently supported built-in registry programmatically:
+
+```python
+from common import summarize_registry_coverage
+
+rows = summarize_registry_coverage()
+```
 
 ---
 
@@ -326,6 +425,52 @@ Noise options:
 - depolarizing
 - amplitude damping
 - combined channels
+
+---
+
+## Low-qubit benchmark
+
+Use this when you want one decision-grade VQE summary across the supported
+small molecules instead of a single-molecule sweep.
+
+Python:
+
+```python
+from vqe import run_vqe_low_qubit_benchmark
+
+bench = run_vqe_low_qubit_benchmark(
+    max_qubits=10,
+    ansatz_name="UCCSD",
+    optimizer_name="Adam",
+    seeds=[0, 1, 2],
+    show=False,
+)
+
+for row in bench["rows"]:
+    print(
+        row["molecule"],
+        row["num_qubits"],
+        row["abs_error_mean"],
+        row["runtime_mean_s"],
+    )
+```
+
+Reported per molecule:
+
+- resolved qubit count
+- Hamiltonian term count
+- exact ground-state reference energy
+- mean / standard deviation of final VQE energy across seeds
+- mean / standard deviation of absolute error against exact diagonalization
+- mean / standard deviation of original compute runtime
+
+By default, molecules that cannot be run with the selected ansatz are skipped and
+reported under `bench["skipped"]`. Set `skip_failures=False` if you want the
+first incompatible case to raise immediately.
+
+When cached artifacts already exist, the benchmark prefers each run's stored
+`compute_runtime_s` value over the current cache-hit wall time, so runtime
+tables still reflect the original compute cost.
 
 ---
 

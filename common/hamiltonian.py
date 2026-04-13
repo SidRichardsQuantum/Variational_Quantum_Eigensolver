@@ -45,10 +45,56 @@ def _normalise_static_key(name: str) -> str:
     up = s.upper().replace(" ", "").replace("-", "_")
 
     # Canonicalise simple ionic aliases
+    if up in {"H"}:
+        return "H"
+    if up in {"H-", "HMINUS", "H_MINUS"}:
+        return "H-"
+    if up in {"H2+", "H2PLUS", "H2_PLUS"}:
+        return "H2+"
+    if up in {"H2-", "H2MINUS", "H2_MINUS"}:
+        return "H2-"
+    if up in {"H3", "H_3"}:
+        return "H3"
     if up in {"H3+", "H3PLUS", "H3_PLUS"}:
         return "H3+"
+    if up in {"H4+", "H4PLUS", "H4_PLUS"}:
+        return "H4+"
     if up in {"H5+", "H5PLUS", "H5_PLUS"}:
         return "H5+"
+    if up in {"HE", "HELIUM"}:
+        return "He"
+    if up in {"HE+", "HEPLUS", "HE_PLUS"}:
+        return "He+"
+    if up in {"LI", "LITHIUM"}:
+        return "Li"
+    if up in {"LI+", "LIPLUS", "LI_PLUS"}:
+        return "Li+"
+    if up in {"BE", "BERYLLIUM"}:
+        return "Be"
+    if up in {"BE+", "BEPLUS", "BE_PLUS"}:
+        return "Be+"
+    if up in {"B", "BORON"}:
+        return "B"
+    if up in {"B+", "BPLUS", "B_PLUS"}:
+        return "B+"
+    if up in {"C", "CARBON"}:
+        return "C"
+    if up in {"C+", "CPLUS", "C_PLUS"}:
+        return "C+"
+    if up in {"N", "NITROGEN"}:
+        return "N"
+    if up in {"N+", "NPLUS", "N_PLUS"}:
+        return "N+"
+    if up in {"O", "OXYGEN"}:
+        return "O"
+    if up in {"O+", "OPLUS", "O_PLUS"}:
+        return "O+"
+    if up in {"F", "FLUORINE"}:
+        return "F"
+    if up in {"F+", "FPLUS", "F_PLUS"}:
+        return "F+"
+    if up in {"NE", "NEON"}:
+        return "Ne"
 
     # Preserve + for other ions if user included it
     # but normalise plain molecule strings by stripping underscores
@@ -61,8 +107,26 @@ def _normalise_static_key(name: str) -> str:
         return "H6"
     if s2.upper() == "HE2":
         return "He2"
+    if s2.upper() == "HE":
+        return "He"
     if s2.upper() == "LIH":
         return "LiH"
+    if s2.upper() == "LI":
+        return "Li"
+    if s2.upper() == "BE":
+        return "Be"
+    if s2.upper() == "B":
+        return "B"
+    if s2.upper() == "C":
+        return "C"
+    if s2.upper() == "N":
+        return "N"
+    if s2.upper() == "O":
+        return "O"
+    if s2.upper() == "F":
+        return "F"
+    if s2.upper() == "NE":
+        return "Ne"
     if s2.upper() == "H2O":
         return "H2O"
     if s2.upper() == "HEH+" or up == "HEH+":
@@ -84,6 +148,7 @@ def hartree_fock_state_from_molecule(
     symbols: list[str],
     coordinates: np.ndarray,
     charge: int,
+    multiplicity: int = 1,
     basis: str,
     n_qubits: int,
     active_electrons: int | None = None,
@@ -107,6 +172,7 @@ def hartree_fock_state_from_molecule(
         symbols=symbols,
         coordinates=coords,
         charge=charge,
+        multiplicity=multiplicity,
         basis=basis,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
@@ -119,13 +185,37 @@ def _make_molecule(
     symbols: list[str],
     coordinates: np.ndarray,
     charge: int,
+    multiplicity: int = 1,
     basis: str,
 ):
     coords = np.array(coordinates, dtype=float)
     try:
-        return qchem.Molecule(symbols, coords, charge=charge, basis=basis)
+        return qchem.Molecule(
+            symbols,
+            coords,
+            charge=charge,
+            mult=int(multiplicity),
+            basis_name=basis,
+        )
     except TypeError:
-        return qchem.Molecule(symbols, coords, charge=charge)
+        try:
+            return qchem.Molecule(
+                symbols,
+                coords,
+                charge=charge,
+                mult=int(multiplicity),
+                basis=basis,
+            )
+        except TypeError:
+            try:
+                return qchem.Molecule(
+                    symbols,
+                    coords,
+                    charge=charge,
+                    mult=int(multiplicity),
+                )
+            except TypeError:
+                return qchem.Molecule(symbols, coords, charge=charge)
 
 
 def resolve_active_space(
@@ -133,6 +223,7 @@ def resolve_active_space(
     symbols: list[str],
     coordinates: np.ndarray,
     charge: int,
+    multiplicity: int = 1,
     basis: str,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
@@ -148,6 +239,7 @@ def resolve_active_space(
         symbols=list(symbols),
         coordinates=np.array(coordinates, dtype=float),
         charge=int(charge),
+        multiplicity=int(multiplicity),
         basis=str(basis),
     )
 
@@ -168,7 +260,7 @@ def resolve_active_space(
     core, active = qchem.active_space(
         total_electrons,
         total_orbitals,
-        mult=1,
+        mult=int(multiplicity),
         active_electrons=ae,
         active_orbitals=ao,
     )
@@ -189,6 +281,7 @@ def build_molecular_hamiltonian(
     symbols: list[str],
     coordinates: np.ndarray,
     charge: int,
+    multiplicity: int = 1,
     basis: str,
     mapping: Optional[str] = None,
     unit: str = "angstrom",
@@ -220,42 +313,57 @@ def build_molecular_hamiltonian(
     unit_norm = normalize_coordinate_unit(unit)
     coords = np.array(coordinates, dtype=float)
     mapping_kw = None if mapping is None else str(mapping).strip().lower()
+    force_openfermion = int(multiplicity) != 1
 
-    # --- Attempt 1: default qchem backend, with mapping if supported ---
-    try:
+    def _call_molecular_hamiltonian(*, method: str | None, include_mapping: bool):
         kwargs: Dict[str, Any] = dict(
             symbols=symbols,
             coordinates=coords,
             charge=int(charge),
+            mult=int(multiplicity),
             basis=basis,
             unit=unit_norm,
         )
+        if method is not None:
+            kwargs["method"] = method
         if active_electrons is not None:
             kwargs["active_electrons"] = int(active_electrons)
         if active_orbitals is not None:
             kwargs["active_orbitals"] = int(active_orbitals)
-        if mapping_kw is not None:
+        if include_mapping and mapping_kw is not None:
             kwargs["mapping"] = mapping_kw
+        return qchem.molecular_hamiltonian(**kwargs)
 
-        H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
+    if force_openfermion:
+        try:
+            H, n_qubits = _call_molecular_hamiltonian(
+                method="openfermion",
+                include_mapping=True,
+            )
+            return H, int(n_qubits)
+        except TypeError:
+            H, n_qubits = _call_molecular_hamiltonian(
+                method="openfermion",
+                include_mapping=False,
+            )
+            return H, int(n_qubits)
+
+    # --- Attempt 1: default qchem backend, with mapping if supported ---
+    try:
+        H, n_qubits = _call_molecular_hamiltonian(
+            method=None,
+            include_mapping=True,
+        )
         return H, int(n_qubits)
 
     except TypeError as exc_type:
         # Retry without mapping if that was provided.
         if mapping_kw is not None:
             try:
-                kwargs = dict(
-                    symbols=symbols,
-                    coordinates=coords,
-                    charge=int(charge),
-                    basis=basis,
-                    unit=unit_norm,
+                H, n_qubits = _call_molecular_hamiltonian(
+                    method=None,
+                    include_mapping=False,
                 )
-                if active_electrons is not None:
-                    kwargs["active_electrons"] = int(active_electrons)
-                if active_orbitals is not None:
-                    kwargs["active_orbitals"] = int(active_orbitals)
-                H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
                 return H, int(n_qubits)
             except Exception:
                 # Fall through to global fallback below
@@ -275,27 +383,20 @@ def build_molecular_hamiltonian(
 
     print("⚠️ Default PennyLane-qchem backend failed — retrying with OpenFermion...")
     try:
-        kwargs = dict(
-            symbols=symbols,
-            coordinates=coords,
-            charge=int(charge),
-            basis=basis,
-            unit=unit_norm,
-            method="openfermion",
-        )
-        if active_electrons is not None:
-            kwargs["active_electrons"] = int(active_electrons)
-        if active_orbitals is not None:
-            kwargs["active_orbitals"] = int(active_orbitals)
         if mapping_kw is not None:
             try:
-                kwargs["mapping"] = mapping_kw
-                H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
+                H, n_qubits = _call_molecular_hamiltonian(
+                    method="openfermion",
+                    include_mapping=True,
+                )
                 return H, int(n_qubits)
             except TypeError:
-                kwargs.pop("mapping", None)
+                pass
 
-        H, n_qubits = qchem.molecular_hamiltonian(**kwargs)
+        H, n_qubits = _call_molecular_hamiltonian(
+            method="openfermion",
+            include_mapping=False,
+        )
         return H, int(n_qubits)
 
     except Exception as e_fallback:
@@ -313,6 +414,7 @@ def build_from_molecule_name(
     unit: str = "angstrom",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    multiplicity: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, Dict[str, Any]]:
     """
     Convenience wrapper for the common molecule registry.
@@ -323,10 +425,12 @@ def build_from_molecule_name(
         cfg is the molecule config dict from common.molecules.
     """
     cfg = get_molecule_config(name)
+    mult = int(cfg.get("multiplicity", 1) if multiplicity is None else multiplicity)
     H, n_qubits = build_molecular_hamiltonian(
         symbols=cfg["symbols"],
         coordinates=cfg["coordinates"],
         charge=cfg["charge"],
+        multiplicity=mult,
         basis=cfg["basis"],
         mapping=mapping,
         unit=unit,
@@ -346,6 +450,7 @@ def build_hamiltonian(
     *,
     charge: Optional[int] = None,
     basis: Optional[str] = None,
+    multiplicity: Optional[int] = None,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     return_metadata: bool = False,
@@ -405,12 +510,14 @@ def build_hamiltonian(
         sym = list(symbols)
         coords = np.array(coordinates, dtype=float)
         chg = int(charge)
+        mult = 1 if multiplicity is None else int(multiplicity)
         bas = str(basis).strip().lower()
 
         H, n_qubits = build_molecular_hamiltonian(
             symbols=sym,
             coordinates=coords,
             charge=chg,
+            multiplicity=mult,
             basis=bas,
             mapping=mapping_norm,
             unit=unit_norm,
@@ -422,6 +529,7 @@ def build_hamiltonian(
             symbols=sym,
             coordinates=coords,
             charge=chg,
+            multiplicity=mult,
             basis=bas,
             n_qubits=int(n_qubits),
             active_electrons=active_electrons,
@@ -494,6 +602,7 @@ def build_hamiltonian(
 
         sym, coords = generate_geometry(mol, float(default_param), unit=unit_norm)
         chg = +1 if up.startswith(("H3+", "H3PLUS", "H3_PLUS")) else 0
+        mult = 1
         bas = "sto-3g"
     else:
         key = _normalise_static_key(mol)
@@ -505,12 +614,15 @@ def build_hamiltonian(
             to_unit=unit_norm,
         )
         chg = int(cfg["charge"])
+        cfg_mult = int(cfg.get("multiplicity", 1))
+        mult = cfg_mult if multiplicity is None else int(multiplicity)
         bas = str(cfg["basis"]).strip().lower()
 
     H, n_qubits = build_molecular_hamiltonian(
         symbols=list(sym),
         coordinates=np.array(coords, dtype=float),
         charge=int(chg),
+        multiplicity=int(mult),
         basis=str(bas).lower(),
         mapping=mapping_norm,
         unit=unit_norm,
@@ -522,6 +634,7 @@ def build_hamiltonian(
         symbols=list(sym),
         coordinates=np.array(coords, dtype=float),
         charge=int(chg),
+        multiplicity=int(mult),
         basis=str(bas).lower(),
         n_qubits=int(n_qubits),
         active_electrons=active_electrons,
@@ -569,3 +682,87 @@ def get_exact_spectrum(
     evals = _np.sort(_np.linalg.eigvalsh(_np.asarray(Hmat, dtype=complex)))
     k = int(max(1, k))
     return [float(x) for x in evals[:k]]
+
+
+def summarize_registry_coverage(
+    *,
+    systems: list[str] | None = None,
+    mapping: str = "jordan_wigner",
+    unit: str = "angstrom",
+    progress: bool = False,
+) -> list[dict[str, Any]]:
+    """
+    Build a coverage summary for registry-backed molecules.
+
+    Parameters
+    ----------
+    systems:
+        Optional subset of registry molecule names. Defaults to all registry entries.
+    mapping, unit:
+        Shared chemistry-pipeline options passed into ``build_hamiltonian(...)``.
+    progress:
+        If True, print one line per built system.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        One row per registry molecule with charge, multiplicity, electron count,
+        qubit count, Hamiltonian term count, and exact ground-state energy.
+    """
+    from common.molecules import MOLECULES
+
+    selected = (
+        sorted(MOLECULES.keys()) if systems is None else [str(s) for s in systems]
+    )
+    rows: list[dict[str, Any]] = []
+
+    for system in selected:
+        cfg = get_molecule_config(system)
+        if progress:
+            print(f"Building {system} from the shared molecule pipeline...")
+
+        (
+            hamiltonian,
+            num_qubits,
+            hf_state,
+            symbols,
+            _coordinates,
+            basis,
+            charge,
+            _unit_out,
+        ) = build_hamiltonian(
+            molecule=system,
+            mapping=str(mapping).strip().lower(),
+            unit=str(unit).strip().lower(),
+            return_metadata=True,
+        )
+
+        matrix = np.asarray(
+            qml.matrix(hamiltonian, wire_order=list(range(int(num_qubits)))),
+            dtype=complex,
+        )
+        exact_ground_energy = float(np.min(np.linalg.eigvalsh(matrix)).real)
+
+        row = {
+            "molecule": system,
+            "symbols": "".join(symbols),
+            "charge": int(charge),
+            "multiplicity": int(cfg.get("multiplicity", 1)),
+            "basis": str(basis).strip().lower(),
+            "num_electrons": int(np.sum(hf_state)),
+            "num_qubits": int(num_qubits),
+            "hamiltonian_terms": int(len(hamiltonian)),
+            "exact_ground_energy": exact_ground_energy,
+        }
+        rows.append(row)
+
+        if progress:
+            print(
+                "Done: "
+                f"qubits={row['num_qubits']}, "
+                f"electrons={row['num_electrons']}, "
+                f"terms={row['hamiltonian_terms']}, "
+                f"E0={row['exact_ground_energy']:+.8f} Ha"
+            )
+
+    return rows

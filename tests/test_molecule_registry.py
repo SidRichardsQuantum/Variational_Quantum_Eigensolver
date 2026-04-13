@@ -20,6 +20,9 @@ def test_molecule_registry_integrity() -> None:
         assert coords.shape[1] == 3
 
         assert isinstance(cfg["charge"], int)
+        if "multiplicity" in cfg:
+            assert isinstance(cfg["multiplicity"], int)
+            assert cfg["multiplicity"] > 0
         assert isinstance(cfg["basis"], str)
         assert len(cfg["symbols"]) == coords.shape[0]
 
@@ -27,12 +30,35 @@ def test_molecule_registry_integrity() -> None:
 def test_expected_molecules_exist() -> None:
     for name in [
         "H2",
+        "H",
+        "H-",
+        "He",
+        "He+",
+        "H2+",
+        "H2-",
+        "H3",
         "H3+",
         "He2",
+        "Li",
+        "Li+",
+        "B",
+        "B+",
+        "C",
+        "C+",
+        "N",
+        "N+",
+        "O",
+        "O+",
+        "F",
+        "F+",
+        "Ne",
         "LiH",
         "H2O",
+        "Be",
+        "Be+",
         "BeH2",
         "H4",
+        "H4+",
         "H5+",
         "H6",
         "HeH+",

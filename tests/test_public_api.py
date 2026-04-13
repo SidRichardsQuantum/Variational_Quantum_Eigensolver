@@ -15,11 +15,14 @@ def test_top_level_imports_smoke() -> None:
 
 
 def test_canonical_entrypoints_are_callable() -> None:
+    from common import summarize_registry_coverage
     from qpe import run_qpe
     from qite import run_qite, run_qrte
-    from vqe import run_vqe
+    from vqe import run_vqe, run_vqe_low_qubit_benchmark
 
+    assert callable(summarize_registry_coverage)
     assert callable(run_vqe)
+    assert callable(run_vqe_low_qubit_benchmark)
     assert callable(run_qpe)
     assert callable(run_qite)
     assert callable(run_qrte)
@@ -44,6 +47,7 @@ def test_calibrated_main_defaults() -> None:
     from vqe.core import (
         run_vqe_ansatz_comparison,
         run_vqe_geometry_scan,
+        run_vqe_low_qubit_benchmark,
         run_vqe_mapping_comparison,
         run_vqe_multi_seed_noise,
         run_vqe_optimizer_comparison,
@@ -60,6 +64,7 @@ def test_calibrated_main_defaults() -> None:
     ansatz_cmp_sig = inspect.signature(run_vqe_ansatz_comparison)
     multi_seed_sig = inspect.signature(run_vqe_multi_seed_noise)
     geometry_sig = inspect.signature(run_vqe_geometry_scan)
+    low_qubit_sig = inspect.signature(run_vqe_low_qubit_benchmark)
     mapping_sig = inspect.signature(run_vqe_mapping_comparison)
     qse_sig = inspect.signature(run_qse)
     lr_sig = inspect.signature(run_lr_vqe)
@@ -74,6 +79,9 @@ def test_calibrated_main_defaults() -> None:
     assert ansatz_cmp_sig.parameters["stepsize"].default is None
     assert multi_seed_sig.parameters["stepsize"].default is None
     assert geometry_sig.parameters["stepsize"].default is None
+    assert low_qubit_sig.parameters["stepsize"].default is None
+    assert low_qubit_sig.parameters["max_qubits"].default == 10
+    assert low_qubit_sig.parameters["skip_failures"].default is True
     assert mapping_sig.parameters["stepsize"].default is None
     assert qse_sig.parameters["stepsize"].default is None
     assert lr_sig.parameters["stepsize"].default is None

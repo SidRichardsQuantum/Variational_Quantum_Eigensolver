@@ -16,7 +16,8 @@ from . import mpl_env as _mpl_env  # noqa: F401
 
 import pennylane as qml
 
-from .hamiltonian import build_hamiltonian, resolve_active_space
+from .hamiltonian import _normalise_static_key, build_hamiltonian, resolve_active_space
+from .molecules import get_molecule_config
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,7 @@ class ResolvedProblem:
     coordinates: np.ndarray
     basis: str
     charge: int
+    multiplicity: int
     mapping: str
     unit: str
     active_electrons: int | None
@@ -43,6 +45,7 @@ def resolve_problem(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     active_electrons: int | None = None,
@@ -58,6 +61,7 @@ def resolve_problem(
     basis_norm = str(basis).strip().lower()
     unit_norm = str(unit).strip().lower()
     charge_int = int(charge)
+    multiplicity_int = int(multiplicity)
 
     if hamiltonian is not None:
         H = hamiltonian
@@ -108,6 +112,7 @@ def resolve_problem(
             ),
             basis=basis_norm,
             charge=charge_int,
+            multiplicity=multiplicity_int,
             mapping=mapping_norm,
             unit=unit_norm,
             active_electrons=(
@@ -139,6 +144,7 @@ def resolve_problem(
             symbols=list(symbols),
             coordinates=np.array(coordinates, dtype=float),
             charge=charge_int,
+            multiplicity=multiplicity_int,
             basis=basis_norm,
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
@@ -148,6 +154,7 @@ def resolve_problem(
         )
         molecule_label = str(molecule).strip() or "molecule"
     else:
+        requested_multiplicity = None if multiplicity_int == 1 else multiplicity_int
         (
             H,
             resolved_num_qubits,
@@ -159,6 +166,7 @@ def resolve_problem(
             unit_out,
         ) = build_hamiltonian(
             molecule=str(molecule),
+            multiplicity=requested_multiplicity,
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
             mapping=mapping_norm,
@@ -167,10 +175,18 @@ def resolve_problem(
         )
         molecule_label = str(molecule).strip()
 
+        try:
+            cfg = get_molecule_config(_normalise_static_key(str(molecule).strip()))
+        except KeyError:
+            cfg = None
+        if cfg is not None and multiplicity_int == 1:
+            multiplicity_int = int(cfg.get("multiplicity", 1))
+
     _, _, (resolved_active_electrons, resolved_active_orbitals) = resolve_active_space(
         symbols=list(symbols_out),
         coordinates=np.array(coordinates_out, dtype=float),
         charge=int(charge_out),
+        multiplicity=multiplicity_int,
         basis=str(basis_out).strip().lower(),
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
@@ -185,6 +201,7 @@ def resolve_problem(
         coordinates=np.array(coordinates_out, dtype=float),
         basis=str(basis_out).strip().lower(),
         charge=int(charge_out),
+        multiplicity=multiplicity_int,
         mapping=mapping_norm,
         unit=str(unit_out).strip().lower(),
         active_electrons=resolved_active_electrons,

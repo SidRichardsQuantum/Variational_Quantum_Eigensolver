@@ -4,7 +4,79 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.14] - April 13, 2026
+
+### Added
+
+- **Expanded small-system molecule registry**
+
+  Added curated atom and atomic-ion entries for small benchmarkable systems in the
+  shared molecule registry:
+
+  - `He`, `He+`
+  - `Li`, `Li+`
+  - `Be`, `Be+`
+  - `B`, `B+`
+  - `C`, `C+`
+  - `N`, `N+`
+  - `O`, `O+`
+  - `F`, `F+`
+  - `Ne`
+
+  This extends the standard chemistry path for low-qubit studies without requiring
+  explicit geometry setup or expert-mode Hamiltonian inputs.
+
+- **Registry coverage notebook**
+
+  Added `notebooks/benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb`
+  to summarize the built-in chemistry registry with resolved qubit counts, term
+  counts, charge and multiplicity defaults, and exact-ground reference energies.
+
+- **Shared registry-coverage helper**
+
+  Added `common.summarize_registry_coverage(...)` so notebooks and scripts can
+  reuse one standard table-building path for registry molecule coverage.
+
+### Changed
+
+- **Open-shell standard chemistry builds now use OpenFermion directly**
+
+  Open-shell registry and explicit-geometry builds now route straight to the
+  OpenFermion backend instead of first failing through the default PennyLane-qchem
+  backend, removing repeated fallback warnings in notebooks such as the hydrogen-family benchmark.
+
+- **Input documentation now describes supported molecule names explicitly**
+
+  Added a `Supported Molecule Inputs` section to `USAGE.md` and summarized the same
+  guidance in `README.md` so users can see when to use registry names, geometry tags,
+  explicit geometry mode, or expert mode.
+
+- **Hydrogen-family benchmark exact references corrected**
+
+  Updated the hydrogen-family benchmark to compare against same-electron-sector
+  exact ground energies rather than the unrestricted global minimum of the full
+  qubit Hamiltonian.
+
 ## [0.3.13] - April 13, 2026
+
+### Added
+
+- **Low-qubit multi-molecule VQE benchmark helper**
+
+  Added `run_vqe_low_qubit_benchmark(...)` to benchmark supported registry
+  molecules up to a chosen qubit limit, aggregating runtime and exact-ground
+  error statistics across seeds for small-system comparison work.
+
+- **Cached compute-runtime metadata across public runners**
+
+  `run_vqe(...)`, `run_qite(...)`, `run_qrte(...)`, and `run_qpe(...)` now
+  return `runtime_s`, `compute_runtime_s`, and `cache_hit` so benchmark code
+  can distinguish cache-load latency from original compute cost.
+
+- **Low-qubit VQE benchmark notebook**
+
+  Added `notebooks/benchmarks/comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb`
+  as the notebook-facing companion for the low-qubit benchmark helper.
 
 ### Changed
 
