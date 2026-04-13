@@ -47,7 +47,7 @@ from .adapt import run_adapt_vqe  # noqa: E402
 from .ansatz import ANSATZES, get_ansatz, init_params  # noqa: E402
 
 # Optimizers -------------------------------------------------------------------
-from .optimizer import get_optimizer, OPTIMIZERS  # noqa: E402
+from .optimizer import get_optimizer, get_optimizer_stepsize, OPTIMIZERS  # noqa: E402
 
 # Hamiltonian & geometry --------------------------------------------------------
 from .hamiltonian import build_hamiltonian, generate_geometry  # noqa: E402
@@ -99,6 +99,7 @@ __all__ = [
     "get_ansatz",
     "init_params",
     "get_optimizer",
+    "get_optimizer_stepsize",
     "OPTIMIZERS",
     # Hamiltonian / geometry
     "build_hamiltonian",

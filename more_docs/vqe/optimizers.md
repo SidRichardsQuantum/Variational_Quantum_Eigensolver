@@ -7,14 +7,31 @@ The implemented optimizer names are:
 - `Adam`
 - `GradientDescent`
 - `Momentum`
-- `Nesterov`
+- `NesterovMomentum`
 - `RMSProp`
 - `Adagrad`
 
-These are exposed through the factory:
+These are exposed through the registry `OPTIMIZERS`, where each canonical name maps
+to:
+
+- the PennyLane optimizer factory
+- a calibrated default `stepsize`
+- accepted aliases
+
+The calibrated defaults currently used by `run_vqe()` when `stepsize` is omitted are:
+
+- `Adam`: `0.15`
+- `GradientDescent`: `0.10`
+- `Momentum`: `0.10`
+- `NesterovMomentum`: `0.20`
+- `RMSProp`: `0.01`
+- `Adagrad`: `0.10`
+
+The main helpers are:
 
 ```python
-get_optimizer(name: str = "Adam", stepsize: float = 0.2)
+get_optimizer(name: str = "Adam", stepsize: float | None = None)
+get_optimizer_stepsize(name: str = "Adam") -> float
 ```
 
 and are used inside the main VQE loop via a unified PennyLane interface.
@@ -64,7 +81,12 @@ where the update $\Delta \theta_t$ depends on the optimizer-specific rule.
 In `vqe.core.run_vqe`, the optimizer is constructed as
 
 ```python
-opt = engine_build_optimizer(str(optimizer_name), stepsize=float(stepsize))
+resolved_stepsize = (
+    get_optimizer_stepsize(str(optimizer_name))
+    if stepsize is None
+    else float(stepsize)
+)
+opt = engine_build_optimizer(str(optimizer_name), stepsize=resolved_stepsize)
 ```
 
 and then applied through either
@@ -243,7 +265,7 @@ Instead of evaluating the gradient exactly at the current point, Nesterov moment
 
 ### Typical use in this repo
 
-Nesterov is a useful intermediate option between simple momentum methods and more adaptive optimizers such as Adam.
+`NesterovMomentum` is a useful intermediate option between simple momentum methods and more adaptive optimizers such as Adam.
 
 ---
 
@@ -412,7 +434,7 @@ The optimizers in this repository can be grouped roughly as follows.
 
 - `GradientDescent`
 - `Momentum`
-- `Nesterov`
+- `NesterovMomentum`
 
 These methods use a global learning rate $\eta$ without adaptive per-parameter normalization. They are simple and interpretable, but usually more sensitive to hyperparameter tuning.
 
@@ -432,14 +454,14 @@ For most standard VQE experiments in this repository:
 
 1. start with `Adam`
 2. use `GradientDescent` as a baseline if you want a clean reference
-3. try `Momentum` or `Nesterov` if you want simple inertial alternatives
+3. try `Momentum` or `NesterovMomentum` if you want simple inertial alternatives
 4. try `RMSProp` or `Adagrad` when parameter scales appear uneven
 
 A practical rule of thumb is:
 
 - **Adam** for general-purpose default use
 - **GradientDescent** for interpretability and baseline studies
-- **Momentum / Nesterov** for simple acceleration over GD
+- **Momentum / NesterovMomentum** for simple acceleration over GD
 - **RMSProp / Adagrad** for stronger per-parameter adaptation
 
 ---
@@ -487,28 +509,42 @@ So:
 The current optimizer registry is:
 
 ```python
-_OPTIMIZERS = {
-    "Adam": qml.AdamOptimizer,
-    "adam": qml.AdamOptimizer,
-    "GradientDescent": qml.GradientDescentOptimizer,
-    "gd": qml.GradientDescentOptimizer,
-    "Momentum": qml.MomentumOptimizer,
-    "Nesterov": qml.NesterovMomentumOptimizer,
-    "RMSProp": qml.RMSPropOptimizer,
-    "Adagrad": qml.AdagradOptimizer,
+OPTIMIZERS = {
+    "Adam": {"factory": qml.AdamOptimizer, "stepsize": 0.15, "aliases": ("adam",)},
+    "GradientDescent": {
+        "factory": qml.GradientDescentOptimizer,
+        "stepsize": 0.10,
+        "aliases": ("gradientdescent", "gradient_descent", "gd"),
+    },
+    "Momentum": {
+        "factory": qml.MomentumOptimizer,
+        "stepsize": 0.10,
+        "aliases": ("momentum",),
+    },
+    "NesterovMomentum": {
+        "factory": qml.NesterovMomentumOptimizer,
+        "stepsize": 0.20,
+        "aliases": ("nesterov", "nesterovmomentum"),
+    },
+    "RMSProp": {"factory": qml.RMSPropOptimizer, "stepsize": 0.01, "aliases": ("rmsprop",)},
+    "Adagrad": {"factory": qml.AdagradOptimizer, "stepsize": 0.10, "aliases": ("adagrad",)},
 }
 ```
 
-So the accepted user-facing names are:
+So the canonical user-facing names are:
 
 - `Adam`
-- `adam`
 - `GradientDescent`
-- `gd`
 - `Momentum`
-- `Nesterov`
+- `NesterovMomentum`
 - `RMSProp`
 - `Adagrad`
+
+Accepted aliases also include:
+
+- `adam`
+- `gd`
+- `nesterov`
 
 ---
 
@@ -518,7 +554,7 @@ So the accepted user-facing names are:
 | ----------------- | --------------------------------------------------- | -------------: | ------------------------------: | ----------------------------------------------------- |
 | `GradientDescent` | direct negative-gradient update                     |             No |                              No | simple but stepsize-sensitive                         |
 | `Momentum`        | gradient descent with velocity accumulation         |            Yes |                              No | faster than GD, can overshoot                         |
-| `Nesterov`        | momentum with look-ahead gradient                   |            Yes |                              No | often sharper updates, still tuning-sensitive         |
+| `NesterovMomentum` | momentum with look-ahead gradient                  |            Yes |                              No | often sharper updates, still tuning-sensitive         |
 | `Adagrad`         | cumulative squared-gradient scaling                 |             No |                             Yes | adapts well early, can become too conservative        |
 | `RMSProp`         | moving-average squared-gradient scaling             |             No |                             Yes | adaptive and stable, but less full-featured than Adam |
 | `Adam`            | momentum + adaptive second moment + bias correction |            Yes |                             Yes | robust default, but more complex                      |

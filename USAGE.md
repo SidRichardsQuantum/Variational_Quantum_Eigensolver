@@ -285,6 +285,9 @@ Guidance:
 | GradientDescent  | baseline                                |
 | NesterovMomentum | faster convergence on smooth landscapes |
 
+If `stepsize` / `--stepsize` is omitted for VQE workflows, the calibrated
+default for the selected optimizer is used.
+
 See:
 
 ```

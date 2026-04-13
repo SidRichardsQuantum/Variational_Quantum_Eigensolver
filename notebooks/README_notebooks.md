@@ -55,8 +55,8 @@ notebooks/
 │   └── vqe/
 │
 ├── getting_started/
-│   ├── vqe_vs_qpe_from_scratch_h2.ipynb
-│   └── 13_getting_started_qrte_h2.ipynb
+│   ├── 01_vqe_vs_qpe_from_scratch_h2.ipynb
+│   └── 11_getting_started_qrte_h2.ipynb
 │
 ├── vqe/
 │   ├── H2/
@@ -72,15 +72,15 @@ notebooks/
 
 If you are new to the repository, begin with:
 
-`notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`
+`notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`
 
 This notebook provides compact, conceptual implementations of **VQE** and **QPE** before moving to the packaged workflows used elsewhere in the repository.
 
 Fast path:
 
-- start with `getting_started/01_getting_started_vqe_h2.ipynb` for the basic VQE API
-- use `getting_started/06_getting_started_qite_h2.ipynb` for VarQITE
-- use `getting_started/13_getting_started_qrte_h2.ipynb` for prepared-state VarQRTE usage
+- start with `getting_started/02_getting_started_vqe_h2.ipynb` for the basic VQE API
+- use `getting_started/07_getting_started_qite_h2.ipynb` for VarQITE
+- use `getting_started/11_getting_started_qrte_h2.ipynb` for prepared-state VarQRTE usage
 - use `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` when you want to validate VarQRTE against exact evolution
 
 ---
@@ -140,7 +140,7 @@ VarQITE and VarQRTE are demonstrated on H2 as package-client workflows.
 | Notebook                           | Purpose                    | Style          |
 | ---------------------------------- | -------------------------- | -------------- |
 | `Real_Time.ipynb`                  | Noiseless VarQRTE on H2    | Package client |
-| `getting_started/13_getting_started_qrte_h2.ipynb` | Prepared-state VarQRTE intro on H2 | Package client |
+| `getting_started/11_getting_started_qrte_h2.ipynb` | Prepared-state VarQRTE intro on H2 | Package client |
 
 Note:
 
@@ -223,11 +223,11 @@ Notes:
 
 1. **Conceptual starting point**
 
-   * `getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`
+   * `getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`
 
 2. **Core VQE workflow**
 
-   * `getting_started/01_getting_started_vqe_h2.ipynb`
+   * `getting_started/02_getting_started_vqe_h2.ipynb`
    * `getting_started/09_bond_scan_h2.ipynb`
 
 3. **Noise studies**
@@ -253,7 +253,7 @@ Notes:
 
 6. **Larger systems and geometry**
 
-   * `getting_started/11_adapt_vqe_h3plus.ipynb`
+   * `getting_started/10_adapt_vqe_h3plus.ipynb`
    * `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
    * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
@@ -261,8 +261,8 @@ Notes:
 
 7. **Projected dynamics**
 
-   * `getting_started/06_getting_started_qite_h2.ipynb`
-   * `getting_started/13_getting_started_qrte_h2.ipynb`
+   * `getting_started/07_getting_started_qite_h2.ipynb`
+   * `getting_started/11_getting_started_qrte_h2.ipynb`
    * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
    * `qite/H2/Real_Time.ipynb`
 

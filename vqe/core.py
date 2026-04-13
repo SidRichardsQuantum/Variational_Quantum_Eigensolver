@@ -39,6 +39,7 @@ from .io_utils import (
     run_signature,
     save_run_record,
 )
+from .optimizer import get_optimizer_stepsize
 from .visualize import (
     plot_convergence,
     plot_noise_statistics,
@@ -125,7 +126,7 @@ def run_vqe(
     molecule: str = "H2",
     seed: int = 0,
     steps: int = 75,
-    stepsize: float = 0.2,
+    stepsize: float | None = None,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
     optimizer_name: str = "Adam",
@@ -150,6 +151,11 @@ def run_vqe(
 ):
     ensure_dirs()
     np.random.seed(int(seed))
+    resolved_stepsize = (
+        get_optimizer_stepsize(str(optimizer_name))
+        if stepsize is None
+        else float(stepsize)
+    )
 
     mapping_norm = str(mapping).strip().lower()
     problem = resolve_problem(
@@ -186,7 +192,7 @@ def run_vqe(
         basis=basis_out,
         ansatz_desc=str(ansatz_name),
         optimizer_name=str(optimizer_name),
-        stepsize=float(stepsize),
+        stepsize=resolved_stepsize,
         max_iterations=int(steps),
         seed=int(seed),
         mapping=mapping_norm,
@@ -273,7 +279,7 @@ def run_vqe(
         active_orbitals=resolved_active_orbitals,
     )
 
-    opt = engine_build_optimizer(str(optimizer_name), stepsize=float(stepsize))
+    opt = engine_build_optimizer(str(optimizer_name), stepsize=resolved_stepsize)
 
     # --- Optimization loop ---
     params = np.array(params0, requires_grad=True)
@@ -346,7 +352,7 @@ def run_vqe_optimizer_comparison(
     ansatz_name: str = "RY-CZ",
     optimizers=None,
     steps: int = 50,
-    stepsize=0.2,
+    stepsize=None,
     noisy: bool = True,
     depolarizing_prob: float = 0.05,
     amplitude_damping_prob: float = 0.05,
@@ -383,7 +389,8 @@ def run_vqe_optimizer_comparison(
 
     Parameters
     ----------
-    stepsize : float | dict
+    stepsize : float | dict | None
+        If omitted, use the calibrated default stepsize for each optimizer.
     noise_type : str
         Built-in channel to sweep in `mode="noise_stats"`.
         Supported values:
@@ -403,6 +410,8 @@ def run_vqe_optimizer_comparison(
     # Helper: resolve stepsize
     # -----------------------------
     def _stepsize_for(opt_name: str) -> float:
+        if stepsize is None:
+            return get_optimizer_stepsize(opt_name)
         if isinstance(stepsize, dict):
             if opt_name not in stepsize:
                 raise ValueError(
@@ -686,7 +695,7 @@ def run_vqe_ansatz_comparison(
     optimizer_name: str = "Adam",
     ansatzes=None,
     steps: int = 50,
-    stepsize: float = 0.2,
+    stepsize: float | None = None,
     noisy: bool = True,
     depolarizing_prob: float = 0.05,
     amplitude_damping_prob: float = 0.05,
@@ -706,7 +715,9 @@ def run_vqe_ansatz_comparison(
     plot: bool = True,
 ):
     """
-    Compare ansatz families for a fixed optimizer (defaults: Adam, 50 steps, stepsize 0.2).
+    Compare ansatz families for a fixed optimizer.
+
+    If `stepsize` is omitted, use the calibrated default for `optimizer_name`.
 
     mode="convergence":
         - single run per ansatz
@@ -727,6 +738,9 @@ def run_vqe_ansatz_comparison(
         "TwoQubit-RY-CNOT",
         "StronglyEntanglingLayers",
     ]
+    resolved_stepsize = (
+        get_optimizer_stepsize(optimizer_name) if stepsize is None else float(stepsize)
+    )
 
     if mode == "convergence":
         results = {}
@@ -737,7 +751,7 @@ def run_vqe_ansatz_comparison(
             res = run_vqe(
                 molecule=molecule,
                 steps=steps,
-                stepsize=float(stepsize),
+                stepsize=resolved_stepsize,
                 plot=False,
                 ansatz_name=ans_name,
                 optimizer_name=optimizer_name,
@@ -786,7 +800,7 @@ def run_vqe_ansatz_comparison(
             "final_energies": final_vals,
             "optimizer_name": optimizer_name,
             "steps": int(steps),
-            "stepsize": float(stepsize),
+            "stepsize": resolved_stepsize,
         }
 
     if mode != "noise_stats":
@@ -815,7 +829,7 @@ def run_vqe_ansatz_comparison(
         "molecule": molecule,
         "optimizer_name": optimizer_name,
         "steps": int(steps),
-        "stepsize": float(stepsize),
+        "stepsize": resolved_stepsize,
         "mapping": mapping,
         "noise_type": noise_type_l,
         "noise_levels": [float(x) for x in noise_levels],
@@ -825,7 +839,7 @@ def run_vqe_ansatz_comparison(
 
     for ans_name in ansatzes:
         print(
-            f"\n🔹 Ansatz: {ans_name} (optimizer={optimizer_name}, stepsize={float(stepsize)})"
+            f"\n🔹 Ansatz: {ans_name} (optimizer={optimizer_name}, stepsize={resolved_stepsize})"
         )
 
         deltaE_mean, deltaE_std = [], []
@@ -840,7 +854,7 @@ def run_vqe_ansatz_comparison(
             ref = run_vqe(
                 molecule=molecule,
                 steps=steps,
-                stepsize=float(stepsize),
+                stepsize=resolved_stepsize,
                 plot=False,
                 ansatz_name=ans_name,
                 optimizer_name=optimizer_name,
@@ -869,7 +883,7 @@ def run_vqe_ansatz_comparison(
                 res = run_vqe(
                     molecule=molecule,
                     steps=steps,
-                    stepsize=float(stepsize),
+                    stepsize=resolved_stepsize,
                     plot=False,
                     ansatz_name=ans_name,
                     optimizer_name=optimizer_name,
@@ -981,7 +995,7 @@ def run_vqe_multi_seed_noise(
     ansatz_name="RY-CZ",
     optimizer_name="Adam",
     steps=30,
-    stepsize=0.2,
+    stepsize=None,
     seeds=None,
     noise_type="depolarizing",
     depolarizing_probs=None,
@@ -1002,6 +1016,9 @@ def run_vqe_multi_seed_noise(
 
     if amplitude_damping_probs is None:
         amplitude_damping_probs = np.zeros_like(depolarizing_probs)
+    resolved_stepsize = (
+        get_optimizer_stepsize(optimizer_name) if stepsize is None else float(stepsize)
+    )
     noise_type_norm = str(noise_type).strip().lower()
     _noise_probs_for_type(noise_type_norm, 0.0)
 
@@ -1012,7 +1029,7 @@ def run_vqe_multi_seed_noise(
         res = run_vqe(
             molecule=molecule,
             steps=steps,
-            stepsize=stepsize,
+            stepsize=resolved_stepsize,
             plot=False,
             ansatz_name=ansatz_name,
             optimizer_name=optimizer_name,
@@ -1044,7 +1061,7 @@ def run_vqe_multi_seed_noise(
             res = run_vqe(
                 molecule=molecule,
                 steps=steps,
-                stepsize=stepsize,
+                stepsize=resolved_stepsize,
                 plot=False,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
@@ -1104,7 +1121,7 @@ def run_vqe_geometry_scan(
     ansatz_name="UCCSD",
     optimizer_name="Adam",
     steps=30,
-    stepsize=0.2,
+    stepsize=None,
     seeds=None,
     force=False,
     mapping: str = "jordan_wigner",
@@ -1137,6 +1154,9 @@ def run_vqe_geometry_scan(
         raise ValueError("param_values must be specified")
 
     seeds = seeds or [0]
+    resolved_stepsize = (
+        get_optimizer_stepsize(optimizer_name) if stepsize is None else float(stepsize)
+    )
     results = []
 
     for val in param_values:
@@ -1149,7 +1169,7 @@ def run_vqe_geometry_scan(
             res = run_vqe(
                 molecule=molecule,
                 steps=steps,
-                stepsize=stepsize,
+                stepsize=resolved_stepsize,
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
                 symbols=symbols,
@@ -1212,7 +1232,7 @@ def run_vqe_mapping_comparison(
     optimizer_name="Adam",
     mappings=None,
     steps=50,
-    stepsize=0.2,
+    stepsize=None,
     noisy=False,
     depolarizing_prob=0.0,
     amplitude_damping_prob=0.0,
@@ -1251,6 +1271,9 @@ def run_vqe_mapping_comparison(
     from common.plotting import build_filename, save_plot
 
     np.random.seed(seed)
+    resolved_stepsize = (
+        get_optimizer_stepsize(optimizer_name) if stepsize is None else float(stepsize)
+    )
 
     mappings = mappings or ["jordan_wigner", "bravyi_kitaev", "parity"]
     results = {}
@@ -1280,7 +1303,7 @@ def run_vqe_mapping_comparison(
             ansatz_name=ansatz_name,
             optimizer_name=optimizer_name,
             steps=steps,
-            stepsize=stepsize,
+            stepsize=resolved_stepsize,
             unit=unit,
             noisy=noisy,
             depolarizing_prob=depolarizing_prob,

@@ -273,7 +273,7 @@ Supported optimizers:
 - Gradient Descent
 - RMSProp
 - Adagrad
-- Momentum / Nesterov
+- Momentum / NesterovMomentum
 
 Differences:
 

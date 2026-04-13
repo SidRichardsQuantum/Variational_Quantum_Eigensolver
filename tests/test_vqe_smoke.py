@@ -13,7 +13,6 @@ def test_vqe_minimal_smoke() -> None:
         ansatz_name="Minimal",
         optimizer_name="Adam",
         steps=4,
-        stepsize=0.2,
         noisy=False,
         force=True,
         plot=False,

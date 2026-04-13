@@ -42,6 +42,7 @@ from .io_utils import (
     run_signature,
     save_run_record,
 )
+from .optimizer import get_optimizer_stepsize
 
 
 def _json_safe_complex_matrix(M: np.ndarray, *, tol: float = 1e-14):
@@ -128,7 +129,7 @@ def run_lr_vqe(
     ansatz_name: str = "UCCSD",
     optimizer_name: str = "Adam",
     steps: int = 50,
-    stepsize: float = 0.2,
+    stepsize: float | None = None,
     seed: int = 0,
     mapping: str = "jordan_wigner",
     fd_eps: float = 1e-3,
@@ -139,6 +140,11 @@ def run_lr_vqe(
     save: bool = False,
 ) -> Dict[str, Any]:
     ensure_dirs()
+    resolved_stepsize = (
+        get_optimizer_stepsize(str(optimizer_name))
+        if stepsize is None
+        else float(stepsize)
+    )
 
     mapping_norm = str(mapping).strip().lower()
     molecule_label = str(molecule).strip()
@@ -157,7 +163,7 @@ def run_lr_vqe(
         basis=str(basis).strip().lower(),
         ansatz_desc=str(ansatz_name),
         optimizer_name=str(optimizer_name),
-        stepsize=float(stepsize),
+        stepsize=resolved_stepsize,
         max_iterations=int(steps),
         seed=int(seed),
         mapping=mapping_norm,
@@ -202,7 +208,7 @@ def run_lr_vqe(
         molecule=str(molecule),
         seed=int(seed),
         steps=int(steps),
-        stepsize=float(stepsize),
+        stepsize=resolved_stepsize,
         plot=False,
         ansatz_name=str(ansatz_name),
         optimizer_name=str(optimizer_name),
@@ -279,7 +285,7 @@ def run_lr_vqe(
                 "ansatz": str(ansatz_name),
                 "optimizer": str(optimizer_name),
                 "steps": int(steps),
-                "stepsize": float(stepsize),
+                "stepsize": resolved_stepsize,
                 "seed": int(seed),
                 "mapping": mapping_norm,
             },

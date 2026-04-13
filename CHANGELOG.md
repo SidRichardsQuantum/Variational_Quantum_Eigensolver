@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.13] - April 13, 2026
+
+### Changed
+
+- **VQE CLI now matches calibrated optimizer-default behaviour**
+
+  `vqe --stepsize` is now optional. When omitted, the CLI preserves the same
+  calibrated per-optimizer default stepsize behaviour as the Python APIs
+  instead of forcing a legacy fixed `0.2` learning rate.
+
+### Fixed
+
+- Fixed stale VQE CLI argument forwarding that still cast `stepsize` eagerly in
+  standard VQE, compare-noise, and post-VQE excited-state workflows, preventing
+  the new optimizer-default resolution path from taking effect.
+- Fixed optimizer documentation to reflect the canonical
+  `NesterovMomentum` registry entry, the alias model, and the current
+  calibrated default-stepsize registry layout.
+- Fixed notebook and documentation path references so the renumbered
+  `getting_started/` notebook names are referenced consistently.
+
 ## [0.3.12] - April 13, 2026
 
 ### Added
@@ -156,7 +177,7 @@ All notable changes to this project will be documented in this file.
 
 - **New VarQRTE notebooks**
 
-  - `notebooks/getting_started/13_getting_started_qrte_h2.ipynb` — prepared-state VarQRTE usage demo
+  - `notebooks/getting_started/11_getting_started_qrte_h2.ipynb` — prepared-state VarQRTE usage demo
   - `notebooks/qite/H2/Real_Time.ipynb` — package-client VarQRTE workflow
   - `notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` — exact-vs-VarQRTE H2 quench benchmark
 

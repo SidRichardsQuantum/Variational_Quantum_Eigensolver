@@ -47,6 +47,11 @@ from vqe import (
 )
 
 
+def _cli_stepsize(value: Optional[float]) -> Optional[float]:
+    """Preserve omitted CLI stepsize so downstream APIs can resolve defaults."""
+    return None if value is None else float(value)
+
+
 def _parse_weights(
     raw: Optional[List[float]], *, num_states: int
 ) -> Optional[List[float]]:
@@ -171,7 +176,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
@@ -214,7 +219,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             mapping=str(args.mapping),
             fd_eps=float(args.lr_fd_eps),
@@ -251,7 +256,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             mapping=str(args.mapping),
             fd_eps=float(args.eom_fd_eps),
@@ -289,7 +294,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             mapping=str(args.mapping),
             pool=str(args.eom_qse_pool),
@@ -327,7 +332,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
@@ -364,7 +369,7 @@ def handle_special_modes(args) -> bool:
         inner_stepsize = (
             float(args.inner_stepsize)
             if args.inner_stepsize is not None
-            else float(args.stepsize)
+            else (0.2 if args.stepsize is None else float(args.stepsize))
         )
 
         res = run_adapt_vqe(
@@ -493,7 +498,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             seed=int(args.seed),
             mapping=str(args.mapping),
             pool=str(args.qse_pool),
@@ -519,7 +524,7 @@ def handle_special_modes(args) -> bool:
             molecule=args.molecule,
             seed=int(args.seed),
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=False,
@@ -538,7 +543,7 @@ def handle_special_modes(args) -> bool:
             molecule=args.molecule,
             seed=int(args.seed),
             steps=int(args.steps),
-            stepsize=float(args.stepsize),
+            stepsize=_cli_stepsize(args.stepsize),
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             noisy=True,
@@ -659,8 +664,8 @@ def main() -> None:
         "-lr",
         "--stepsize",
         type=float,
-        default=0.2,
-        help="Optimizer step size",
+        default=None,
+        help="Optimizer step size. If omitted, use the calibrated default for the selected optimizer.",
     )
 
     # ------------------------------------------------------------------
@@ -953,7 +958,12 @@ def main() -> None:
     print(f"• Ansatz:     {args.ansatz}")
     print(f"• Optimizer:  {args.optimizer}")
     print(f"• Mapping:    {args.mapping}")
-    print(f"• Steps:      {args.steps}  | Stepsize: {args.stepsize}")
+    stepsize_label = (
+        "auto (calibrated per optimizer)"
+        if args.stepsize is None
+        else str(args.stepsize)
+    )
+    print(f"• Steps:      {args.steps}  | Stepsize: {stepsize_label}")
     print(f"• Noise:      {'ON' if args.noisy else 'OFF'}")
     print(f"• Seed:       {args.seed}")
     if explicit_geometry:
@@ -976,7 +986,9 @@ def main() -> None:
     elif args.adapt:
         inner_steps = args.inner_steps if args.inner_steps is not None else args.steps
         inner_stepsize = (
-            args.inner_stepsize if args.inner_stepsize is not None else args.stepsize
+            args.inner_stepsize
+            if args.inner_stepsize is not None
+            else (0.2 if args.stepsize is None else args.stepsize)
         )
         print(
             f"• Mode:       ADAPT-VQE (pool={args.pool}, max_ops={args.max_ops}, grad_tol={args.grad_tol}, "
@@ -1008,7 +1020,7 @@ def main() -> None:
         molecule=args.molecule,
         seed=int(args.seed),
         steps=int(args.steps),
-        stepsize=float(args.stepsize),
+        stepsize=_cli_stepsize(args.stepsize),
         ansatz_name=args.ansatz,
         optimizer_name=args.optimizer,
         noisy=bool(args.noisy),

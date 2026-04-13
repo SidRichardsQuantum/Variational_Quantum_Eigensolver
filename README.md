@@ -115,6 +115,9 @@ model_res = run_vqe(
 print("Model VQE:", model_res["energy"])
 ```
 
+`run_vqe()` uses the calibrated default stepsize for the selected optimizer when `stepsize` is omitted.
+The `vqe` CLI does the same when `--stepsize` is omitted.
+
 CLI:
 
 ```bash
@@ -274,9 +277,9 @@ Layout:
 
 Recommended starting points:
 
-- [`notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb`](notebooks/getting_started/vqe_vs_qpe_from_scratch_h2.ipynb)
-- [`notebooks/getting_started/06_getting_started_qite_h2.ipynb`](notebooks/getting_started/06_getting_started_qite_h2.ipynb)
-- [`notebooks/getting_started/13_getting_started_qrte_h2.ipynb`](notebooks/getting_started/13_getting_started_qrte_h2.ipynb)
+- [`notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`](notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb)
+- [`notebooks/getting_started/07_getting_started_qite_h2.ipynb`](notebooks/getting_started/07_getting_started_qite_h2.ipynb)
+- [`notebooks/getting_started/11_getting_started_qrte_h2.ipynb`](notebooks/getting_started/11_getting_started_qrte_h2.ipynb)
 - [`notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`](notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb)
 
 ## Documentation

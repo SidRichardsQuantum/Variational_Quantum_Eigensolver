@@ -35,6 +35,7 @@ from .io_utils import (
     run_signature,
     save_run_record,
 )
+from .optimizer import get_optimizer_stepsize
 
 # ================================================================
 # Operator specs (JSON-safe)
@@ -362,7 +363,7 @@ def run_qse(
     ansatz_name: str = "UCCSD",
     optimizer_name: str = "Adam",
     steps: int = 50,
-    stepsize: float = 0.2,
+    stepsize: float | None = None,
     seed: int = 0,
     mapping: str = "jordan_wigner",
     # QSE pool controls
@@ -401,6 +402,11 @@ def run_qse(
     mol = str(molecule).strip()
     mapping_norm = str(mapping).strip().lower()
     pool_norm = str(pool).strip().lower()
+    resolved_stepsize = (
+        get_optimizer_stepsize(str(optimizer_name))
+        if stepsize is None
+        else float(stepsize)
+    )
 
     # ------------------------------------------------------------
     # 1) Reference VQE run (noiseless)
@@ -409,7 +415,7 @@ def run_qse(
         molecule=mol,
         seed=int(seed),
         steps=int(steps),
-        stepsize=float(stepsize),
+        stepsize=resolved_stepsize,
         plot=False,
         ansatz_name=str(ansatz_name),
         optimizer_name=str(optimizer_name),
@@ -471,7 +477,7 @@ def run_qse(
         basis=str(basis),
         ansatz_desc=str(ansatz_name),
         optimizer_name=str(optimizer_name),
-        stepsize=float(stepsize),
+        stepsize=resolved_stepsize,
         max_iterations=int(steps),
         seed=int(seed),
         mapping=mapping_norm,
@@ -492,7 +498,7 @@ def run_qse(
         "ansatz": str(ansatz_name),
         "optimizer": str(optimizer_name),
         "steps": int(steps),
-        "stepsize": float(stepsize),
+        "stepsize": resolved_stepsize,
         "seed": int(seed),
         "mapping": mapping_norm,
     }
