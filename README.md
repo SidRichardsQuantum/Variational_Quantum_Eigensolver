@@ -17,6 +17,8 @@
 
 </p>
 
+PyPI: [https://pypi.org/project/vqe-pennylane/](https://pypi.org/project/vqe-pennylane/)
+
 PennyLane-based workflows for:
 
 - ground-state VQE
