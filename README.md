@@ -32,6 +32,29 @@ Implemented packages:
 - `qite` for projected variational dynamics (`VarQITE`, `VarQRTE`)
 - `common` for shared chemistry, Hamiltonians, caching, and plotting
 
+## Table of Contents
+
+- [What This Repo Is Good For](#what-this-repo-is-good-for)
+- [Choose A Method](#choose-a-method)
+- [Install](#install)
+- [Quickstart](#quickstart)
+- [Typical Workflow](#typical-workflow)
+- [Package Overview](#package-overview)
+  - [vqe](#vqe)
+  - [qpe](#qpe)
+  - [qite](#qite)
+- [Shared Infrastructure](#shared-infrastructure)
+- [Supported Molecule Inputs](#supported-molecule-inputs)
+- [Non-Molecule Mode](#non-molecule-mode)
+- [Outputs And Reproducibility](#outputs-and-reproducibility)
+- [Notebooks](#notebooks)
+- [Documentation](#documentation)
+- [Repository Layout](#repository-layout)
+- [Testing](#testing)
+- [Support Development](#support-development)
+- [Author](#author)
+- [License](#license)
+
 ## What This Repo Is Good For
 
 Use this repo if you want:
@@ -356,6 +379,24 @@ Variational_Quantum_Eigensolver/
 ```bash
 pytest -q
 ```
+
+---
+
+## Support development
+
+If this repository is useful for research, learning, or experimentation, you can support continued development via GitHub Sponsors:
+
+https://github.com/sponsors/SidRichardsQuantum
+
+Sponsorship helps support ongoing work on open-source implementations of quantum algorithms, including improvements to documentation, reproducible workflows, and example notebooks.
+
+Support helps maintain and expand practical tooling for variational quantum methods, quantum simulation workflows, and related experimentation.
+
+## Citation
+
+Sid Richards (2026)
+
+Unified Variational and Phase-Estimation Quantum Simulation Suite
 
 ## Author
 

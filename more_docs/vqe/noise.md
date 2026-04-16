@@ -155,9 +155,9 @@ vqe -m H2 --noisy --depolarizing-prob 0.02
 
 Behaviour:
 
-* noise applied independently to each qubit
-* any subset of built-in channels can be combined
-* ignored if `--noisy` is not set
+- noise applied independently to each qubit
+- any subset of built-in channels can be combined
+- ignored if `--noisy` is not set
 
 ---
 
@@ -186,9 +186,9 @@ apply_optional_noise(..., noise_model=my_noise)
 
 Behaviour:
 
-* applied **after the ansatz**
-* executed only if `noisy=True`
-* can include arbitrary PennyLane channels
+- applied **after the ansatz**
+- executed only if `noisy=True`
+- can include arbitrary PennyLane channels
 
 ---
 
@@ -196,8 +196,8 @@ Behaviour:
 
 If both interfaces are used:
 
-* built-in configured channels are applied first
-* then `noise_model` is applied
+- built-in configured channels are applied first
+- then `noise_model` is applied
 
 This allows explicit package-supported channels plus arbitrary extra PennyLane channels.
 
@@ -213,13 +213,13 @@ apply_optional_noise(...)
 
 ### Key properties
 
-* no-op if `noisy=False`
-* applied to all wires:
+- no-op if `noisy=False`
+- applied to all wires:
 
   ```python
   wires = list(range(num_wires))
   ```
-* applied **inside QNodes**, after ansatz construction
+- applied **inside QNodes**, after ansatz construction
 
 ---
 
@@ -257,8 +257,8 @@ Differentiation method depends on noise:
 
 Reason:
 
-* parameter-shift is not generally valid for noisy channels
-* finite-difference is used as a fallback
+- parameter-shift is not generally valid for noisy channels
+- finite-difference is used as a fallback
 
 ---
 
@@ -268,34 +268,34 @@ Noise affects different methods differently.
 
 ### Fully supported
 
-* VQE
-* ADAPT-VQE
-* SSVQE
-* VQD
-* QPE (via noisy evolution)
+- VQE
+- ADAPT-VQE
+- SSVQE
+- VQD
+- QPE (via noisy evolution)
 
 ---
 
 ### Partially supported
 
-* QITE / VarQITE
+- QITE / VarQITE
 
-  * optimization: noiseless
-  * evaluation: noisy (post-processing)
+  - optimization: noiseless
+  - evaluation: noisy (post-processing)
 
 ---
 
 ### Not supported (noiseless-only)
 
-* LR-VQE
-* EOM-VQE
-* QSE
-* EOM-QSE
+- LR-VQE
+- EOM-VQE
+- QSE
+- EOM-QSE
 
 Reason:
 
-* require statevector access
-* rely on exact overlaps or tangent vectors
+- require statevector access
+- rely on exact overlaps or tangent vectors
 
 ---
 
@@ -303,12 +303,12 @@ Reason:
 
 For methods like VQD:
 
-* noiseless:
+- noiseless:
   [
   |\langle \psi_i | \psi_j \rangle|^2
   ]
 
-* noisy:
+- noisy:
   [
   \mathrm{Tr}(\rho_i \rho_j)
   ]
@@ -323,42 +323,42 @@ Noise impacts:
 
 ### 1. Energy estimation
 
-* increases variance
-* introduces bias
-* reduces achievable accuracy
+- increases variance
+- introduces bias
+- reduces achievable accuracy
 
 ---
 
 ### 2. Optimization
 
-* flattens gradients
-* introduces stochastic behaviour
-* may slow convergence
+- flattens gradients
+- introduces stochastic behaviour
+- may slow convergence
 
 ---
 
 ### 3. Circuit expressibility
 
-* reduces effective expressibility
-* limits reachable states
+- reduces effective expressibility
+- limits reachable states
 
 ---
 
 ### 4. Excited-state methods
 
-* post-VQE methods typically break under noise
-* variational methods remain usable
+- post-VQE methods typically break under noise
+- variational methods remain usable
 
 ---
 
 ## Practical Guidance
 
-* use small noise levels first:
+- use small noise levels first:
 
-  * e.g. `0.01 – 0.05`
-* compare against noiseless baseline
-* reduce stepsize when noise is high
-* use multi-seed runs for statistical analysis:
+  - e.g. `0.01 – 0.05`
+- compare against noiseless baseline
+- reduce stepsize when noise is high
+- use multi-seed runs for statistical analysis:
 
   ```bash
   vqe --multi-seed-noise
@@ -368,10 +368,10 @@ Noise impacts:
 
 ## Limitations
 
-* noise is applied **after the full ansatz**, not per gate
-* no time-dependent noise modeling
-* no hardware-specific calibration
-* no error mitigation techniques included
+- noise is applied **after the full ansatz**, not per gate
+- no time-dependent noise modeling
+- no hardware-specific calibration
+- no error mitigation techniques included
 
 ---
 
@@ -392,8 +392,8 @@ Noise impacts:
 
 Noise is treated as a **modular, post-ansatz layer**:
 
-* simple to use via CLI
-* extensible via custom models
-* integrated consistently across VQE workflows
+- simple to use via CLI
+- extensible via custom models
+- integrated consistently across VQE workflows
 
 This design enables controlled studies of noise effects without modifying algorithm implementations.

@@ -9,6 +9,50 @@ Workflows and APIs for:
 
 ---
 
+## Table of Contents
+
+- [Documentation Map](#documentation-map)
+- [Core Execution Model](#core-execution-model)
+- [Supported Molecule Inputs](#supported-molecule-inputs)
+- [Installation](#installation)
+- [General Conventions](#general-conventions)
+- [Method Support Summary](#method-support-summary)
+- [Quickstart](#quickstart)
+
+- [VQE Workflows](#vqe-workflows)
+  - [Basic VQE](#basic-vqe)
+  - [Non-molecule expert mode](#non-molecule-expert-mode)
+  - [Ansatz selection](#ansatz-selection)
+  - [Optimizer selection](#optimizer-selection)
+  - [Geometry scans](#geometry-scans)
+  - [Noise studies](#noise-studies)
+  - [Low-qubit benchmark](#low-qubit-benchmark)
+
+- [Excited-State Methods](#excited-state-methods)
+  - [Post-VQE methods](#post-vqe-methods)
+  - [Variational excited states](#variational-excited-states)
+
+- [QPE](#qpe)
+  - [Basic QPE](#basic-qpe)
+  - [Noise](#noise)
+  - [Time evolution controls](#time-evolution-controls)
+
+- [QITE / Projected Dynamics](#qite--projected-dynamics)
+  - [Execution modes](#execution-modes)
+  - [Run](#run)
+  - [Real-time run](#real-time-run)
+  - [Noisy evaluation](#noisy-evaluation)
+  - [Noise sweep](#noise-sweep)
+  - [Cache semantics](#cache-semantics)
+
+- [Reproducibility](#reproducibility)
+- [Testing](#testing)
+- [Citation](#citation)
+- [Author](#author)
+- [License](#license)
+
+---
+
 ## Documentation Map
 
 | File                        | Purpose                        |
@@ -812,7 +856,13 @@ Sid Richards (2026)
 
 Unified Variational and Phase-Estimation Quantum Simulation Suite
 
----
+## Author
 
-Author: Sid Richards
-License: MIT
+Sid Richards
+
+- LinkedIn: [sid-richards-21374b30b](https://www.linkedin.com/in/sid-richards-21374b30b/)
+- GitHub: [SidRichardsQuantum](https://github.com/SidRichardsQuantum)
+
+## License
+
+MIT. See [LICENSE](LICENSE).

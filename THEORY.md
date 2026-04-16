@@ -788,5 +788,13 @@ PennyLane documentation for:
 
 ---
 
-Author: Sid Richards
-License: MIT
+## Author
+
+Sid Richards
+
+- LinkedIn: [sid-richards-21374b30b](https://www.linkedin.com/in/sid-richards-21374b30b/)
+- GitHub: [SidRichardsQuantum](https://github.com/SidRichardsQuantum)
+
+## License
+
+MIT. See [LICENSE](LICENSE).

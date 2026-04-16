@@ -20,6 +20,35 @@ For the main project docs, see:
 
 ---
 
+## Table of Contents
+
+- [How to use these notebooks](#how-to-use-these-notebooks)
+- [Directory Structure](#directory-structure)
+- [Getting Started](#getting-started)
+
+- [VQE Notebooks](#vqe-notebooks)
+  - [H2](#h2)
+  - [H2O](#h2o)
+
+- [QPE Notebooks](#qpe-notebooks)
+
+- [QITE / Projected-Dynamics Notebooks](#qite--projected-dynamics-notebooks)
+  - [H2](#h2-1)
+
+- [Benchmark Notebooks](#benchmark-notebooks)
+  - [VQE Benchmarks](#vqe-benchmarks)
+  - [QPE Benchmarks](#qpe-benchmarks)
+  - [Cross-Method Benchmarks](#cross-method-benchmarks)
+  - [Default Calibration Benchmarks](#default-calibration-benchmarks)
+  - [QITE / VarQRTE Benchmarks](#qite--varqrte-benchmarks)
+
+- [Recommended Reading Order](#recommended-reading-order)
+- [Reproducibility](#reproducibility)
+- [Author](#author)
+- [License](#license)
+
+---
+
 ## How to use these notebooks
 
 These notebooks are intended to serve three roles:
@@ -104,10 +133,10 @@ H2 is the main educational benchmark in this repository: small enough to run qui
 
 Notes:
 
-* `QSE.ipynb`, `EOM_QSE.ipynb`, `LR_VQE.ipynb`, and `EOM_VQE.ipynb` are all **post-VQE** workflows built on converged noiseless VQE reference states.
-* `EOM_QSE.ipynb` studies a generally non-Hermitian reduced problem and uses physical-root selection heuristics.
-* `LR_VQE.ipynb` demonstrates the tangent-space **Tamm-Dancoff approximation (TDA)**.
-* `EOM_VQE.ipynb` demonstrates the **full-response** tangent-space workflow.
+- `QSE.ipynb`, `EOM_QSE.ipynb`, `LR_VQE.ipynb`, and `EOM_VQE.ipynb` are all **post-VQE** workflows built on converged noiseless VQE reference states.
+- `EOM_QSE.ipynb` studies a generally non-Hermitian reduced problem and uses physical-root selection heuristics.
+- `LR_VQE.ipynb` demonstrates the tangent-space **Tamm-Dancoff approximation (TDA)**.
+- `EOM_VQE.ipynb` demonstrates the **full-response** tangent-space workflow.
 
 ---
 
@@ -144,8 +173,8 @@ VarQITE and VarQRTE are demonstrated on H2 as package-client workflows.
 
 Note:
 
-* if a noisy-evaluation notebook is added in future, it should follow the repository convention used elsewhere: perform the parameter-update stage noiselessly, then evaluate the converged circuit under noise
-* both VarQITE and VarQRTE are implemented as projected pure-state variational dynamics workflows; they do not optimize under mixed-state noise
+- if a noisy-evaluation notebook is added in future, it should follow the repository convention used elsewhere: perform the parameter-update stage noiselessly, then evaluate the converged circuit under noise
+- both VarQITE and VarQRTE are implemented as projected pure-state variational dynamics workflows; they do not optimize under mixed-state noise
 
 ---
 
@@ -157,8 +186,8 @@ These notebooks are dedicated comparison, scan, or exact-reference workflows and
 
 Paths:
 
-* `notebooks/benchmarks/vqe/H2/`
-* `notebooks/benchmarks/vqe/H3plus/`
+- `notebooks/benchmarks/vqe/H2/`
+- `notebooks/benchmarks/vqe/H3plus/`
 
 | Notebook | Purpose | Style |
 | -------- | ------- | ----- |
@@ -216,9 +245,9 @@ Path: `notebooks/benchmarks/qite/H2/`
 
 Notes:
 
-* `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` is the main small-system correctness notebook for VarQRTE: it compares the variational trajectory against exact real-time evolution of the same post-quench initial state
-* benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the specialized algorithm notebooks that remain under `notebooks/vqe/` and `notebooks/qite/`
-* the benchmark backlog is tracked in `notebooks/BENCHMARK_ROADMAP.md`
+- `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb` is the main small-system correctness notebook for VarQRTE: it compares the variational trajectory against exact real-time evolution of the same post-quench initial state
+- benchmark notebooks are meant to complement, not replace, the smaller usage demos in `getting_started/` and the specialized algorithm notebooks that remain under `notebooks/vqe/` and `notebooks/qite/`
+- the benchmark backlog is tracked in `notebooks/BENCHMARK_ROADMAP.md`
 
 ---
 
@@ -226,49 +255,49 @@ Notes:
 
 1. **Conceptual starting point**
 
-   * `getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`
+   - `getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`
 
 2. **Core VQE workflow**
 
-   * `getting_started/02_getting_started_vqe_h2.ipynb`
-   * `getting_started/09_bond_scan_h2.ipynb`
+   - `getting_started/02_getting_started_vqe_h2.ipynb`
+   - `getting_started/09_bond_scan_h2.ipynb`
 
 3. **Noise studies**
 
-   * `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb`
-   * `benchmarks/vqe/H2/Noise_Scan.ipynb`
-   * `benchmarks/qpe/H2/Noisy.ipynb`
+   - `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb`
+   - `benchmarks/vqe/H2/Noise_Scan.ipynb`
+   - `benchmarks/qpe/H2/Noisy.ipynb`
 
 4. **Default calibration**
 
-   * `benchmarks/defaults/VQE_Default_Calibration.ipynb`
-   * `benchmarks/defaults/VarQITE_Default_Calibration.ipynb`
-   * `benchmarks/defaults/QPE_Default_Calibration.ipynb`
+   - `benchmarks/defaults/VQE_Default_Calibration.ipynb`
+   - `benchmarks/defaults/VarQITE_Default_Calibration.ipynb`
+   - `benchmarks/defaults/QPE_Default_Calibration.ipynb`
 
 5. **Excited-state methods**
 
-   * `vqe/H2/QSE.ipynb`
-   * `vqe/H2/EOM_QSE.ipynb`
-   * `vqe/H2/LR_VQE.ipynb`
-   * `vqe/H2/EOM_VQE.ipynb`
-   * `vqe/H2/SSVQE.ipynb`
-   * `vqe/H2/VQD.ipynb`
+   - `vqe/H2/QSE.ipynb`
+   - `vqe/H2/EOM_QSE.ipynb`
+   - `vqe/H2/LR_VQE.ipynb`
+   - `vqe/H2/EOM_VQE.ipynb`
+   - `vqe/H2/SSVQE.ipynb`
+   - `vqe/H2/VQD.ipynb`
 
 6. **Larger systems and geometry**
 
-   * `getting_started/10_adapt_vqe_h3plus.ipynb`
-   * `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb`
-   * `benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb`
-   * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
-   * `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
-   * `vqe/H2O/Bond_Angle.ipynb`
+   - `getting_started/10_adapt_vqe_h3plus.ipynb`
+   - `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb`
+   - `benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb`
+   - `benchmarks/vqe/H3plus/Ansatz_Comparison_Noiseless.ipynb`
+   - `benchmarks/vqe/H3plus/Ansatz_Comparison_Noisy.ipynb`
+   - `vqe/H2O/Bond_Angle.ipynb`
 
 7. **Projected dynamics**
 
-   * `getting_started/07_getting_started_qite_h2.ipynb`
-   * `getting_started/11_getting_started_qrte_h2.ipynb`
-   * `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
-   * `qite/H2/Real_Time.ipynb`
+   - `getting_started/07_getting_started_qite_h2.ipynb`
+   - `getting_started/11_getting_started_qrte_h2.ipynb`
+   - `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
+   - `qite/H2/Real_Time.ipynb`
 
 ---
 
@@ -278,15 +307,19 @@ These notebooks use the same caching, naming, and output conventions as the pack
 
 That means:
 
-* repeated runs can reuse cached results when configurations match
-* plot and JSON output naming follows the shared repository conventions
-* notebook experiments are aligned with the packaged solver infrastructure rather than separate one-off code paths
+- repeated runs can reuse cached results when configurations match
+- plot and JSON output naming follows the shared repository conventions
+- notebook experiments are aligned with the packaged solver infrastructure rather than separate one-off code paths
 
 ---
 
-**Author:** Sid Richards (SidRichardsQuantum)
+## Author
 
-LinkedIn:
-[https://www.linkedin.com/in/sid-richards-21374b30b/](https://www.linkedin.com/in/sid-richards-21374b30b/)
+Sid Richards
 
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE).
+- LinkedIn: [sid-richards-21374b30b](https://www.linkedin.com/in/sid-richards-21374b30b/)
+- GitHub: [SidRichardsQuantum](https://github.com/SidRichardsQuantum)
+
+## License
+
+MIT. See [LICENSE](LICENSE).
