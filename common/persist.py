@@ -75,6 +75,19 @@ def read_json(path: Path) -> Dict[str, Any]:
         return json.load(f)
 
 
+def cached_compute_runtime(result: Dict[str, Any]) -> float | None:
+    """
+    Return the stored compute runtime from a cached result when available.
+
+    Older cache records may predate runtime metadata entirely. In that case,
+    return None so callers can treat the cache entry as stale and recompute.
+    """
+    val = result.get("compute_runtime_s", result.get("runtime_s"))
+    if val is None:
+        return None
+    return float(val)
+
+
 def canonical_noise(
     *,
     noisy: bool,

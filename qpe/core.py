@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 import pennylane as qml
 from pennylane import numpy as np
 
-from common.persist import canonical_noise
+from common.persist import cached_compute_runtime, canonical_noise
 from common.problem import resolve_problem
 from qpe.noise import apply_noise_all
 
@@ -291,10 +291,12 @@ def run_qpe(
         )
         if cached is not None:
             res = dict(cached)
-            cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
-            res["compute_runtime_s"] = (
-                None if cached_compute is None else float(cached_compute)
-            )
+            cached_compute = cached_compute_runtime(res)
+            if cached_compute is None:
+                res = None
+            else:
+                res["compute_runtime_s"] = cached_compute
+        if cached is not None and res is not None:
             res["runtime_s"] = float(time.perf_counter() - start_time)
             res["cache_hit"] = True
             return res

@@ -194,6 +194,7 @@ Paths:
 | `benchmarks/vqe/H2/Ansatz_Comparison.ipynb` | Compare H2 VQE ansätze, including exact-reference checks | Mixed |
 | `benchmarks/vqe/H2/Mapping_Comparison.ipynb` | Compare fermion-to-qubit mappings for H2 | Package client |
 | `benchmarks/vqe/H2/Noise_Scan.ipynb` | Multi-seed H2 noise statistics benchmark | Package client |
+| `benchmarks/vqe/H2/Noise_Robustness_Benchmark.ipynb` | Compare built-in H2 VQE noise channels under one shared multi-seed protocol and rank sensitivity | Mixed |
 | `benchmarks/vqe/H2/Noisy_Ansatz_Comparison.ipynb` | Compare H2 ansatz families under noise | Package client |
 | `benchmarks/vqe/H2/Noisy_Ansatz_Convergence.ipynb` | Compare noisy H2 ansatz convergence traces | Package client |
 | `benchmarks/vqe/H2/Noisy_Optimizer_Comparison.ipynb` | Compare H2 optimizers under noise | Package client |
@@ -214,12 +215,17 @@ Path: `notebooks/benchmarks/qpe/H2/`
 
 ### Cross-Method Benchmarks
 
-Path: `notebooks/benchmarks/comparisons/H2/`
+Paths:
+
+- `notebooks/benchmarks/comparisons/H2/`
+- `notebooks/benchmarks/comparisons/LiH/`
 
 | Notebook | Purpose | Style |
 | -------- | ------- | ----- |
 | `benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb` | Compare VQE, QPE, and VarQITE on one shared H2 Hamiltonian and exact reference | Mixed |
+| `benchmarks/comparisons/LiH/Cross_Method_Comparison.ipynb` | Extend the same cross-method comparison pattern to LiH with one shared active-space Hamiltonian, exact reference, and cache/runtime reporting | Mixed |
 | `benchmarks/comparisons/H2/Reproducibility_Benchmark.ipynb` | Measure seed spread, cache timing, and noisy-vs-noiseless variance on one shared H2 problem | Mixed |
+| `benchmarks/comparisons/LiH/Reproducibility_Benchmark.ipynb` | Extend the reproducibility benchmark to LiH with the shared active-space setup, seed-spread analysis, and cache-hit versus forced-rerun timing | Mixed |
 | `benchmarks/comparisons/multi_molecule/Scaling_Benchmark.ipynb` | Compare runtime, qubit count, exact-energy error, and proxy-size metrics across H2, LiH, and BeH2 | Mixed |
 | `benchmarks/comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb` | Benchmark small-system VQE across the supported sub-12-qubit registry molecules with exact-ground error and runtime summaries | Mixed |
 | `benchmarks/comparisons/multi_molecule/Hydrogen_Family_VQE_Benchmark.ipynb` | Benchmark VQE across neutral and charged small hydrogen systems through the standard molecule pipeline with registry-backed multiplicity defaults and same-electron-sector exact references | Mixed |
@@ -308,6 +314,7 @@ These notebooks use the same caching, naming, and output conventions as the pack
 That means:
 
 - repeated runs can reuse cached results when configurations match
+- comparison notebooks generally prefer `force=False`, while fresh-run tutorials and quench workflows keep `force=True` where recomputation is part of the notebook's purpose
 - plot and JSON output naming follows the shared repository conventions
 - notebook experiments are aligned with the packaged solver infrastructure rather than separate one-off code paths
 

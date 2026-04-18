@@ -240,6 +240,7 @@ Execution behaviour:
 
 - deterministic hashing defines run identity
 - cached runs automatically reused
+- cached records missing runtime metadata are treated as stale and refreshed on access
 - `--force` bypasses cache
 - identical Hamiltonians shared across algorithms
 
@@ -816,6 +817,7 @@ Ensures:
 
 - reproducible optimisation trajectories
 - noise evaluation does not invalidate optimisation cache
+- stale cache artifacts without runtime metadata are refreshed automatically instead of being trusted as benchmark inputs
 
 ---
 

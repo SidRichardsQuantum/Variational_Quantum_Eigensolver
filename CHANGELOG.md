@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.16] - April 18, 2026
+
+### Added
+
+- **New benchmark notebooks for noise robustness and LiH comparisons**
+
+  Added benchmark notebooks for:
+
+  - `notebooks/benchmarks/vqe/H2/Noise_Robustness_Benchmark.ipynb` — a unified H2 VQE noise benchmark comparing multiple channel types under one shared protocol
+  - `notebooks/benchmarks/comparisons/LiH/Cross_Method_Comparison.ipynb` — a decision notebook comparing VQE, VarQITE, and QPE on one shared active-space LiH problem
+  - `notebooks/benchmarks/comparisons/LiH/Reproducibility_Benchmark.ipynb` — a LiH reproducibility notebook covering seed spread, noisy-vs-noiseless variation, and forced-vs-cached timing
+
+- **Shared benchmark and metric helpers**
+
+  Added reusable helpers in `common/` so benchmark notebooks and package code can rely on one standard implementation for:
+
+  - fidelity computation
+  - timed execution
+  - summary statistics
+  - exact-ground / problem-summary helpers for resolved chemistry problems
+
+### Changed
+
+- **Notebook benchmark roadmap and index updated**
+
+  Updated `notebooks/BENCHMARK_ROADMAP.md` and `notebooks/README_notebooks.md` to reflect the new benchmark coverage, clarify the remaining QPE calibration follow-on work, and keep notebook additions focused on non-overlapping decision-grade studies.
+
+- **Benchmark notebooks now use shared package helpers**
+
+  Updated benchmark notebooks to consume the new `common` helpers instead of carrying duplicate local implementations for timing, fidelity, and exact-reference summary logic.
+
+- **Notebook cache policy clarified**
+
+  Notebook `force=` usage is now more deliberate:
+
+  - comparison and decision notebooks prefer `force=False` where cache reuse is appropriate
+  - fresh-run tutorials and quench-style workflows keep `force=True` where recomputation is part of the notebook's purpose
+  - notebook markdown now explains that choice where it is likely to be non-obvious
+
+- **Tooling pins aligned across local dev and CI**
+
+  Updated the lint workflow so CI uses the same `black` and `ruff` versions pinned in `pyproject.toml`.
+
+### Fixed
+
+- **Cached results without runtime metadata are now treated as stale**
+
+  `run_vqe(...)`, `run_qite(...)`, `run_qrte(...)`, and `run_qpe(...)` now reject cache entries that contain neither `compute_runtime_s` nor legacy `runtime_s`, recomputing and refreshing those artifacts automatically when needed.
+
+- **Cross-method notebook runtime handling**
+
+  Fixed the LiH cross-method comparison notebook so missing optional runtime fields are handled safely instead of failing on `float(None)`.
+
+- **Notebook plotting and layout issues**
+
+  Fixed the H2 noise-robustness notebook layout so the shared legend and figure title no longer overlap.
+
 ## [0.3.14] - April 13, 2026
 
 ### Added

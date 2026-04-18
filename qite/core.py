@@ -24,6 +24,7 @@ from typing import Any, Dict
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.persist import cached_compute_runtime
 from common.problem import resolve_problem
 from qite.engine import build_ansatz as engine_build_ansatz
 from qite.engine import (
@@ -42,26 +43,6 @@ from qite.io_utils import (
     save_run_record,
 )
 from qite.visualize import plot_convergence
-
-
-def compute_fidelity(pure_state, state_or_rho) -> float:
-    """
-    Fidelity between a pure state |ψ⟩ and either:
-        - a statevector |φ⟩
-        - or a density matrix ρ
-
-    Returns |⟨ψ|φ⟩|² or ⟨ψ|ρ|ψ⟩ respectively.
-    """
-    state_or_rho = np.array(state_or_rho)
-    pure_state = np.array(pure_state)
-
-    if state_or_rho.ndim == 1:
-        return float(abs(np.vdot(pure_state, state_or_rho)) ** 2)
-
-    if state_or_rho.ndim == 2:
-        return float(np.real(np.vdot(pure_state, state_or_rho @ pure_state)))
-
-    raise ValueError("Invalid state shape for fidelity computation")
 
 
 def run_qite(
@@ -212,10 +193,12 @@ def run_qite(
                         "Cached VarQITE record is missing final parameters. "
                         "Re-run with force=True to refresh the cache."
                     )
-                cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
-                res["compute_runtime_s"] = (
-                    None if cached_compute is None else float(cached_compute)
-                )
+                cached_compute = cached_compute_runtime(res)
+                if cached_compute is None:
+                    res = None
+                else:
+                    res["compute_runtime_s"] = cached_compute
+            if record is not None and res is not None:
                 res["runtime_s"] = float(time.perf_counter() - start_time)
                 res["cache_hit"] = True
                 return res
@@ -517,10 +500,12 @@ def run_qrte(
                         "Cached VarQRTE record is missing final parameters. "
                         "Re-run with force=True to refresh the cache."
                     )
-                cached_compute = res.get("compute_runtime_s", res.get("runtime_s"))
-                res["compute_runtime_s"] = (
-                    None if cached_compute is None else float(cached_compute)
-                )
+                cached_compute = cached_compute_runtime(res)
+                if cached_compute is None:
+                    res = None
+                else:
+                    res["compute_runtime_s"] = cached_compute
+            if record is not None and res is not None:
                 res["runtime_s"] = float(time.perf_counter() - start_time)
                 res["cache_hit"] = True
                 return res

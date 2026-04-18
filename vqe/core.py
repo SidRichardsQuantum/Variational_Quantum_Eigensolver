@@ -18,7 +18,9 @@ import time
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.metrics import compute_fidelity
 from common.molecules import MOLECULES
+from common.persist import cached_compute_runtime
 from common.problem import resolve_problem
 from common.units import coordinate_unit_label
 
@@ -47,28 +49,6 @@ from .visualize import (
     plot_convergence,
     plot_noise_statistics,
 )
-
-
-# ================================================================
-# SHARED HELPERS
-# ================================================================
-def compute_fidelity(pure_state, state_or_rho):
-    """
-    Fidelity between a pure state |ψ⟩ and either:
-        - a statevector |φ⟩
-        - or a density matrix ρ
-
-    Returns |⟨ψ|φ⟩|² or ⟨ψ|ρ|ψ⟩ respectively.
-    """
-    state_or_rho = np.array(state_or_rho)
-    pure_state = np.array(pure_state)
-
-    if state_or_rho.ndim == 1:
-        return float(abs(np.vdot(pure_state, state_or_rho)) ** 2)
-    elif state_or_rho.ndim == 2:
-        return float(np.real(np.vdot(pure_state, state_or_rho @ pure_state)))
-
-    raise ValueError("Invalid state shape for fidelity computation")
 
 
 def _noise_probs_for_type(noise_type: str, level: float) -> dict[str, float]:
@@ -280,12 +260,12 @@ def run_vqe(
             record = load_run_record(prefix)
             if record is not None:
                 cached = dict(record["result"])
-                cached_compute = cached.get(
-                    "compute_runtime_s", cached.get("runtime_s")
-                )
-                cached["compute_runtime_s"] = (
-                    None if cached_compute is None else float(cached_compute)
-                )
+                cached_compute = cached_compute_runtime(cached)
+                if cached_compute is None:
+                    cached = None
+                else:
+                    cached["compute_runtime_s"] = cached_compute
+            if record is not None and cached is not None:
                 cached["runtime_s"] = float(time.perf_counter() - start_time)
                 cached["cache_hit"] = True
                 return cached

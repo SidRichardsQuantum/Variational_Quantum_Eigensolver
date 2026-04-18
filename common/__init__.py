@@ -39,6 +39,13 @@ from .hamiltonian import (  # noqa: F401, E402
     get_exact_spectrum,
     summarize_registry_coverage,
 )
+from .benchmarks import (  # noqa: F401, E402
+    exact_ground_energy_for_problem,
+    summarize_problem,
+    summary_stats,
+    timed_call,
+)
+from .metrics import compute_fidelity  # noqa: F401, E402
 from .problem import ResolvedProblem, resolve_problem  # noqa: F401, E402
 
 # Molecule visualization
@@ -62,6 +69,11 @@ __all__ = [
     "build_hamiltonian",
     "get_exact_spectrum",
     "summarize_registry_coverage",
+    "timed_call",
+    "summary_stats",
+    "exact_ground_energy_for_problem",
+    "summarize_problem",
+    "compute_fidelity",
     "ResolvedProblem",
     "resolve_problem",
     # Plotting

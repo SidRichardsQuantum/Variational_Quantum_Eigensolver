@@ -15,8 +15,8 @@ jobs:
 
       # Pin formatter versions to eliminate local/CI drift.
       # Update these intentionally when you want to adopt a new formatter release.
-      BLACK_VERSION: "24.10.0"
-      RUFF_VERSION: "0.8.4"
+      BLACK_VERSION: "26.1.0"
+      RUFF_VERSION: "0.14.11"
 
     steps:
       - name: Checkout repository

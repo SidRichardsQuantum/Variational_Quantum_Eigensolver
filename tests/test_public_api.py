@@ -15,12 +15,24 @@ def test_top_level_imports_smoke() -> None:
 
 
 def test_canonical_entrypoints_are_callable() -> None:
-    from common import summarize_registry_coverage
+    from common import (
+        compute_fidelity,
+        exact_ground_energy_for_problem,
+        summarize_problem,
+        summarize_registry_coverage,
+        summary_stats,
+        timed_call,
+    )
     from qpe import run_qpe
     from qite import run_qite, run_qrte
     from vqe import run_vqe, run_vqe_low_qubit_benchmark
 
+    assert callable(compute_fidelity)
+    assert callable(exact_ground_energy_for_problem)
+    assert callable(summarize_problem)
     assert callable(summarize_registry_coverage)
+    assert callable(summary_stats)
+    assert callable(timed_call)
     assert callable(run_vqe)
     assert callable(run_vqe_low_qubit_benchmark)
     assert callable(run_qpe)
