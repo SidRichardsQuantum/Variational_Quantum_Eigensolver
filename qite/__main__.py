@@ -406,6 +406,7 @@ def _resolve_plot_show(args):
 def _run_varqite(args) -> dict:
     plot, show = _resolve_plot_show(args)
     symbols, coordinates = _validated_geometry_inputs(args)
+    active_space = _active_space_kwargs(args)
 
     return run_qite(
         molecule=str(args.molecule),
@@ -418,7 +419,8 @@ def _run_varqite(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
-        **_active_space_kwargs(args),
+        active_electrons=active_space["active_electrons"],
+        active_orbitals=active_space["active_orbitals"],
         mapping=str(args.mapping),
         unit=str(args.unit),
         plot=bool(plot),
@@ -434,6 +436,7 @@ def _run_varqite(args) -> dict:
 def _run_varqrte(args) -> dict:
     plot, show = _resolve_plot_show(args)
     symbols, coordinates = _validated_geometry_inputs(args)
+    active_space = _active_space_kwargs(args)
 
     return run_qrte(
         molecule=str(args.molecule),
@@ -446,7 +449,8 @@ def _run_varqrte(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
-        **_active_space_kwargs(args),
+        active_electrons=active_space["active_electrons"],
+        active_orbitals=active_space["active_orbitals"],
         mapping=str(args.mapping),
         unit=str(args.unit),
         plot=bool(plot),
@@ -665,6 +669,7 @@ def eval_noise(args) -> dict:
     if seeds is None:
         seeds = list(range(5))
     base_noise = _builtin_noise_from_args(args)
+    active_space = _active_space_kwargs(args)
 
     def _get_noiseless_record(seed: int) -> dict:
         return run_qite(
@@ -678,7 +683,8 @@ def eval_noise(args) -> dict:
             coordinates=coordinates_in,
             basis=str(args.basis),
             charge=int(args.charge),
-            **_active_space_kwargs(args),
+            active_electrons=active_space["active_electrons"],
+            active_orbitals=active_space["active_orbitals"],
             mapping=str(args.mapping),
             unit=str(args.unit),
             plot=False,

@@ -23,6 +23,8 @@ while keeping the interface compatible with `vqe.engine.build_ansatz(...)`.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
@@ -113,6 +115,9 @@ def hardware_efficient_ansatz(params, wires):
 # ================================================================
 # UCC-STYLE CHEMISTRY ANSATZES
 # ================================================================
+_UCC_DATA_CACHE: dict[tuple[Any, ...], tuple[Any, Any, Any]] = {}
+
+
 def _ucc_cache_key(
     symbols,
     coordinates,
@@ -153,7 +158,7 @@ def _build_ucc_data(
 
     Notes
     -----
-    * The cache lives on the function object so repeated calls are cheap.
+    * The module-level cache keeps repeated calls cheap.
     """
     if symbols is None or coordinates is None:
         raise ValueError(
@@ -172,10 +177,7 @@ def _build_ucc_data(
         active_orbitals=active_orbitals,
     )
 
-    if not hasattr(_build_ucc_data, "_cache"):
-        _build_ucc_data._cache = {}
-
-    if key not in _build_ucc_data._cache:
+    if key not in _UCC_DATA_CACHE:
         try:
             mol = qchem.Molecule(
                 symbols,
@@ -226,9 +228,9 @@ def _build_ucc_data(
         doubles = [tuple(ex) for ex in doubles]
         hf_state = np.array(hf_state, dtype=int)
 
-        _build_ucc_data._cache[key] = (singles, doubles, hf_state)
+        _UCC_DATA_CACHE[key] = (singles, doubles, hf_state)
 
-    return _build_ucc_data._cache[key]
+    return _UCC_DATA_CACHE[key]
 
 
 def _apply_ucc_layers(

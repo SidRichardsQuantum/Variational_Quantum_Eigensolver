@@ -289,6 +289,7 @@ def run_qpe(
             active_electrons=resolved_active_electrons,
             active_orbitals=resolved_active_orbitals,
         )
+        res: Dict[str, Any] | None = None
         if cached is not None:
             res = dict(cached)
             cached_compute = cached_compute_runtime(res)

@@ -191,7 +191,7 @@ def build_ansatz(
             except Exception:
                 chemistry_style = False
 
-            def ansatz_fn(params: np.ndarray) -> None:
+            def delegated_ansatz_fn(params: np.ndarray) -> None:
                 if hf is not None and not chemistry_style:
                     qml.BasisState(hf, wires=list(range(n)))
                 inner_call(
@@ -208,7 +208,7 @@ def build_ansatz(
                     basis=basis,
                 )
 
-            return ansatz_fn, init_params
+            return delegated_ansatz_fn, init_params
     except ValueError:
         raise
     except Exception:
@@ -220,12 +220,12 @@ def build_ansatz(
     init = 0.01 * np.random.randn(int(layers), n, 2)
     init_params = np.array(init, requires_grad=bool(requires_grad))
 
-    def ansatz_fn(params: np.ndarray) -> None:
+    def fallback_ansatz_fn(params: np.ndarray) -> None:
         if hf is not None:
             qml.BasisState(hf, wires=list(range(n)))
         _fallback_hardware_efficient_ansatz(params, num_wires=n, layers=int(layers))
 
-    return ansatz_fn, init_params
+    return fallback_ansatz_fn, init_params
 
 
 # =============================================================================
@@ -295,7 +295,7 @@ def make_state_qnode(
     if bool(noisy):
 
         @qml.qnode(dev)
-        def state_qnode(params: np.ndarray):
+        def noisy_state_qnode(params: np.ndarray):
             ansatz_fn(params)
             _apply_noise_layer(
                 num_wires=n,
@@ -308,14 +308,14 @@ def make_state_qnode(
             )
             return qml.density_matrix(wires=list(range(n)))
 
-        return state_qnode
+        return noisy_state_qnode
 
     @qml.qnode(dev)
-    def state_qnode(params: np.ndarray):
+    def noiseless_state_qnode(params: np.ndarray):
         ansatz_fn(params)
         return qml.state()
 
-    return state_qnode
+    return noiseless_state_qnode
 
 
 # =============================================================================

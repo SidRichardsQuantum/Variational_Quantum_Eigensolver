@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.20] - April 20, 2026
+
+### Changed
+
+- Broadened the scoped `mypy` gate to include the public solver orchestration modules, CLI entrypoints, engine layers, Hamiltonian wrappers, run I/O helpers, VQE ansatz/optimizer support, QPE noise helpers, and shared infrastructure.
+
+### Fixed
+
+- Added narrow typing annotations, an explicit UCC ansatz data cache, CLI active-space argument handling, and local helper renames so the expanded type gate passes without changing runtime behavior.
+
+---
+
 ## [0.3.19] - April 20, 2026
 
 ### Changed

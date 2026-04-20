@@ -186,6 +186,7 @@ def run_qite(
 
         if not force:
             record = load_run_record(prefix)
+            res: Dict[str, Any] | None = None
             if record is not None:
                 res = dict(record["result"])
                 if "final_params" not in res or "final_params_shape" not in res:
@@ -493,6 +494,7 @@ def run_qrte(
 
         if not force:
             record = load_run_record(prefix)
+            res: Dict[str, Any] | None = None
             if record is not None:
                 res = dict(record["result"])
                 if "final_params" not in res or "final_params_shape" not in res:

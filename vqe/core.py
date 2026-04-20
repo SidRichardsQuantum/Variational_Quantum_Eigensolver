@@ -14,6 +14,7 @@ Includes:
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -122,7 +123,7 @@ def _select_low_qubit_molecules(
     unit: str,
 ):
     names = list(molecules) if molecules is not None else list(MOLECULES.keys())
-    selected: list[dict[str, object]] = []
+    selected: list[dict[str, Any]] = []
 
     for mol in names:
         problem = resolve_problem(molecule=str(mol), mapping=mapping, unit=unit)
@@ -146,7 +147,7 @@ def _select_low_qubit_molecules(
             }
         )
 
-    selected.sort(key=lambda row: (int(row["num_qubits"]), str(row["molecule"])))
+    selected.sort(key=lambda row: (row["num_qubits"], row["molecule"]))
     return selected
 
 
@@ -258,6 +259,7 @@ def run_vqe(
 
         if not force:
             record = load_run_record(prefix)
+            cached: dict[str, Any] | None = None
             if record is not None:
                 cached = dict(record["result"])
                 cached_compute = cached_compute_runtime(cached)
@@ -568,7 +570,8 @@ def run_vqe_optimizer_comparison(
     noise_type = str(noise_type).lower()
     _noise_probs_for_type(noise_type, 0.0)
 
-    out = {
+    optimizer_results: dict[str, dict[str, Any]] = {}
+    out: dict[str, Any] = {
         "mode": "noise_stats",
         "molecule": molecule,
         "ansatz_name": ansatz_name,
@@ -577,7 +580,7 @@ def run_vqe_optimizer_comparison(
         "noise_type": noise_type,
         "noise_levels": [float(x) for x in noise_levels],
         "seeds": [int(s) for s in seeds],
-        "optimizers": {},
+        "optimizers": optimizer_results,
     }
 
     for opt_name in optimizers:
@@ -634,7 +637,11 @@ def run_vqe_optimizer_comparison(
                     ansatz_name=ansatz_name,
                     optimizer_name=opt_name,
                     noisy=True,
-                    **noise_kwargs,
+                    depolarizing_prob=noise_kwargs["depolarizing_prob"],
+                    amplitude_damping_prob=noise_kwargs["amplitude_damping_prob"],
+                    phase_damping_prob=noise_kwargs["phase_damping_prob"],
+                    bit_flip_prob=noise_kwargs["bit_flip_prob"],
+                    phase_flip_prob=noise_kwargs["phase_flip_prob"],
                     mapping=mapping,
                     force=force,
                     seed=s_int,
@@ -671,7 +678,7 @@ def run_vqe_optimizer_comparison(
                 f"⟨F⟩={fid_mean[-1]:.4f} ± {fid_std[-1]:.4f}"
             )
 
-        out["optimizers"][opt_name] = {
+        optimizer_results[opt_name] = {
             "stepsize": lr,
             "deltaE_mean": deltaE_mean,
             "deltaE_std": deltaE_std,
@@ -683,7 +690,7 @@ def run_vqe_optimizer_comparison(
         # ΔE overlay
         plt.figure(figsize=(8, 5))
         for opt_name in optimizers:
-            data = out["optimizers"][opt_name]
+            data = optimizer_results[opt_name]
             plt.errorbar(
                 noise_levels,
                 data["deltaE_mean"],
@@ -711,7 +718,7 @@ def run_vqe_optimizer_comparison(
         # Fidelity overlay
         plt.figure(figsize=(8, 5))
         for opt_name in optimizers:
-            data = out["optimizers"][opt_name]
+            data = optimizer_results[opt_name]
             plt.errorbar(
                 noise_levels,
                 data["fidelity_mean"],
@@ -876,7 +883,8 @@ def run_vqe_ansatz_comparison(
     noise_type_l = str(noise_type).lower()
     _noise_probs_for_type(noise_type_l, 0.0)
 
-    out = {
+    ansatz_results: dict[str, dict[str, list[float]]] = {}
+    out: dict[str, Any] = {
         "mode": "noise_stats",
         "molecule": molecule,
         "optimizer_name": optimizer_name,
@@ -886,7 +894,7 @@ def run_vqe_ansatz_comparison(
         "noise_type": noise_type_l,
         "noise_levels": [float(x) for x in noise_levels],
         "seeds": [int(s) for s in seeds],
-        "ansatzes": {},
+        "ansatzes": ansatz_results,
     }
 
     for ans_name in ansatzes:
@@ -940,7 +948,11 @@ def run_vqe_ansatz_comparison(
                     ansatz_name=ans_name,
                     optimizer_name=optimizer_name,
                     noisy=True,
-                    **noise_kwargs,
+                    depolarizing_prob=noise_kwargs["depolarizing_prob"],
+                    amplitude_damping_prob=noise_kwargs["amplitude_damping_prob"],
+                    phase_damping_prob=noise_kwargs["phase_damping_prob"],
+                    bit_flip_prob=noise_kwargs["bit_flip_prob"],
+                    phase_flip_prob=noise_kwargs["phase_flip_prob"],
                     mapping=mapping,
                     unit=unit,
                     force=force,
@@ -972,7 +984,7 @@ def run_vqe_ansatz_comparison(
                 f"⟨F⟩={fid_mean[-1]:.4f} ± {fid_std[-1]:.4f}"
             )
 
-        out["ansatzes"][ans_name] = {
+        ansatz_results[ans_name] = {
             "deltaE_mean": deltaE_mean,
             "deltaE_std": deltaE_std,
             "fidelity_mean": fid_mean,
@@ -982,7 +994,7 @@ def run_vqe_ansatz_comparison(
     if plot:
         plt.figure(figsize=(8, 5))
         for ans_name in ansatzes:
-            data = out["ansatzes"][ans_name]
+            data = ansatz_results[ans_name]
             plt.errorbar(
                 noise_levels,
                 data["deltaE_mean"],
@@ -1009,7 +1021,7 @@ def run_vqe_ansatz_comparison(
 
         plt.figure(figsize=(8, 5))
         for ans_name in ansatzes:
-            data = out["ansatzes"][ans_name]
+            data = ansatz_results[ans_name]
             plt.errorbar(
                 noise_levels,
                 data["fidelity_mean"],
@@ -1118,7 +1130,11 @@ def run_vqe_multi_seed_noise(
                 ansatz_name=ansatz_name,
                 optimizer_name=optimizer_name,
                 noisy=True,
-                **noise_kwargs,
+                depolarizing_prob=noise_kwargs["depolarizing_prob"],
+                amplitude_damping_prob=noise_kwargs["amplitude_damping_prob"],
+                phase_damping_prob=noise_kwargs["phase_damping_prob"],
+                bit_flip_prob=noise_kwargs["bit_flip_prob"],
+                phase_flip_prob=noise_kwargs["phase_flip_prob"],
                 mapping=mapping,
                 unit=unit,
                 force=force,
@@ -1209,7 +1225,7 @@ def run_vqe_low_qubit_benchmark(
             f"(max_qubits={int(max_qubits)})."
         )
 
-    rows: list[dict[str, object]] = []
+    rows: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []
     print(
         "\n🔹 Running low-qubit VQE benchmark "
@@ -1519,7 +1535,7 @@ def run_vqe_mapping_comparison(
         basis = basis.lower()
 
         try:
-            num_terms = len(H.ops)
+            num_terms: int | None = len(H.ops)
         except AttributeError:
             try:
                 num_terms = len(H.terms()[0]) if callable(H.terms) else len(H.data)
