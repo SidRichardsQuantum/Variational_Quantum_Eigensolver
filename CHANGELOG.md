@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.17] - April 20, 2026
+
+### Added
+
+- **QPE calibration decision-map benchmark**
+
+  Added `notebooks/benchmarks/qpe/H2/Calibration_Decision_Map.ipynb` to turn QPE calibration output into decision-ready tables and diagnostics for H2.
+
+  The notebook reports:
+
+  - ranked QPE configuration candidates
+  - absolute energy error against an exact H2 reference
+  - default-adequacy checks for the package baseline QPE settings
+  - branch-selection, dominant-bin, and resolution / alias-risk diagnostics
+
+- **Reusable QPE benchmark helpers**
+
+  Added shared helpers in `common.benchmarks` for:
+
+  - QPE branch-candidate phase / energy interpretation
+  - flat per-result QPE calibration diagnostics
+  - calibration run-plan generation that runs analytic configurations once and finite-shot configurations across seeds
+
+### Changed
+
+- **Notebook roadmap and index updated**
+
+  Updated `notebooks/BENCHMARK_ROADMAP.md` and `notebooks/README_notebooks.md` to include the QPE calibration decision-map notebook and mark the H2 follow-on as added.
+
+- **Scoped mypy gate added to lint workflow**
+
+  Added a phased `mypy` configuration for selected shared helper modules and enabled a scoped mypy check in `.github/workflows/lint.yml`.
+
+- **Requirements aligned with package metadata**
+
+  Updated `requirements.txt` so runtime dependency bounds mirror `pyproject.toml`, including the NumPy and SciPy upper bounds.
+
+### Fixed
+
+- **Typed canonical noise metadata**
+
+  Added an explicit mixed-value dictionary annotation in `common.persist.canonical_noise(...)` so the new scoped mypy gate passes cleanly.
+
 ## [0.3.16] - April 18, 2026
 
 ### Added

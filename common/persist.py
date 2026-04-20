@@ -108,7 +108,7 @@ def canonical_noise(
         "p_phase_flip": float(p_phase_flip or 0.0),
     }
     m = None if model is None else str(model).strip()
-    out = {k: v for k, v in vals.items() if v != 0.0}
+    out: Dict[str, Any] = {k: v for k, v in vals.items() if v != 0.0}
     if (not out) and (m in {None, ""}):
         return {}
     if m not in {None, ""}:

@@ -40,7 +40,10 @@ from .hamiltonian import (  # noqa: F401, E402
     summarize_registry_coverage,
 )
 from .benchmarks import (  # noqa: F401, E402
+    analyze_qpe_result,
     exact_ground_energy_for_problem,
+    qpe_branch_candidates,
+    qpe_calibration_plan,
     summarize_problem,
     summary_stats,
     timed_call,
@@ -71,6 +74,9 @@ __all__ = [
     "summarize_registry_coverage",
     "timed_call",
     "summary_stats",
+    "qpe_branch_candidates",
+    "analyze_qpe_result",
+    "qpe_calibration_plan",
     "exact_ground_energy_for_problem",
     "summarize_problem",
     "compute_fidelity",

@@ -2,7 +2,7 @@
 
 This roadmap is intentionally narrow: add notebooks that answer method-selection or research-validation questions, not just more usage demos.
 
-## Highest-Value Remaining Additions
+## Highest-Value QPE Follow-On
 ### 1. QPE Calibration Benchmark Follow-on
 
 Goal:
@@ -19,6 +19,11 @@ Recommended outputs:
 Priority molecules:
 
 - `H2`
+
+Status:
+
+- Added `notebooks/benchmarks/qpe/H2/Calibration_Decision_Map.ipynb` as the H2 follow-on notebook.
+- Keep future QPE calibration additions focused on new molecules or materially different failure modes rather than duplicating this decision-map workflow.
 
 ## Scope Guardrail
 

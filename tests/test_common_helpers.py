@@ -5,8 +5,11 @@ import time
 import numpy as np
 
 from common import (
+    analyze_qpe_result,
     compute_fidelity,
     exact_ground_energy_for_problem,
+    qpe_branch_candidates,
+    qpe_calibration_plan,
     summarize_problem,
     summary_stats,
     timed_call,
@@ -89,3 +92,67 @@ def test_exact_ground_energy_for_problem_matches_summary_problem() -> None:
     assert int(summary["num_qubits"]) >= 1
     assert int(summary["hamiltonian_terms"]) >= 1
     assert abs(float(summary["exact_ground_energy"]) - exact) < 1e-12
+
+
+def test_qpe_branch_candidates_reports_both_orientations() -> None:
+    out = qpe_branch_candidates("10", t=1.0, ref_energy=-1.0)
+
+    assert out["phase_msb"] == 0.5
+    assert out["phase_lsb"] == 0.25
+    assert isinstance(out["energy_msb"], float)
+    assert isinstance(out["energy_lsb"], float)
+    assert out["energy_msb"] != out["energy_lsb"]
+
+
+def test_analyze_qpe_result_flags_dominant_bin_failure() -> None:
+    result = {
+        "t": 1.0,
+        "hf_energy": -1.0,
+        "energy": 0.0,
+        "best_bitstring": "00",
+        "probs": {"00": 0.6, "10": 0.4},
+        "phase": 0.0,
+        "n_ancilla": 2,
+    }
+
+    out = analyze_qpe_result(result, exact_ground=-np.pi)
+
+    assert out["best_bitstring"] == "00"
+    assert out["oracle_any_bitstring"] == "10"
+    assert out["dominant_bin_failure"] is True
+    assert out["abs_error"] > out["oracle_any_abs_error"]
+
+
+def test_analyze_qpe_result_rejects_inconsistent_best_bitstring() -> None:
+    result = {
+        "t": 1.0,
+        "hf_energy": -1.0,
+        "energy": 0.0,
+        "best_bitstring": "11",
+        "probs": {"00": 1.0},
+        "phase": 0.0,
+        "n_ancilla": 2,
+    }
+
+    try:
+        analyze_qpe_result(result, exact_ground=-1.0)
+    except ValueError as exc:
+        assert "best_bitstring" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected ValueError for inconsistent QPE result")
+
+
+def test_qpe_calibration_plan_runs_analytic_once_and_sampled_across_seeds() -> None:
+    plan = qpe_calibration_plan(
+        ancillas_grid=[2],
+        times_grid=[1.0],
+        trotter_grid=[1],
+        shots_grid=[None, 100],
+        seeds=[4, 5],
+    )
+
+    assert plan == [
+        {"ancillas": 2, "t": 1.0, "trotter_steps": 1, "shots": None, "seed": 0},
+        {"ancillas": 2, "t": 1.0, "trotter_steps": 1, "shots": 100, "seed": 4},
+        {"ancillas": 2, "t": 1.0, "trotter_steps": 1, "shots": 100, "seed": 5},
+    ]

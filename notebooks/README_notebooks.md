@@ -212,6 +212,7 @@ Path: `notebooks/benchmarks/qpe/H2/`
 | -------- | ------- | ----- |
 | `benchmarks/qpe/H2/Noisy.ipynb` | Noisy QPE distribution and multi-seed noise sweep | Package client |
 | `benchmarks/qpe/H2/Calibration_Sweep.ipynb` | Diagnostic QPE calibration sweep with analytic baselines, phase-bin diagnostics, and aliasing / branch-selection checks against an exact H2 reference | Mixed |
+| `benchmarks/qpe/H2/Calibration_Decision_Map.ipynb` | Convert QPE calibration results into ranked configuration tables, default-adequacy checks, and branch / dominant-bin / alias-risk diagnostics | Mixed |
 
 ### Cross-Method Benchmarks
 
