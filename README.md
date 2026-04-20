@@ -14,6 +14,10 @@
 <img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/tests.yml?label=tests&style=flat-square" alt="Tests">
 </a>
 
+<a href="https://sidrichardsquantum.github.io/Variational_Quantum_Eigensolver/">
+<img src="https://img.shields.io/github/actions/workflow/status/SidRichardsQuantum/Variational_Quantum_Eigensolver/pages.yml?label=docs&style=flat-square" alt="Docs">
+</a>
+
 <a href="LICENSE">
 <img src="https://img.shields.io/github/license/SidRichardsQuantum/Variational_Quantum_Eigensolver?style=flat-square" alt="License">
 </a>
@@ -25,6 +29,8 @@
 </p>
 
 PyPI: [https://pypi.org/project/vqe-pennylane/](https://pypi.org/project/vqe-pennylane/)
+
+Docs: [https://sidrichardsquantum.github.io/Variational_Quantum_Eigensolver/](https://sidrichardsquantum.github.io/Variational_Quantum_Eigensolver/)
 
 PennyLane-based workflows for:
 
@@ -352,6 +358,13 @@ Recommended starting points:
 - [`notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`](notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb)
 
 ## Documentation
+
+The repository documentation can be built as a navigable Sphinx site:
+
+```bash
+pip install -e ".[docs]"
+python -m sphinx -W -b html docs docs/_build/html
+```
 
 Use these in order:
 

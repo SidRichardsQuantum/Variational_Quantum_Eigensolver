@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.22"
+version = "0.3.23"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -36,7 +36,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver"
 Issues = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/issues"
-Documentation = "https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver#readme"
+Documentation = "https://sidrichardsquantum.github.io/Variational_Quantum_Eigensolver/"
 
 [project.optional-dependencies]
 dev = [
@@ -48,6 +48,8 @@ dev = [
 docs = [
   "sphinx",
   "furo",
+  "myst-parser",
+  "sphinxcontrib-mermaid",
 ]
 
 [tool.pytest.ini_options]
