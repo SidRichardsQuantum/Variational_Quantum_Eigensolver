@@ -48,7 +48,7 @@ from .optimizer import get_optimizer_stepsize
 def _json_safe_complex_matrix(M: np.ndarray, *, tol: float = 1e-14):
     out: list[list[float | list[float]]] = []
     for row in M.tolist():
-        r = []
+        r: list[float | list[float]] = []
         for x in row:
             z = complex(x)
             if abs(z.imag) < float(tol):

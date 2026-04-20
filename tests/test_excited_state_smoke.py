@@ -455,3 +455,70 @@ def test_excited_state_cli_forwards_mapping(monkeypatch: pytest.MonkeyPatch) -> 
     assert vqd_called["basis"] == "6-31g"
     assert vqd_called["charge"] == 1
     assert vqd_called["unit"] == "bohr"
+
+
+def test_excited_state_cli_omitted_stepsize_uses_solver_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ssvqe_called: dict[str, object] = {}
+    vqd_called: dict[str, object] = {}
+
+    def fake_run_ssvqe(**kwargs):
+        ssvqe_called.update(kwargs)
+        return {"energies_per_state": [[-1.0], [-0.5]]}
+
+    def fake_run_vqd(**kwargs):
+        vqd_called.update(kwargs)
+        return {"energies_per_state": [[-1.0], [-0.5]]}
+
+    monkeypatch.setattr(vqe_main, "run_ssvqe", fake_run_ssvqe)
+    monkeypatch.setattr(vqe_main, "run_vqd", fake_run_vqd)
+
+    common_args = dict(
+        lr_vqe=False,
+        eom_vqe=False,
+        eom_qse=False,
+        noisy=False,
+        mapping="jordan_wigner",
+        molecule="H2",
+        num_states=2,
+        ansatz="Minimal",
+        optimizer="Adam",
+        steps=1,
+        stepsize=None,
+        seed=0,
+        depolarizing_prob=0.0,
+        amplitude_damping_prob=0.0,
+        phase_damping_prob=0.0,
+        bit_flip_prob=0.0,
+        phase_flip_prob=0.0,
+        plot=False,
+        force=True,
+        basis="sto-3g",
+        charge=0,
+        unit="angstrom",
+        symbols=None,
+        coordinates=None,
+    )
+
+    ssvqe_args = SimpleNamespace(
+        **common_args,
+        ssvqe=True,
+        vqd=False,
+        weights=None,
+    )
+    vqd_args = SimpleNamespace(
+        **common_args,
+        ssvqe=False,
+        vqd=True,
+        beta=10.0,
+        beta_start=None,
+        beta_ramp="linear",
+        beta_hold_fraction=0.0,
+    )
+
+    assert vqe_main.handle_special_modes(ssvqe_args) is True
+    assert vqe_main.handle_special_modes(vqd_args) is True
+
+    assert ssvqe_called["stepsize"] == 0.4
+    assert vqd_called["stepsize"] == 0.4

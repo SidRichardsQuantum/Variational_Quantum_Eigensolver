@@ -48,9 +48,9 @@ def _json_safe_complex_matrix(M: np.ndarray, *, tol: float = 1e-14):
       - if imag ~ 0 -> float(real)
       - else        -> [real, imag]
     """
-    out = []
+    out: list[list[float | list[float]]] = []
     for row in M.tolist():
-        r = []
+        r: list[float | list[float]] = []
         for x in row:
             z = complex(x)
             if abs(z.imag) < float(tol):

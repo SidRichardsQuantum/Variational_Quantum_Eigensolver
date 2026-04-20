@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.21"
+version = "0.3.22"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -115,31 +115,10 @@ known-first-party = ["vqe", "qpe", "qite", "common"]
 [tool.mypy]
 python_version = "3.10"
 files = [
-  "common/benchmarks.py",
-  "common/geometry.py",
-  "common/hamiltonian.py",
-  "common/metrics.py",
-  "common/molecules.py",
-  "common/noise.py",
-  "common/persist.py",
-  "common/problem.py",
-  "vqe/ansatz.py",
-  "vqe/__main__.py",
-  "vqe/core.py",
-  "vqe/engine.py",
-  "vqe/hamiltonian.py",
-  "vqe/io_utils.py",
-  "vqe/optimizer.py",
-  "qpe/__main__.py",
-  "qpe/core.py",
-  "qpe/hamiltonian.py",
-  "qpe/io_utils.py",
-  "qpe/noise.py",
-  "qite/__main__.py",
-  "qite/core.py",
-  "qite/engine.py",
-  "qite/hamiltonian.py",
-  "qite/io_utils.py",
+  "common",
+  "vqe",
+  "qpe",
+  "qite",
 ]
 warn_unused_configs = true
 ignore_missing_imports = true

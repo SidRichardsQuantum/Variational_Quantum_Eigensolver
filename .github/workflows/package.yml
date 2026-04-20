@@ -1,0 +1,120 @@
+name: package
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONUTF8: "1"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
+
+      - name: Install packaging tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build wheel and sdist
+        run: |
+          rm -rf dist build *.egg-info
+          python -m build
+
+      - name: Check package metadata
+        run: |
+          python -m twine check dist/*
+
+      - name: Inspect package contents
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import tarfile
+          import zipfile
+
+          wheel = next(Path("dist").glob("*.whl"))
+          sdist = next(Path("dist").glob("*.tar.gz"))
+
+          with zipfile.ZipFile(wheel) as zf:
+              wheel_names = sorted(zf.namelist())
+          with tarfile.open(sdist) as tf:
+              sdist_names = sorted(tf.getnames())
+
+          allowed_wheel_prefixes = (
+              "common/",
+              "qite/",
+              "qpe/",
+              "vqe/",
+              "vqe_pennylane-",
+          )
+          wheel_extras = [
+              name
+              for name in wheel_names
+              if not name.startswith(allowed_wheel_prefixes)
+          ]
+          if wheel_extras:
+              raise SystemExit(f"Unexpected wheel entries: {wheel_extras[:20]}")
+
+          banned_fragments = (
+              "__pycache__",
+              ".pyc",
+              ".pytest_cache",
+              "/results/",
+              "/images/",
+              "/vendor_wheels/",
+              ".ipynb_checkpoints",
+          )
+          banned_hits = [
+              name
+              for name in sdist_names
+              if any(fragment in name for fragment in banned_fragments)
+          ]
+          if banned_hits:
+              raise SystemExit(f"Unexpected sdist entries: {banned_hits[:20]}")
+
+          if any(
+              name.endswith(".ipynb")
+              and len(name.split("/", 1)) == 2
+              and name.split("/", 1)[1].startswith("notebooks/")
+              for name in sdist_names
+          ):
+              raise SystemExit("Repository notebooks must not be included in sdist")
+
+          if not any(name.endswith("tests/test_notebook_validation.py") for name in sdist_names):
+              raise SystemExit("Expected tests to be included in sdist")
+
+          print(f"wheel: {wheel.name} ({len(wheel_names)} files)")
+          print(f"sdist: {sdist.name} ({len(sdist_names)} files)")
+          PY
+
+      - name: Install built wheel and smoke entrypoints
+        run: |
+          python -m venv /tmp/vqe-wheel-smoke
+          /tmp/vqe-wheel-smoke/bin/python -m pip install --upgrade pip
+          /tmp/vqe-wheel-smoke/bin/python -m pip install dist/*.whl
+          /tmp/vqe-wheel-smoke/bin/python - <<'PY'
+          import common
+          import qite
+          import qpe
+          import vqe
+
+          for module in (common, qite, qpe, vqe):
+              print(module.__file__)
+          PY
+          /tmp/vqe-wheel-smoke/bin/vqe --help >/tmp/vqe-help.txt
+          /tmp/vqe-wheel-smoke/bin/qpe --help >/tmp/qpe-help.txt
+          /tmp/vqe-wheel-smoke/bin/qite --help >/tmp/qite-help.txt

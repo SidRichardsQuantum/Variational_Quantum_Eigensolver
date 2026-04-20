@@ -65,7 +65,7 @@ def _detect_ansatz(hamiltonian, num_qubits: int) -> tuple[str, str]:
             if axis_left != axis_right:
                 unsupported_terms.append(word)
                 continue
-            pair = tuple(sorted((left, right)))
+            pair = (min(int(left), int(right)), max(int(left), int(right)))
             two_body_axes_by_pair[pair].add(axis_left)
             two_body_coeffs[(pair, axis_left)] += coeff
         else:

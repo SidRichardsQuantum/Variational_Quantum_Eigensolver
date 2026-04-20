@@ -25,7 +25,7 @@ All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe / vqe.vqd.run_vqd.
 from __future__ import annotations
 
 import argparse
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 
@@ -50,6 +50,11 @@ from vqe import (
 def _cli_stepsize(value: Optional[float]) -> Optional[float]:
     """Preserve omitted CLI stepsize so downstream APIs can resolve defaults."""
     return None if value is None else float(value)
+
+
+def _cli_excited_stepsize(value: Optional[float]) -> float:
+    """Use the excited-state solver default when CLI stepsize is omitted."""
+    return 0.4 if value is None else float(value)
 
 
 def _parse_weights(
@@ -136,7 +141,7 @@ def _validated_geometry_inputs(
     return symbols, coordinates
 
 
-def _active_space_kwargs(args) -> dict[str, int | None]:
+def _active_space_kwargs(args) -> dict[str, Any]:
     return {
         "active_electrons": (
             None
@@ -176,7 +181,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=_cli_stepsize(args.stepsize),
+            stepsize=_cli_excited_stepsize(args.stepsize),
             seed=int(args.seed),
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),
@@ -332,7 +337,7 @@ def handle_special_modes(args) -> bool:
             ansatz_name=args.ansatz,
             optimizer_name=args.optimizer,
             steps=int(args.steps),
-            stepsize=_cli_stepsize(args.stepsize),
+            stepsize=_cli_excited_stepsize(args.stepsize),
             seed=int(args.seed),
             noisy=bool(args.noisy),
             depolarizing_prob=float(args.depolarizing_prob),

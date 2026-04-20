@@ -4,6 +4,69 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.22] - April 20, 2026
+
+### Added
+
+- **Benchmark notebook validation gate**
+
+  Added a lightweight pytest smoke test for every notebook under `notebooks/benchmarks/`.
+  The check validates notebook JSON structure, confirms Python kernel metadata,
+  compiles each code cell, and rejects saved error outputs without executing the
+  expensive benchmark workloads.
+
+- **Expert-mode regression coverage**
+
+  Added focused tests for expert-mode qubit Hamiltonians covering canonical
+  Hamiltonian fingerprints, auto ansatz selection for `XXZ-HVA`,
+  `NumberPreservingGivens`, and fallback cases, selection metadata in solver
+  results, and cache reuse across VQE, QPE, VarQITE, and VarQRTE.
+
+- **Full package mypy coverage**
+
+  Broadened the scoped mypy gate from selected source files to all `common`,
+  `vqe`, `qpe`, and `qite` package modules.
+
+- **Package artifact CI gate**
+
+  Added a release-package workflow that builds the wheel and sdist, runs
+  `twine check`, inspects package contents for accidental generated artifacts,
+  installs the built wheel, and smoke-tests the console entrypoints.
+
+- **Executable notebook smoke coverage**
+
+  Added a tiny checked-in notebook fixture and pytest executor so notebook code
+  cells are exercised in CI without running expensive benchmark notebooks.
+
+- **Stale cache invalidation coverage**
+
+  Added regression tests confirming VQE, QPE, VarQITE, and VarQRTE recompute
+  legacy cache records that lack `compute_runtime_s` / `runtime_s` metadata.
+
+### Fixed
+
+- **Typing cleanup for full-package checks**
+
+  Added narrow typing annotations and scalar conversions in expert ansatz
+  selection and excited-state helper modules so the full package passes mypy.
+
+- **Excited-state CLI default stepsizes**
+
+  Preserved the SSVQE and VQD default stepsize when `--stepsize` is omitted,
+  matching their public Python API defaults while keeping VQE-family commands on
+  calibrated optimizer defaults.
+
+- **Package manifest intent**
+
+  Made the sdist test-inclusion policy explicit in `MANIFEST.in` while keeping
+  runtime wheels limited to importable package modules.
+
+- **Stale interrupted notebook output**
+
+  Removed a saved `KeyboardInterrupt` error output from
+  `notebooks/benchmarks/vqe/H2/Noise_Scan.ipynb` so committed benchmark notebooks
+  pass the new validation gate.
+
 ## [0.3.21] - April 20, 2026
 
 ### Added

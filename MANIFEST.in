@@ -15,6 +15,11 @@ recursive-include common *.py
 # Include only notebook *descriptions* but NOT results
 recursive-include notebooks *.md
 
+# Include tests in the source distribution so downstream packagers can run the
+# same smoke/regression suite against the sdist. These are not included in the
+# wheel because package discovery is restricted to the runtime package modules.
+recursive-include tests *.py *.ipynb
+
 # Exclude notebooks themselves (huge)
 exclude notebooks/*.ipynb
 exclude notebooks/**/*.ipynb

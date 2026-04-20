@@ -57,9 +57,9 @@ def _json_safe_complex_matrix(M: np.ndarray, *, tol: float = 1e-14):
       - if imag ~ 0 -> float(real)
       - else        -> [real, imag]
     """
-    out = []
+    out: list[list[float | list[float]]] = []
     for row in M.tolist():
-        r = []
+        r: list[float | list[float]] = []
         for x in row:
             z = complex(x)
             if abs(z.imag) < float(tol):
@@ -580,7 +580,7 @@ def run_eom_qse(
         vi = Opsi[i]
         for j in range(m):
             S[i, j] = np.vdot(vi, Opsi[j])
-            A[i, j] = np.vdot(vi, Hv[j]) - np.vdot(vi, Ow[j])
+            A[i, j] = complex(np.vdot(vi, Hv[j])) - complex(np.vdot(vi, Ow[j]))
 
     # ------------------------------------------------------------
     # 6) Solve generalized non-Hermitian EVP A c = ω S c
