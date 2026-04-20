@@ -8,6 +8,7 @@ Shared built-in single-qubit noise channels used across VQE, QITE, and QPE.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from typing import Any, cast
 
 import pennylane as qml
 
@@ -18,6 +19,10 @@ BUILTIN_NOISE_FIELDS = (
     "p_bit_flip",
     "p_phase_flip",
 )
+
+
+def _noise_float(value: object) -> float:
+    return float(cast(Any, value or 0.0))
 
 
 def apply_builtin_noise(
@@ -76,7 +81,7 @@ def format_noise_summary(noise: Mapping[str, object] | None) -> str:
         ("p_phase_flip", "phase_flip"),
     )
     for key, label in mapping:
-        val = float(noise.get(key, 0.0) or 0.0)
+        val = _noise_float(noise.get(key, 0.0))
         if val > 0.0:
             parts.append(f"{label}={val:g}")
 
@@ -104,7 +109,7 @@ def format_noise_tag(noise: Mapping[str, object] | None) -> str:
         ("p_phase_flip", "phaseflip"),
     )
     for key, label in mapping:
-        val = float(noise.get(key, 0.0) or 0.0)
+        val = _noise_float(noise.get(key, 0.0))
         if val > 0.0:
             parts.append(f"{label}{_tok(val)}")
 

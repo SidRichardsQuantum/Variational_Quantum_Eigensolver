@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.19] - April 20, 2026
+
+### Changed
+
+- Refreshed package metadata for the next `0.3.19` release.
+- Broadened the scoped `mypy` gate to cover additional shared chemistry, geometry, and noise helpers.
+
+### Fixed
+
+- Added a typed noise-value conversion helper so built-in noise summary / tag formatting passes the broader type gate cleanly.
+
+## [0.3.18] - April 20, 2026
+
+### Changed
+
+- Bumped the package release metadata to `0.3.18`.
+
 ## [0.3.17] - April 20, 2026
 
 ### Added

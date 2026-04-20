@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.18"
+version = "0.3.19"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -116,8 +116,13 @@ known-first-party = ["vqe", "qpe", "qite", "common"]
 python_version = "3.10"
 files = [
   "common/benchmarks.py",
+  "common/geometry.py",
+  "common/hamiltonian.py",
   "common/metrics.py",
+  "common/molecules.py",
+  "common/noise.py",
   "common/persist.py",
+  "common/problem.py",
 ]
 warn_unused_configs = true
 ignore_missing_imports = true
