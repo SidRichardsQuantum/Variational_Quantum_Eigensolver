@@ -1,0 +1,8 @@
+setting,value
+molecule,LiH
+mapping,jordan_wigner
+active_electrons,2
+active_orbitals,2
+num_qubits,4
+hamiltonian_terms,27
+exact_ground_energy,-7.862129

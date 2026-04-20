@@ -4,6 +4,81 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.24] - April 20, 2026
+
+### Added
+
+- **Published Sphinx documentation site**
+
+  Added a Sphinx/Furo documentation shell around the existing `README.md`,
+  `USAGE.md`, `THEORY.md`, `notebooks/README_notebooks.md`, and `more_docs/`
+  content.
+
+  The docs build supports MyST Markdown, Mermaid diagrams, API autodoc pages,
+  strict Sphinx builds, and GitHub Pages deployment.
+
+- **Benchmark summary and results pages**
+
+  Added benchmark documentation pages for:
+
+  - `notebooks/benchmarks/SUMMARY.md`
+  - `notebooks/benchmarks/RESULTS.md`
+  - `notebooks/benchmarks/MAINTENANCE.md`
+
+  These pages summarize the benchmark notebook inventory, method-selection
+  guidance, artifact policy, and result-bearing notebooks.
+
+- **Curated benchmark artifact export flow**
+
+  Added `scripts/export_benchmark_artifacts.py` to promote selected local
+  benchmark outputs into tracked, curated artifacts under
+  `notebooks/benchmarks/_artifacts/`.
+
+  The exporter currently publishes selected figures and CSV/Markdown tables for:
+
+  - H2 ansatz comparison
+  - H2 mapping comparison
+  - low-qubit VQE benchmark
+  - H2 cross-method runtime
+  - LiH cross-method results
+  - QPE H2 decision-map summaries
+  - H2 noise-robustness reference results
+
+- **Benchmark artifact regression tests**
+
+  Added tests that verify `RESULTS.md` references existing curated artifacts,
+  enforce a small set of expected artifact file types, guard against oversized
+  artifact files, and confirm the benchmark exporter is idempotent.
+
+### Changed
+
+- **Documentation URLs and Pages workflows**
+
+  Updated the package documentation URL and README badge/link to point at the
+  GitHub Pages documentation site.
+
+  Added docs and Pages workflow checks that run the benchmark artifact exporter
+  and fail if curated artifacts are stale.
+
+- **Benchmark artifact policy**
+
+  Kept raw `results/` and `images/` ignored while tracking only curated,
+  reviewed copies under `notebooks/benchmarks/_artifacts/`.
+
+### Fixed
+
+- **Generated artifact cleanup**
+
+  Removed stale local smoke/cache result files and orphaned generated images from
+  the ignored artifact directories, leaving only referenced generated images in
+  the local `images/` directory.
+
+## [0.3.23] - April 20, 2026
+
+### Changed
+
+- Published the initial GitHub Pages documentation release.
+
 ## [0.3.22] - April 20, 2026
 
 ### Added

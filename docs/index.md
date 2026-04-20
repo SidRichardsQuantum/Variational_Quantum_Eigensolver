@@ -22,6 +22,15 @@ architecture
 ```{toctree}
 :maxdepth: 1
 :titlesonly:
+:caption: Benchmarks
+
+Benchmark Summary <benchmarks/summary>
+Benchmark Results <benchmarks/results>
+```
+
+```{toctree}
+:maxdepth: 1
+:titlesonly:
 :caption: VQE
 
 Ansatzes <vqe/ansatzes>

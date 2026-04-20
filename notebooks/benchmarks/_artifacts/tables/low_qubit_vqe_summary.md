@@ -1,0 +1,5 @@
+| molecule | num_qubits | hamiltonian_terms | exact_ground_energy | energy_mean | energy_std | abs_error_mean | abs_error_std | runtime_mean_s | runtime_std_s | parameter_count |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| H2 | 4 | 15 | -1.137270 | -1.137268 | 0.0 | 0.000002 | 0.0 | 2.941093 | 0.470165 | 3 |
+| H3+ | 6 | 62 | -1.296055 | -1.261729 | 0.0 | 0.034327 | 0.0 | 31.919543 | 3.227556 | 8 |
+| H4 | 8 | 185 | -2.166387 | -2.166291 | 0.0 | 0.000096 | 0.0 | 256.256229 | 51.861543 | 26 |

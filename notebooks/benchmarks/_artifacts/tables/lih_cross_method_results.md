@@ -1,0 +1,5 @@
+| method | energy | exact_ground | abs_error | runtime_s | compute_runtime_s | cache_hit | num_qubits |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| VarQITE | -7.862129 | -7.862129 | 2.200000e-07 | 1.162672 |  | True | 4 |
+| VQE | -7.862128 | -7.862129 | 6.200000e-07 | 1.195395 | 5.518632 | True | 4 |
+| QPE | -6.675884 | -7.862129 | 1.186244e+00 | 1.234748 |  | True | 4 |

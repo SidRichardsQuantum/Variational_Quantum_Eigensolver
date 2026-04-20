@@ -73,6 +73,7 @@ jobs:
               "__pycache__",
               ".pyc",
               ".pytest_cache",
+              "/notebooks/benchmarks/_artifacts/",
               "/results/",
               "/images/",
               "/vendor_wheels/",
@@ -96,6 +97,9 @@ jobs:
 
           if not any(name.endswith("tests/test_notebook_validation.py") for name in sdist_names):
               raise SystemExit("Expected tests to be included in sdist")
+
+          if any(name.endswith("tests/test_benchmark_artifacts.py") for name in sdist_names):
+              raise SystemExit("Repository-only benchmark artifact tests must not be included in sdist")
 
           print(f"wheel: {wheel.name} ({len(wheel_names)} files)")
           print(f"sdist: {sdist.name} ({len(sdist_names)} files)")

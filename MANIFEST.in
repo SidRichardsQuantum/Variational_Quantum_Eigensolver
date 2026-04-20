@@ -19,10 +19,16 @@ recursive-include notebooks *.md
 # same smoke/regression suite against the sdist. These are not included in the
 # wheel because package discovery is restricted to the runtime package modules.
 recursive-include tests *.py *.ipynb
+exclude tests/test_benchmark_artifacts.py
 
 # Exclude notebooks themselves (huge)
 exclude notebooks/*.ipynb
 exclude notebooks/**/*.ipynb
+
+# Exclude curated benchmark artifacts from the sdist. They are tracked in the
+# repository for the docs site, but they are generated result artifacts rather
+# than source-package inputs.
+prune notebooks/benchmarks/_artifacts
 
 # Exclude large data directories
 prune data
