@@ -307,7 +307,8 @@ Notes:
 - this is a Python expert-mode API, not a CLI feature
 - arbitrary qubit wire labels are normalized internally
 - `run_qpe(...)` expert mode requires both `hamiltonian` and `hf_state`
-- chemistry-specific ansatzes like `UCCSD` still require chemistry metadata; for generic model Hamiltonians prefer ansatzes like `RY-CZ`, `Minimal`, or `StronglyEntanglingLayers`
+- `ansatz_name="auto"` can select a conservative model ansatz for recognized Pauli structures such as TFIM, XXZ/Heisenberg, and SSH-like hopping chains
+- chemistry-specific ansatzes like `UCCSD` still require chemistry metadata; for generic or unclassified model Hamiltonians use `ansatz_name="auto"` or explicit non-chemistry ansatzes such as `RY-CZ`, `Minimal`, or `StronglyEntanglingLayers`
 
 ## Outputs And Reproducibility
 
@@ -326,6 +327,7 @@ General behavior:
 
 - run configurations are hashed deterministically
 - matching runs reuse cached JSON records
+- expert-mode Hamiltonian runs cache by canonical Pauli-term fingerprint, reference bitstring, resolved ansatz, and solver settings
 - cached records missing runtime metadata are treated as stale and recomputed automatically
 - `--force` recomputes instead of loading cache
 

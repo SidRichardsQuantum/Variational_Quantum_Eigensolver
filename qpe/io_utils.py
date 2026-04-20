@@ -48,6 +48,8 @@ def signature_hash(
     unit: str = "angstrom",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    hamiltonian: Dict[str, Any] | None = None,
+    reference_state: list[int] | None = None,
     shots: Optional[int] = None,
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
@@ -80,6 +82,8 @@ def signature_hash(
             None if active_electrons is None else int(active_electrons)
         ),
         "active_orbitals": (None if active_orbitals is None else int(active_orbitals)),
+        "hamiltonian": hamiltonian,
+        "reference_state": reference_state,
     }
     return stable_hash_cfg(cfg, ndigits=10, n_hex=12)
 
@@ -160,6 +164,10 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         unit=result.get("unit", "angstrom"),
         active_electrons=result.get("active_electrons"),
         active_orbitals=result.get("active_orbitals"),
+        hamiltonian=result.get("hamiltonian"),
+        reference_state=(
+            result.get("hf_state") if result.get("hamiltonian") is not None else None
+        ),
     )
 
     path = cache_path(
@@ -194,6 +202,8 @@ def load_qpe_result(
     unit: str = "angstrom",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    hamiltonian: Dict[str, Any] | None = None,
+    reference_state: list[int] | None = None,
 ) -> Optional[Dict[str, Any]]:
     key = signature_hash(
         molecule=molecule,
@@ -211,6 +221,8 @@ def load_qpe_result(
         unit=unit,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        reference_state=reference_state,
     )
 
     path = cache_path(

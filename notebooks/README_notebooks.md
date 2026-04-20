@@ -39,6 +39,7 @@ For the main project docs, see:
   - [VQE Benchmarks](#vqe-benchmarks)
   - [QPE Benchmarks](#qpe-benchmarks)
   - [Cross-Method Benchmarks](#cross-method-benchmarks)
+  - [Non-Molecule Benchmarks](#non-molecule-benchmarks)
   - [Default Calibration Benchmarks](#default-calibration-benchmarks)
   - [QITE / VarQRTE Benchmarks](#qite--varqrte-benchmarks)
 
@@ -79,6 +80,7 @@ notebooks/
 ├── benchmarks/
 │   ├── comparisons/
 │   ├── defaults/
+│   ├── non_molecule/
 │   ├── qite/
 │   ├── qpe/
 │   └── vqe/
@@ -231,6 +233,17 @@ Paths:
 | `benchmarks/comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb` | Benchmark small-system VQE across the supported sub-12-qubit registry molecules with exact-ground error and runtime summaries | Mixed |
 | `benchmarks/comparisons/multi_molecule/Hydrogen_Family_VQE_Benchmark.ipynb` | Benchmark VQE across neutral and charged small hydrogen systems through the standard molecule pipeline with registry-backed multiplicity defaults and same-electron-sector exact references | Mixed |
 | `benchmarks/comparisons/multi_molecule/Registry_Coverage.ipynb` | Summarize the built-in chemistry registry with charge, multiplicity, qubit count, term count, and exact-ground reference energy using the shared registry-coverage helper | Mixed |
+| `benchmarks/comparisons/multi_molecule/Atomic_Ionization_Energy_Benchmark.ipynb` | Compare neutral/cation registry atom pairs beyond the H2/LiH panel with exact ionization-energy, qubit-count, and Hamiltonian-term diagnostics | Mixed |
+
+### Non-Molecule Benchmarks
+
+Path: `notebooks/benchmarks/non_molecule/`
+
+| Notebook | Purpose | Style |
+| -------- | ------- | ----- |
+| `benchmarks/non_molecule/TFIM_Cross_Method_Benchmark.ipynb` | Compare exact diagonalization, VQE, VarQITE, and QPE on a transverse-field Ising chain using expert-mode Hamiltonian inputs and `ansatz_name="auto"` | Mixed |
+| `benchmarks/non_molecule/Heisenberg_Chain_Benchmark.ipynb` | Compare exact diagonalization, VQE, VarQITE, and QPE on an open XXZ Heisenberg chain using expert-mode Hamiltonian inputs and `ansatz_name="auto"` | Mixed |
+| `benchmarks/non_molecule/SSH_Chain_Benchmark.ipynb` | Compare exact diagonalization, VQE, VarQITE, and QPE on an open Su-Schrieffer-Heeger chain using expert-mode Hamiltonian inputs and `ansatz_name="auto"` | Mixed |
 
 ### Default Calibration Benchmarks
 
@@ -306,6 +319,12 @@ Notes:
    - `benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`
    - `qite/H2/Real_Time.ipynb`
 
+8. **Non-molecule model Hamiltonians**
+
+   - `benchmarks/non_molecule/TFIM_Cross_Method_Benchmark.ipynb`
+   - `benchmarks/non_molecule/Heisenberg_Chain_Benchmark.ipynb`
+   - `benchmarks/non_molecule/SSH_Chain_Benchmark.ipynb`
+
 ---
 
 ## Reproducibility
@@ -315,6 +334,7 @@ These notebooks use the same caching, naming, and output conventions as the pack
 That means:
 
 - repeated runs can reuse cached results when configurations match
+- prebuilt-Hamiltonian benchmark runs reuse cached records using canonical Pauli-term fingerprints, reference bitstrings, resolved ansatz metadata, and solver settings
 - comparison notebooks generally prefer `force=False`, while fresh-run tutorials and quench workflows keep `force=True` where recomputation is part of the notebook's purpose
 - plot and JSON output naming follows the shared repository conventions
 - notebook experiments are aligned with the packaged solver infrastructure rather than separate one-off code paths

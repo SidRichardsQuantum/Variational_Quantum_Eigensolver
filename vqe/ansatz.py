@@ -102,14 +102,145 @@ def minimal(params, wires):
     qml.CNOT(wires=[wires[0], wires[1]])
 
 
-def hardware_efficient_ansatz(params, wires):
+def hardware_efficient_ansatz(params, wires, *, layers: int | None = None):
     """
     Standard hardware-efficient ansatz using StronglyEntanglingLayers.
 
     Convention:
         params.shape = (n_layers, len(wires), 3)
     """
+    if layers is not None and int(layers) != int(np.shape(params)[0]):
+        raise ValueError(
+            "StronglyEntanglingLayers received params with "
+            f"{int(np.shape(params)[0])} layers, but ansatz_kwargs requested "
+            f"{int(layers)} layers."
+        )
     qml.templates.StronglyEntanglingLayers(params, wires=wires)
+
+
+def number_preserving_givens(params, wires, *, layers: int | None = None):
+    """
+    Nearest-neighbour number-preserving ansatz for lattice Hamiltonians.
+
+    Each layer applies SingleExcitation rotations on nearest-neighbour bonds,
+    which preserves the total excitation number prepared by reference_state.
+
+    Convention:
+        params.shape = (n_layers, len(wires) - 1)
+    """
+    wires = list(wires)
+    if len(wires) < 2:
+        raise ValueError("NumberPreservingGivens requires at least 2 wires.")
+
+    params_arr = np.asarray(params)
+    if params_arr.ndim == 1:
+        params_arr = np.reshape(params_arr, (1, -1))
+
+    expected_layers = int(layers) if layers is not None else int(params_arr.shape[0])
+    expected_shape = (expected_layers, len(wires) - 1)
+    if tuple(params_arr.shape) != expected_shape:
+        raise ValueError(
+            "NumberPreservingGivens expects params.shape == "
+            f"{expected_shape}, got {tuple(params_arr.shape)}."
+        )
+
+    for layer in range(expected_layers):
+        for bond in range(len(wires) - 1):
+            qml.SingleExcitation(
+                params_arr[layer, bond],
+                wires=[wires[bond], wires[bond + 1]],
+            )
+
+
+def tfim_hamiltonian_variational(
+    params,
+    wires,
+    *,
+    layers: int | None = None,
+    prepare_plus: bool = True,
+):
+    """
+    Hamiltonian-variational ansatz for open-chain TFIM models.
+
+    By default the circuit starts from |+...+>, then each layer applies
+    nearest-neighbour ZZ entanglers followed by a transverse-field mixer:
+        exp(-i beta_l sum_i X_i) exp(-i gamma_l sum_i Z_i Z_{i+1})
+
+    Convention:
+        params.shape = (n_layers, 2)
+        params[:, 0] = beta_l
+        params[:, 1] = gamma_l
+    """
+    wires = list(wires)
+    if len(wires) < 2:
+        raise ValueError("TFIM-HVA requires at least 2 wires.")
+
+    params_arr = np.asarray(params)
+    if params_arr.ndim == 1:
+        params_arr = np.reshape(params_arr, (1, -1))
+
+    expected_layers = int(layers) if layers is not None else int(params_arr.shape[0])
+    expected_shape = (expected_layers, 2)
+    if tuple(params_arr.shape) != expected_shape:
+        raise ValueError(
+            f"TFIM-HVA expects params.shape == {expected_shape}, "
+            f"got {tuple(params_arr.shape)}."
+        )
+
+    if bool(prepare_plus):
+        for wire in wires:
+            qml.Hadamard(wires=wire)
+
+    for layer in range(expected_layers):
+        beta, gamma = params_arr[layer]
+        for left, right in zip(wires[:-1], wires[1:]):
+            qml.IsingZZ(2.0 * gamma, wires=[left, right])
+        for wire in wires:
+            qml.RX(2.0 * beta, wires=wire)
+
+
+def xxz_hamiltonian_variational(params, wires, *, layers: int | None = None):
+    """
+    Hamiltonian-variational ansatz for open-chain XXZ/Heisenberg models.
+
+    Each layer applies nearest-neighbour excitation-preserving exchange
+    rotations and ZZ entanglers on even bonds, then odd bonds. The exchange
+    block is implemented with ``SingleExcitation`` so the ansatz stays in the
+    fixed-magnetization sector of the input reference state.
+
+    Convention:
+        params.shape = (n_layers, 4)
+        params[:, 0] = theta_xy_even_l
+        params[:, 1] = theta_z_even_l
+        params[:, 2] = theta_xy_odd_l
+        params[:, 3] = theta_z_odd_l
+    """
+    wires = list(wires)
+    if len(wires) < 2:
+        raise ValueError("XXZ-HVA requires at least 2 wires.")
+
+    params_arr = np.asarray(params)
+    if params_arr.ndim == 1:
+        params_arr = np.reshape(params_arr, (1, -1))
+
+    expected_layers = int(layers) if layers is not None else int(params_arr.shape[0])
+    expected_shape = (expected_layers, 4)
+    if tuple(params_arr.shape) != expected_shape:
+        raise ValueError(
+            f"XXZ-HVA expects params.shape == {expected_shape}, "
+            f"got {tuple(params_arr.shape)}."
+        )
+
+    for layer in range(expected_layers):
+        theta_xy_even, theta_z_even, theta_xy_odd, theta_z_odd = params_arr[layer]
+        for start, theta_xy, theta_z in (
+            (0, theta_xy_even, theta_z_even),
+            (1, theta_xy_odd, theta_z_odd),
+        ):
+            for bond in range(start, len(wires) - 1, 2):
+                left, right = wires[bond], wires[bond + 1]
+                qml.SingleExcitation(theta_xy, wires=[left, right])
+                qml.IsingZZ(2.0 * theta_z, wires=[left, right])
 
 
 # ================================================================
@@ -462,6 +593,9 @@ ANSATZES = {
     "RY-CZ": ry_cz,
     "Minimal": minimal,
     "StronglyEntanglingLayers": hardware_efficient_ansatz,
+    "NumberPreservingGivens": number_preserving_givens,
+    "TFIM-HVA": tfim_hamiltonian_variational,
+    "XXZ-HVA": xxz_hamiltonian_variational,
     "UCCSD": uccsd_ansatz,
     "UCCD": uccd_ansatz,
     "UCCS": uccs_ansatz,
@@ -488,6 +622,13 @@ def canonicalize_ansatz_name(name: str) -> str:
         _normalize_ansatz_key("RY-CZ"): "RY-CZ",
         _normalize_ansatz_key("Minimal"): "Minimal",
         _normalize_ansatz_key("StronglyEntanglingLayers"): "StronglyEntanglingLayers",
+        _normalize_ansatz_key("NumberPreservingGivens"): "NumberPreservingGivens",
+        _normalize_ansatz_key("SSH-Givens"): "NumberPreservingGivens",
+        _normalize_ansatz_key("TFIM-HVA"): "TFIM-HVA",
+        _normalize_ansatz_key("TFIMHamiltonianVariational"): "TFIM-HVA",
+        _normalize_ansatz_key("XXZ-HVA"): "XXZ-HVA",
+        _normalize_ansatz_key("Heisenberg-HVA"): "XXZ-HVA",
+        _normalize_ansatz_key("XXZHamiltonianVariational"): "XXZ-HVA",
         _normalize_ansatz_key("UCCSD"): "UCCSD",
         _normalize_ansatz_key("UCCD"): "UCCD",
         _normalize_ansatz_key("UCCS"): "UCCS",
@@ -530,6 +671,7 @@ def init_params(
     multiplicity: int = 1,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    ansatz_kwargs: dict[str, Any] | None = None,
     seed: int = 0,
 ):
     """
@@ -558,6 +700,13 @@ def init_params(
     np.random.seed(seed)
 
     ansatz_name = canonicalize_ansatz_name(ansatz_name)
+    options = dict(ansatz_kwargs or {})
+
+    def _positive_int_option(name: str, default: int) -> int:
+        value = int(options.get(name, default))
+        if value < 1:
+            raise ValueError(f"ansatz_kwargs['{name}'] must be >= 1.")
+        return value
 
     # --- Toy ansatzes --------------------------------------------------------
     if ansatz_name == "TwoQubit-RY-CNOT":
@@ -575,8 +724,22 @@ def init_params(
 
     # --- Chemistry ansatzes (UCC family) ------------------------------------
     elif ansatz_name == "StronglyEntanglingLayers":
-        # 1 layer, 3 parameters per wire
-        vals = np.random.normal(loc=0.0, scale=np.pi, size=(1, num_wires, 3))
+        # n layers, 3 parameters per wire
+        layers = _positive_int_option("layers", 1)
+        vals = np.random.normal(loc=0.0, scale=np.pi, size=(layers, num_wires, 3))
+
+    elif ansatz_name == "NumberPreservingGivens":
+        if num_wires < 2:
+            raise ValueError("NumberPreservingGivens requires at least 2 wires.")
+        layers = _positive_int_option("layers", 1)
+        vals = scale * np.random.randn(layers, num_wires - 1)
+
+    elif ansatz_name in {"TFIM-HVA", "XXZ-HVA"}:
+        if num_wires < 2:
+            raise ValueError(f"{ansatz_name} requires at least 2 wires.")
+        layers = _positive_int_option("layers", 1)
+        params_per_layer = 2 if ansatz_name == "TFIM-HVA" else 4
+        vals = scale * np.random.randn(layers, params_per_layer)
 
     elif ansatz_name in ["UCCSD", "UCCD", "UCCS"]:
         if symbols is None or coordinates is None:

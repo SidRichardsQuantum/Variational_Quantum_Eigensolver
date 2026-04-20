@@ -18,6 +18,8 @@ import pennylane as qml
 
 from common.hamiltonian import build_hamiltonian
 
+HARTREE_TO_EV = 27.211386245988
+
 
 def timed_call(
     fn: Callable[..., Any],
@@ -53,6 +55,70 @@ def summary_stats(xs) -> dict[str, float]:
         "min": float(arr.min()),
         "max": float(arr.max()),
     }
+
+
+def ionization_energy_panel(
+    coverage_rows: list[dict[str, Any]],
+    *,
+    pairs: list[tuple[str, str]] | None = None,
+) -> list[dict[str, object]]:
+    """
+    Build neutral/cation ionization-energy rows from registry coverage output.
+
+    The input is intentionally the flat output from
+    ``summarize_registry_coverage(...)`` so notebooks can build expensive
+    Hamiltonians once and reuse the same metadata table for multiple views.
+    """
+    by_name = {str(row["molecule"]): row for row in coverage_rows}
+    selected_pairs = (
+        [
+            (name, f"{name}+")
+            for name, row in by_name.items()
+            if int(row.get("charge", 0)) == 0 and f"{name}+" in by_name
+        ]
+        if pairs is None
+        else [(str(neutral), str(cation)) for neutral, cation in pairs]
+    )
+
+    rows: list[dict[str, Any]] = []
+    for neutral_name, cation_name in selected_pairs:
+        if neutral_name not in by_name:
+            raise ValueError(f"Missing neutral coverage row for {neutral_name!r}.")
+        if cation_name not in by_name:
+            raise ValueError(f"Missing cation coverage row for {cation_name!r}.")
+
+        neutral = by_name[neutral_name]
+        cation = by_name[cation_name]
+        neutral_energy = float(neutral["exact_ground_energy"])
+        cation_energy = float(cation["exact_ground_energy"])
+        ionization_ha = cation_energy - neutral_energy
+
+        rows.append(
+            {
+                "system": neutral_name,
+                "neutral": neutral_name,
+                "cation": cation_name,
+                "neutral_exact_ground_energy": neutral_energy,
+                "cation_exact_ground_energy": cation_energy,
+                "ionization_energy_ha": float(ionization_ha),
+                "ionization_energy_ev": float(ionization_ha * HARTREE_TO_EV),
+                "neutral_num_electrons": int(neutral["num_electrons"]),
+                "cation_num_electrons": int(cation["num_electrons"]),
+                "neutral_num_qubits": int(neutral["num_qubits"]),
+                "cation_num_qubits": int(cation["num_qubits"]),
+                "neutral_hamiltonian_terms": int(neutral["hamiltonian_terms"]),
+                "cation_hamiltonian_terms": int(cation["hamiltonian_terms"]),
+            }
+        )
+
+    rows.sort(
+        key=lambda row: (
+            int(row["neutral_num_qubits"]),
+            int(row["neutral_num_electrons"]),
+            str(row["system"]),
+        )
+    )
+    return rows
 
 
 def qpe_branch_candidates(

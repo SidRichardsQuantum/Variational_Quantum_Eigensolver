@@ -7,7 +7,6 @@ import pennylane as qml
 import pytest
 import numpy as np
 
-import qpe.io_utils as qpe_io_utils
 from common.hamiltonian import build_hamiltonian
 from qpe import run_qpe
 from qpe.visualize import plot_qpe_distribution
@@ -110,7 +109,7 @@ def test_qpe_explicit_geometry_mode_smoke() -> None:
     assert "probs" in res
 
 
-def test_qpe_hamiltonian_override_bypasses_cache_and_plotting(monkeypatch) -> None:
+def test_qpe_hamiltonian_override_uses_cache() -> None:
     atoms = ["H", "H"]
     coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
 
@@ -121,26 +120,22 @@ def test_qpe_hamiltonian_override_bypasses_cache_and_plotting(monkeypatch) -> No
         basis="sto-3g",
     )
 
-    def fail_load(**_kwargs):
-        raise AssertionError("expert-mode QPE should not read from cache")
-
-    def fail_save(_result):
-        raise AssertionError("expert-mode QPE should not save to cache")
-
-    monkeypatch.setattr(qpe_io_utils, "load_qpe_result", fail_load)
-    monkeypatch.setattr(qpe_io_utils, "save_qpe_result", fail_save)
-
-    res = run_qpe(
+    cfg = dict(
+        molecule="expert_qpe_cache_smoke",
         hamiltonian=hamiltonian,
         hf_state=hf_state,
         n_ancilla=1,
         shots=100,
-        plot=True,
-        force=False,
+        plot=False,
     )
+
+    fresh = run_qpe(force=True, **cfg)
+    res = run_qpe(force=False, **cfg)
 
     assert isinstance(res, dict)
     assert "phase" in res
+    assert fresh["cache_hit"] is False
+    assert res["cache_hit"] is True
 
 
 def test_qpe_cache_hit_reports_cached_timing_metadata() -> None:

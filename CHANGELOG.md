@@ -4,6 +4,65 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.21] - April 20, 2026
+
+### Added
+
+- **Atomic ionization benchmark coverage**
+
+  Added `notebooks/benchmarks/comparisons/multi_molecule/Atomic_Ionization_Energy_Benchmark.ipynb` to extend benchmark coverage beyond the H2/LiH molecular panel.
+
+  The notebook compares neutral/cation registry pairs for `He`, `Be`, `B`, `C`, `N`, `O`, and `F` using the shared Hamiltonian pipeline and reports:
+
+  - exact neutral and cation ground-state energies
+  - ionization energy in Hartree and eV
+  - electron, qubit, and Hamiltonian-term counts for each pair
+
+- **Reusable ionization benchmark helper**
+
+  Added `common.ionization_energy_panel(...)` so notebooks can derive neutral/cation ionization-energy tables from `summarize_registry_coverage(...)` without duplicating row-matching and unit-conversion logic.
+
+- **Non-molecule model-Hamiltonian benchmarks**
+
+  Added expert-mode benchmark notebooks for non-chemistry qubit Hamiltonians:
+
+  - `notebooks/benchmarks/non_molecule/TFIM_Cross_Method_Benchmark.ipynb` — transverse-field Ising chain field sweep
+  - `notebooks/benchmarks/non_molecule/Heisenberg_Chain_Benchmark.ipynb` — open XXZ Heisenberg chain anisotropy sweep
+  - `notebooks/benchmarks/non_molecule/SSH_Chain_Benchmark.ipynb` — open Su-Schrieffer-Heeger chain dimerization sweep
+
+  These notebooks compare exact diagonalization, VQE, VarQITE, and QPE on prebuilt `qml.Hamiltonian` inputs.
+
+- **Auto ansatz selection for model Hamiltonians**
+
+  Added `ansatz_name="auto"` for expert-mode qubit-Hamiltonian runs. The selector inspects Pauli-term structure and chooses a conservative concrete ansatz:
+
+  - `TFIM-HVA` for nearest-neighbor `ZZ` couplings with transverse `X` fields
+  - `XXZ-HVA` for nearest-neighbor `XX + YY + ZZ` exchange models
+  - `NumberPreservingGivens` for nearest-neighbor `XX + YY` hopping models
+  - `StronglyEntanglingLayers` as the fallback for unclassified Hamiltonians
+
+  Results now report the selected ansatz and decision metadata through `ansatz_selection`.
+
+- **Model-specific non-molecule ansatzes**
+
+  Added package-level ansatzes for compact model Hamiltonian benchmarks:
+
+  - `NumberPreservingGivens` / `SSH-Givens`
+  - `TFIM-HVA`
+  - `XXZ-HVA` / `Heisenberg-HVA`
+
+### Changed
+
+- **Non-molecule notebooks use auto ansatz selection**
+
+  Updated the TFIM, XXZ Heisenberg, and SSH notebooks to set `ANSATZ_NAME = "auto"` while keeping explicit `ANSATZ_KWARGS` depth choices.
+
+### Fixed
+
+- **Expert-mode Hamiltonian caching**
+
+  VQE, VarQITE, VarQRTE, and QPE expert-mode runs with prebuilt `qml.Hamiltonian` inputs now participate in caching. Cache signatures include a canonical Pauli-term Hamiltonian fingerprint, qubit count, reference bitstring, resolved ansatz, `ansatz_kwargs`, solver settings, seed, and noise settings. `force=True` recomputes these non-molecule runs; matching `force=False` runs reuse cached JSON records.
+
 ## [0.3.20] - April 20, 2026
 
 ### Changed

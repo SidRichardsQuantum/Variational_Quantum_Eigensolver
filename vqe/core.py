@@ -21,10 +21,11 @@ from pennylane import numpy as np
 
 from common.metrics import compute_fidelity
 from common.molecules import MOLECULES
-from common.persist import cached_compute_runtime
+from common.persist import cached_compute_runtime, canonical_hamiltonian
 from common.problem import resolve_problem
 from common.units import coordinate_unit_label
 
+from .auto_ansatz import resolve_auto_ansatz
 from .engine import (
     build_ansatz as engine_build_ansatz,
 )
@@ -161,6 +162,7 @@ def run_vqe(
     stepsize: float | None = None,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
+    ansatz_kwargs: dict[str, Any] | None = None,
     optimizer_name: str = "Adam",
     noisy: bool = False,
     depolarizing_prob: float = 0.0,
@@ -219,14 +221,23 @@ def run_vqe(
     unit_out = problem.unit
     resolved_active_electrons = problem.active_electrons
     resolved_active_orbitals = problem.active_orbitals
-    cache_enabled = problem.cacheable
+    hamiltonian_mode = hamiltonian is not None
+    cache_enabled = bool(problem.cacheable or hamiltonian_mode)
+    resolved_ansatz_name, resolved_ansatz_kwargs, ansatz_selection = (
+        resolve_auto_ansatz(
+            str(ansatz_name),
+            H,
+            int(qubits),
+            ansatz_kwargs=ansatz_kwargs,
+        )
+    )
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
         symbols=symbols_out,
         coordinates=coordinates_out,
         basis=basis_out,
-        ansatz_desc=str(ansatz_name),
+        ansatz_desc=str(resolved_ansatz_name),
         optimizer_name=str(optimizer_name),
         stepsize=resolved_stepsize,
         max_iterations=int(steps),
@@ -243,8 +254,19 @@ def run_vqe(
         unit=unit_out,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
     cfg["multiplicity"] = int(multiplicity_out)
+    if ansatz_selection is not None:
+        cfg["ansatz_selection"] = dict(ansatz_selection)
+    if hamiltonian_mode:
+        cfg["hamiltonian"] = canonical_hamiltonian(H)
+        cfg["num_qubits"] = int(qubits)
+        cfg["reference_state"] = (
+            None
+            if reference_state is None
+            else np.array(reference_state, dtype=int).tolist()
+        )
 
     prefix = None
     if cache_enabled:
@@ -276,7 +298,7 @@ def run_vqe(
     dev = make_device(int(qubits), noisy=bool(cfg.get("noise")))
 
     ansatz_fn, params0 = engine_build_ansatz(
-        str(ansatz_name),
+        str(resolved_ansatz_name),
         int(qubits),
         seed=int(seed),
         symbols=symbols_out,
@@ -287,6 +309,7 @@ def run_vqe(
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
         reference_state=reference_state,
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
 
     energy_qnode = make_energy_qnode(
@@ -308,6 +331,7 @@ def run_vqe(
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
         reference_state=reference_state,
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
 
     state_qnode = make_state_qnode(
@@ -327,6 +351,8 @@ def run_vqe(
         basis=basis_out,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
+        reference_state=reference_state,
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
 
     opt = engine_build_optimizer(str(optimizer_name), stepsize=resolved_stepsize)
@@ -365,7 +391,7 @@ def run_vqe(
             energies,
             molecule_label,
             optimizer=str(optimizer_name),
-            ansatz=str(ansatz_name),
+            ansatz=str(resolved_ansatz_name),
             dep_prob=float(depolarizing_prob),
             amp_prob=float(amplitude_damping_prob),
             phase_prob=float(phase_damping_prob),
@@ -384,12 +410,16 @@ def run_vqe(
         "num_qubits": int(qubits),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
+        "ansatz": str(resolved_ansatz_name),
+        "ansatz_kwargs": dict(cfg.get("ansatz_kwargs", {})),
         "final_params": final_params,
         "params_history": params_history,
         "runtime_s": compute_runtime_s,
         "compute_runtime_s": compute_runtime_s,
         "cache_hit": False,
     }
+    if ansatz_selection is not None:
+        result["ansatz_selection"] = dict(ansatz_selection)
 
     if cache_enabled and prefix is not None:
         save_run_record(prefix, {"config": cfg, "result": result})

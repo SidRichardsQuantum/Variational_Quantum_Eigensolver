@@ -8,6 +8,7 @@ from common import (
     analyze_qpe_result,
     compute_fidelity,
     exact_ground_energy_for_problem,
+    ionization_energy_panel,
     qpe_branch_candidates,
     qpe_calibration_plan,
     summarize_problem,
@@ -26,6 +27,66 @@ def test_summary_stats_returns_basic_moments() -> None:
         "min": 1.0,
         "max": 3.0,
     }
+
+
+def test_ionization_energy_panel_pairs_neutral_and_cation_rows() -> None:
+    coverage_rows = [
+        {
+            "molecule": "He",
+            "charge": 0,
+            "exact_ground_energy": -2.80,
+            "num_electrons": 2,
+            "num_qubits": 4,
+            "hamiltonian_terms": 9,
+        },
+        {
+            "molecule": "He+",
+            "charge": 1,
+            "exact_ground_energy": -1.99,
+            "num_electrons": 1,
+            "num_qubits": 4,
+            "hamiltonian_terms": 5,
+        },
+        {
+            "molecule": "Li",
+            "charge": 0,
+            "exact_ground_energy": -7.43,
+            "num_electrons": 3,
+            "num_qubits": 10,
+            "hamiltonian_terms": 118,
+        },
+    ]
+
+    rows = ionization_energy_panel(coverage_rows)
+
+    assert len(rows) == 1
+    assert rows[0]["system"] == "He"
+    assert rows[0]["neutral"] == "He"
+    assert rows[0]["cation"] == "He+"
+    assert np.isclose(float(rows[0]["ionization_energy_ha"]), 0.81)
+    assert float(rows[0]["ionization_energy_ev"]) > 20.0
+    assert rows[0]["neutral_num_electrons"] == 2
+    assert rows[0]["cation_num_electrons"] == 1
+
+
+def test_ionization_energy_panel_rejects_missing_requested_pair() -> None:
+    coverage_rows = [
+        {
+            "molecule": "He",
+            "charge": 0,
+            "exact_ground_energy": -2.80,
+            "num_electrons": 2,
+            "num_qubits": 4,
+            "hamiltonian_terms": 9,
+        }
+    ]
+
+    try:
+        ionization_energy_panel(coverage_rows, pairs=[("He", "He+")])
+    except ValueError as exc:
+        assert "He+" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("Expected ValueError for missing cation row")
 
 
 def test_timed_call_returns_result_and_elapsed() -> None:

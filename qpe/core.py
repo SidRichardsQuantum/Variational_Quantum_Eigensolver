@@ -22,7 +22,11 @@ from typing import Any, Dict, Optional
 import pennylane as qml
 from pennylane import numpy as np
 
-from common.persist import cached_compute_runtime, canonical_noise
+from common.persist import (
+    cached_compute_runtime,
+    canonical_hamiltonian,
+    canonical_noise,
+)
 from common.problem import resolve_problem
 from qpe.noise import apply_noise_all
 
@@ -251,7 +255,10 @@ def run_qpe(
     resolved_active_electrons = problem.active_electrons
     resolved_active_orbitals = problem.active_orbitals
     mapping_norm = problem.mapping
-    cache_enabled = problem.cacheable
+    hamiltonian_mode = hamiltonian is not None
+    cache_enabled = bool(problem.cacheable or hamiltonian_mode)
+    hamiltonian_fingerprint = canonical_hamiltonian(H) if hamiltonian_mode else None
+    reference_bits = np.array(hf_bits, dtype=int).tolist()
 
     # -------------------------
     # Normalise noise
@@ -288,6 +295,8 @@ def run_qpe(
             unit=unit_out,
             active_electrons=resolved_active_electrons,
             active_orbitals=resolved_active_orbitals,
+            hamiltonian=hamiltonian_fingerprint,
+            reference_state=reference_bits if hamiltonian_mode else None,
         )
         res: Dict[str, Any] | None = None
         if cached is not None:
@@ -405,6 +414,8 @@ def run_qpe(
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
         "num_qubits": int(qubits),
+        "hf_state": reference_bits,
+        "hamiltonian": hamiltonian_fingerprint,
         "runtime_s": compute_runtime_s,
         "compute_runtime_s": compute_runtime_s,
         "cache_hit": False,

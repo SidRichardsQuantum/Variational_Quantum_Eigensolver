@@ -18,6 +18,7 @@ def test_canonical_entrypoints_are_callable() -> None:
     from common import (
         compute_fidelity,
         exact_ground_energy_for_problem,
+        ionization_energy_panel,
         summarize_problem,
         summarize_registry_coverage,
         summary_stats,
@@ -29,6 +30,7 @@ def test_canonical_entrypoints_are_callable() -> None:
 
     assert callable(compute_fidelity)
     assert callable(exact_ground_energy_for_problem)
+    assert callable(ionization_energy_panel)
     assert callable(summarize_problem)
     assert callable(summarize_registry_coverage)
     assert callable(summary_stats)

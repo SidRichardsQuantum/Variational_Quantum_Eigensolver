@@ -373,7 +373,7 @@ res = run_vqe(
     hamiltonian=H_model,
     num_qubits=1,
     reference_state=[1],
-    ansatz_name="RY-CZ",
+    ansatz_name="auto",
     optimizer_name="Adam",
     steps=20,
     plot=False,
@@ -383,8 +383,9 @@ res = run_vqe(
 Notes:
 
 - expert-mode VQE is Python-only
-- prebuilt-Hamiltonian runs bypass chemistry cache lookup / save paths
+- prebuilt-Hamiltonian runs use cache keys based on a canonical Pauli-term fingerprint, `num_qubits`, `reference_state`, resolved ansatz, solver settings, and seed
 - `reference_state` should be a computational-basis bitstring of length `num_qubits`
+- `ansatz_name="auto"` can select TFIM, XXZ/Heisenberg, SSH-like hopping, or generic fallback ansatzes from Hamiltonian structure
 - generic model Hamiltonians should use non-chemistry ansatzes unless you also provide chemistry metadata
 
 ---
@@ -633,7 +634,7 @@ Notes:
 
 - QPE expert mode requires both `hamiltonian` and `hf_state`
 - `system_qubits` defaults to the `hf_state` length when omitted, but cannot be smaller than the Hamiltonian wire count
-- prebuilt-Hamiltonian QPE runs bypass cache lookup / save paths
+- prebuilt-Hamiltonian QPE runs use cache keys based on a canonical Pauli-term fingerprint, `hf_state`, system-qubit count, phase-estimation settings, seed, shots, and noise settings
 - for finite-shot QPE, `seed` is still meaningful because sampling is stochastic; in analytic mode (`shots=None`) it is effectively irrelevant
 
 ---
@@ -807,10 +808,13 @@ qite eval-noise \
 VarQITE / VarQRTE cache keys include:
 
 - molecule, geometry
+- canonical Pauli-term Hamiltonian fingerprints for prebuilt-Hamiltonian expert-mode runs
 - ansatz
+- `ansatz_kwargs`
 - `steps`, `dtau` or `dt`
 - solver parameters
 - seed
+- reference bitstrings for expert-mode Hamiltonian runs
 - initialization metadata for prepared-state VarQRTE runs
 
 Ensures:

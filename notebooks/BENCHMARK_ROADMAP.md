@@ -82,3 +82,30 @@ The `LiH` reproducibility notebook extends the same active-space benchmark setup
 - noisy-versus-noiseless variance where supported
 - cache-hit versus forced-rerun timing
 - artifact-inspection notes for cached JSON outputs
+
+## Current Additions In 0.3.21
+
+- `notebooks/benchmarks/comparisons/multi_molecule/Atomic_Ionization_Energy_Benchmark.ipynb`
+- `notebooks/benchmarks/non_molecule/TFIM_Cross_Method_Benchmark.ipynb`
+- `notebooks/benchmarks/non_molecule/Heisenberg_Chain_Benchmark.ipynb`
+- `notebooks/benchmarks/non_molecule/SSH_Chain_Benchmark.ipynb`
+
+The atomic ionization notebook expands the benchmark set beyond the H2/LiH molecular panel by using registry neutral/cation atom pairs for:
+
+- `He`
+- `Be`
+- `B`
+- `C`
+- `N`
+- `O`
+- `F`
+
+It reports exact neutral and cation ground-state energies, ionization energies in Hartree and eV, and the electron, qubit, and Hamiltonian-term counts needed to decide which non-H2/non-LiH systems are ready for heavier solver benchmarks.
+
+The non-molecule notebooks exercise the advertised expert-mode Hamiltonian API on compact model Hamiltonians:
+
+- transverse-field Ising chain field sweep
+- open XXZ Heisenberg chain anisotropy sweep
+- open SSH chain dimerization sweep
+
+They compare exact diagonalization, VQE, VarQITE, and QPE on prebuilt `qml.Hamiltonian` inputs so the repository now has visible benchmark coverage outside the chemistry pipeline. They also demonstrate `ansatz_name="auto"` and expert-mode cache reuse based on canonical Pauli-term Hamiltonian fingerprints.

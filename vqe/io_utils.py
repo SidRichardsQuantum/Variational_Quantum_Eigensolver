@@ -33,6 +33,24 @@ def ensure_dirs() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _json_safe_mapping(values: dict[str, Any] | None) -> dict[str, Any]:
+    if not values:
+        return {}
+
+    def convert(value):
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, (list, tuple)):
+            return [convert(item) for item in value]
+        if isinstance(value, dict):
+            return {str(k): convert(v) for k, v in sorted(value.items())}
+        if hasattr(value, "tolist"):
+            return convert(value.tolist())
+        return str(value)
+
+    return {str(k): convert(v) for k, v in sorted(values.items())}
+
+
 def make_run_config_dict(
     symbols,
     coordinates,
@@ -54,6 +72,7 @@ def make_run_config_dict(
     unit: str = "angstrom",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    ansatz_kwargs: dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     """
     Construct a JSON-safe config dict used for hashing/caching.
@@ -89,6 +108,7 @@ def make_run_config_dict(
         "noisy": bool(bool(noise)),
         "noise": noise,
         "ansatz": canonicalize_ansatz_name(ansatz_desc),
+        "ansatz_kwargs": _json_safe_mapping(ansatz_kwargs),
         "optimizer": {
             "name": canonicalize_optimizer_name(optimizer_name),
             "stepsize": float(stepsize),

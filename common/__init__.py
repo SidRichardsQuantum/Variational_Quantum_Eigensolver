@@ -42,6 +42,7 @@ from .hamiltonian import (  # noqa: F401, E402
 from .benchmarks import (  # noqa: F401, E402
     analyze_qpe_result,
     exact_ground_energy_for_problem,
+    ionization_energy_panel,
     qpe_branch_candidates,
     qpe_calibration_plan,
     summarize_problem,
@@ -78,6 +79,7 @@ __all__ = [
     "analyze_qpe_result",
     "qpe_calibration_plan",
     "exact_ground_energy_for_problem",
+    "ionization_energy_panel",
     "summarize_problem",
     "compute_fidelity",
     "ResolvedProblem",

@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+import pennylane as qml
+
 
 def round_floats(x: Any, ndigits: int = 8) -> Any:
     if isinstance(x, float):
@@ -118,6 +120,38 @@ def canonical_noise(
 
 def canonical_geometry(coordinates: Any, ndigits: int = 8) -> Any:
     return round_floats(to_serializable(coordinates), ndigits=ndigits)
+
+
+def canonical_hamiltonian(hamiltonian: Any, ndigits: int = 10) -> Dict[str, Any]:
+    """
+    Return a stable JSON-safe representation of a qubit Hamiltonian.
+
+    The representation is based on PennyLane's PauliSentence so equivalent
+    Pauli-term orderings produce the same cache key.
+    """
+    sentence = qml.pauli.pauli_sentence(hamiltonian)
+    terms = []
+    for word, coeff in sentence.items():
+        coeff_c = complex(coeff)
+        if abs(coeff_c) <= 1e-12:
+            continue
+        ops = [[int(wire), str(axis)] for wire, axis in sorted(word.items())]
+        terms.append(
+            {
+                "ops": ops,
+                "coeff_real": round(float(coeff_c.real), ndigits),
+                "coeff_imag": round(float(coeff_c.imag), ndigits),
+            }
+        )
+
+    terms.sort(
+        key=lambda term: (
+            term["ops"],
+            term["coeff_real"],
+            term["coeff_imag"],
+        )
+    )
+    return {"pauli_terms": terms}
 
 
 def stable_hash_cfg(cfg: Dict[str, Any], *, ndigits: int = 8, n_hex: int = 12) -> str:

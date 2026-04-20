@@ -140,6 +140,7 @@ def build_ansatz(
     active_orbitals: int | None = None,
     requires_grad: bool = True,
     hf_state: Optional[np.ndarray] = None,
+    ansatz_kwargs: Optional[dict[str, Any]] = None,
 ) -> Tuple[Callable[[np.ndarray], None], np.ndarray]:
     """
     Build an ansatz callable and an initial parameter array.
@@ -155,6 +156,7 @@ def build_ansatz(
     np.random.seed(int(seed))
 
     hf = None if hf_state is None else np.array(hf_state, dtype=int)
+    extra_ansatz_kwargs = dict(ansatz_kwargs or {})
 
     # Preferred: reuse the VQE ansatz plumbing so chemistry ansatzes
     # share the same charge-aware parameterization and circuit kwargs.
@@ -177,6 +179,8 @@ def build_ansatz(
                 builder_kwargs["active_electrons"] = active_electrons
             if "active_orbitals" in builder_supported:
                 builder_kwargs["active_orbitals"] = active_orbitals
+            if "ansatz_kwargs" in builder_supported:
+                builder_kwargs["ansatz_kwargs"] = extra_ansatz_kwargs
 
             inner_fn, init = inner_builder(name, n, **builder_kwargs)
             init_params = np.array(init, requires_grad=bool(requires_grad))
@@ -206,6 +210,7 @@ def build_ansatz(
                     reference_state=(hf if chemistry_style else None),
                     prepare_reference=(True if chemistry_style else None),
                     basis=basis,
+                    ansatz_kwargs=extra_ansatz_kwargs,
                 )
 
             return delegated_ansatz_fn, init_params
@@ -216,7 +221,13 @@ def build_ansatz(
         pass
 
     # Fallback HEA
-    layers = 2
+    unsupported = sorted(key for key in extra_ansatz_kwargs if key != "layers")
+    if unsupported:
+        joined = ", ".join(unsupported)
+        raise ValueError(f"Fallback ansatz does not support ansatz_kwargs: {joined}.")
+    layers = int(extra_ansatz_kwargs.get("layers", 2))
+    if layers < 1:
+        raise ValueError("ansatz_kwargs['layers'] must be >= 1.")
     init = 0.01 * np.random.randn(int(layers), n, 2)
     init_params = np.array(init, requires_grad=bool(requires_grad))
 

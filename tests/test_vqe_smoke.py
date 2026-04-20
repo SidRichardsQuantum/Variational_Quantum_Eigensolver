@@ -59,19 +59,11 @@ def test_vqe_deterministic_given_seed_and_force() -> None:
     assert np.allclose(e1, e2, atol=1e-10, rtol=0.0)
 
 
-def test_vqe_prebuilt_hamiltonian_smoke_and_bypass_cache(monkeypatch) -> None:
+def test_vqe_prebuilt_hamiltonian_smoke_and_cache_hit() -> None:
     H = qml.Hamiltonian([1.0], [qml.PauliZ(3)])
 
-    def fail_load(_prefix):
-        raise AssertionError("expert-mode VQE should not read from cache")
-
-    def fail_save(_prefix, _record):
-        raise AssertionError("expert-mode VQE should not save to cache")
-
-    monkeypatch.setattr(vqe_core, "load_run_record", fail_load)
-    monkeypatch.setattr(vqe_core, "save_run_record", fail_save)
-
-    res = run_vqe(
+    cfg = dict(
+        molecule="expert_vqe_cache_smoke",
         hamiltonian=H,
         num_qubits=1,
         reference_state=[1],
@@ -80,12 +72,94 @@ def test_vqe_prebuilt_hamiltonian_smoke_and_bypass_cache(monkeypatch) -> None:
         steps=2,
         stepsize=0.1,
         plot=False,
-        force=False,
     )
+
+    fresh = run_vqe(force=True, **cfg)
+    res = run_vqe(force=False, **cfg)
 
     assert isinstance(res, dict)
     assert np.isfinite(float(res["energy"]))
     assert int(res["num_qubits"]) == 1
+    assert fresh["cache_hit"] is False
+    assert res["cache_hit"] is True
+
+
+def test_vqe_routes_ansatz_kwargs_to_non_molecule_ansatz() -> None:
+    H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
+
+    res = run_vqe(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[1, 0],
+        ansatz_name="NumberPreservingGivens",
+        ansatz_kwargs={"layers": 2},
+        optimizer_name="Adam",
+        steps=1,
+        stepsize=0.1,
+        plot=False,
+        force=True,
+        seed=0,
+    )
+
+    assert isinstance(res, dict)
+    assert np.isfinite(float(res["energy"]))
+    assert int(res["num_qubits"]) == 2
+    assert len(res["final_params"]) == 2
+
+
+def test_vqe_routes_model_specific_ansatz_kwargs() -> None:
+    H = qml.Hamiltonian(
+        [-1.0, -0.5],
+        [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0)],
+    )
+
+    res = run_vqe(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[0, 0],
+        ansatz_name="TFIM-HVA",
+        ansatz_kwargs={"layers": 2},
+        optimizer_name="Adam",
+        steps=1,
+        stepsize=0.1,
+        plot=False,
+        force=True,
+        seed=0,
+    )
+
+    assert isinstance(res, dict)
+    assert np.isfinite(float(res["energy"]))
+    assert len(res["final_params"]) == 4
+
+
+def test_vqe_auto_ansatz_selects_tfim_hva() -> None:
+    H = qml.Hamiltonian(
+        [-1.0, -0.5, -0.5],
+        [
+            qml.PauliZ(0) @ qml.PauliZ(1),
+            qml.PauliX(0),
+            qml.PauliX(1),
+        ],
+    )
+
+    res = run_vqe(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[0, 0],
+        ansatz_name="auto",
+        ansatz_kwargs={"layers": 2},
+        optimizer_name="Adam",
+        steps=1,
+        stepsize=0.1,
+        plot=False,
+        force=True,
+        seed=0,
+    )
+
+    assert res["ansatz"] == "TFIM-HVA"
+    assert res["ansatz_kwargs"] == {"layers": 2}
+    assert res["ansatz_selection"]["selected"] == "TFIM-HVA"
+    assert len(res["final_params"]) == 4
 
 
 def test_vqe_cache_hit_reports_cached_timing_metadata() -> None:

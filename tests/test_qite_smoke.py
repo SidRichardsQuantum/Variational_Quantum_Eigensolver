@@ -4,7 +4,6 @@ import numpy as np
 import pennylane as qml
 import pytest
 
-import qite.core as qite_core
 from qite import run_qite, run_qrte
 from qite.engine import build_ansatz
 from vqe import run_vqe
@@ -93,33 +92,136 @@ def test_qite_charged_uccsd_smoke() -> None:
     assert len(res["final_params"]) >= 1
 
 
-def test_qite_prebuilt_hamiltonian_smoke_and_bypass_cache(monkeypatch) -> None:
+def test_qite_prebuilt_hamiltonian_smoke_and_cache_hit() -> None:
     H = qml.Hamiltonian([1.0], [qml.PauliZ(4)])
 
-    def fail_load(_prefix):
-        raise AssertionError("expert-mode QITE should not read from cache")
-
-    def fail_save(_prefix, _record):
-        raise AssertionError("expert-mode QITE should not save to cache")
-
-    monkeypatch.setattr(qite_core, "load_run_record", fail_load)
-    monkeypatch.setattr(qite_core, "save_run_record", fail_save)
-
-    res = run_qite(
+    cfg = dict(
+        molecule="expert_qite_cache_smoke",
         hamiltonian=H,
         num_qubits=1,
         reference_state=[1],
         ansatz_name="RY-CZ",
         steps=2,
         dtau=0.1,
-        force=False,
         plot=False,
         show=False,
     )
 
+    fresh = run_qite(force=True, **cfg)
+    res = run_qite(force=False, **cfg)
+
     assert isinstance(res, dict)
     assert np.isfinite(float(res["energy"]))
     assert int(res["num_qubits"]) == 1
+    assert fresh["cache_hit"] is False
+    assert res["cache_hit"] is True
+
+
+def test_qite_routes_ansatz_kwargs_to_non_molecule_ansatz() -> None:
+    H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
+
+    res = run_qite(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[1, 0],
+        ansatz_name="NumberPreservingGivens",
+        ansatz_kwargs={"layers": 2},
+        steps=1,
+        dtau=0.1,
+        force=True,
+        plot=False,
+        show=False,
+        seed=0,
+    )
+
+    assert isinstance(res, dict)
+    assert np.isfinite(float(res["energy"]))
+    assert int(res["num_qubits"]) == 2
+    assert res["final_params_shape"] == [2, 1]
+
+
+def test_qite_routes_model_specific_ansatz_kwargs() -> None:
+    H = qml.Hamiltonian(
+        [1.0, 1.0, 0.5],
+        [
+            qml.PauliX(0) @ qml.PauliX(1),
+            qml.PauliY(0) @ qml.PauliY(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+        ],
+    )
+
+    res = run_qite(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[1, 0],
+        ansatz_name="XXZ-HVA",
+        ansatz_kwargs={"layers": 2},
+        steps=1,
+        dtau=0.1,
+        force=True,
+        plot=False,
+        show=False,
+        seed=0,
+    )
+
+    assert isinstance(res, dict)
+    assert np.isfinite(float(res["energy"]))
+    assert res["final_params_shape"] == [2, 4]
+
+
+def test_qite_auto_ansatz_selects_xxz_hva() -> None:
+    H = qml.Hamiltonian(
+        [1.0, 1.0, 0.5],
+        [
+            qml.PauliX(0) @ qml.PauliX(1),
+            qml.PauliY(0) @ qml.PauliY(1),
+            qml.PauliZ(0) @ qml.PauliZ(1),
+        ],
+    )
+
+    res = run_qite(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[1, 0],
+        ansatz_name="auto",
+        ansatz_kwargs={"layers": 2},
+        steps=1,
+        dtau=0.1,
+        force=True,
+        plot=False,
+        show=False,
+        seed=0,
+    )
+
+    assert res["ansatz"] == "XXZ-HVA"
+    assert res["ansatz_kwargs"] == {"layers": 2}
+    assert res["ansatz_selection"]["selected"] == "XXZ-HVA"
+    assert res["final_params_shape"] == [2, 4]
+
+
+def test_qite_auto_ansatz_selects_number_preserving_givens() -> None:
+    H = qml.Hamiltonian(
+        [0.5, 0.5],
+        [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliY(1)],
+    )
+
+    res = run_qite(
+        hamiltonian=H,
+        num_qubits=2,
+        reference_state=[1, 0],
+        ansatz_name="auto",
+        steps=1,
+        dtau=0.1,
+        force=True,
+        plot=False,
+        show=False,
+        seed=0,
+    )
+
+    assert res["ansatz"] == "NumberPreservingGivens"
+    assert res["ansatz_kwargs"] == {"layers": 3}
+    assert res["ansatz_selection"]["selected"] == "NumberPreservingGivens"
+    assert res["final_params_shape"] == [3, 1]
 
 
 def test_qite_engine_delegates_charge_aware_builder(

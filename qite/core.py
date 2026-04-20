@@ -24,7 +24,7 @@ from typing import Any, Dict
 import pennylane as qml
 from pennylane import numpy as np
 
-from common.persist import cached_compute_runtime
+from common.persist import cached_compute_runtime, canonical_hamiltonian
 from common.problem import resolve_problem
 from qite.engine import build_ansatz as engine_build_ansatz
 from qite.engine import (
@@ -43,6 +43,7 @@ from qite.io_utils import (
     save_run_record,
 )
 from qite.visualize import plot_convergence
+from vqe.auto_ansatz import resolve_auto_ansatz
 
 
 def run_qite(
@@ -53,6 +54,7 @@ def run_qite(
     dtau: float = 0.2,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
+    ansatz_kwargs: dict[str, Any] | None = None,
     force: bool = False,
     symbols=None,
     coordinates=None,
@@ -147,7 +149,16 @@ def run_qite(
     molecule_label = problem.molecule_label
     resolved_active_electrons = problem.active_electrons
     resolved_active_orbitals = problem.active_orbitals
-    cache_enabled = problem.cacheable
+    hamiltonian_mode = hamiltonian is not None
+    cache_enabled = bool(problem.cacheable or hamiltonian_mode)
+    resolved_ansatz_name, resolved_ansatz_kwargs, ansatz_selection = (
+        resolve_auto_ansatz(
+            str(ansatz_name),
+            H,
+            int(qubits),
+            ansatz_kwargs=ansatz_kwargs,
+        )
+    )
 
     # --- Configuration & caching ---
     cfg = make_run_config_dict(
@@ -167,7 +178,7 @@ def run_qite(
         dtau=float(dtau),
         steps=int(steps),
         molecule_label=molecule_label,
-        ansatz_name=str(ansatz_name),
+        ansatz_name=str(resolved_ansatz_name),
         noise_model_name=None,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
@@ -175,7 +186,14 @@ def run_qite(
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
+    if ansatz_selection is not None:
+        cfg["ansatz_selection"] = dict(ansatz_selection)
+    if hamiltonian_mode:
+        cfg["hamiltonian"] = canonical_hamiltonian(H)
+        cfg["num_qubits"] = int(qubits)
+        cfg["reference_state"] = np.array(hf_state, dtype=int).tolist()
 
     prefix = None
     if cache_enabled:
@@ -208,7 +226,7 @@ def run_qite(
     dev = make_device(int(qubits), noisy=False)
 
     ansatz_fn, params = engine_build_ansatz(
-        str(ansatz_name),
+        str(resolved_ansatz_name),
         int(qubits),
         seed=int(seed),
         symbols=symbols_out,
@@ -219,6 +237,7 @@ def run_qite(
         active_orbitals=resolved_active_orbitals,
         requires_grad=True,
         hf_state=np.array(hf_state, dtype=int),
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
 
     energy_qnode = make_energy_qnode(
@@ -283,7 +302,7 @@ def run_qite(
             energies,
             molecule=str(molecule_label),
             method="VarQITE",
-            ansatz=str(ansatz_name),
+            ansatz=str(resolved_ansatz_name),
             seed=int(seed),
             dep_prob=0.0,
             amp_prob=0.0,
@@ -303,7 +322,8 @@ def run_qite(
         "basis": str(basis_out),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
-        "ansatz": str(ansatz_name),
+        "ansatz": str(resolved_ansatz_name),
+        "ansatz_kwargs": dict(cfg.get("ansatz_kwargs", {})),
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],
         "steps": int(steps),
@@ -323,6 +343,8 @@ def run_qite(
         "compute_runtime_s": compute_runtime_s,
         "cache_hit": False,
     }
+    if ansatz_selection is not None:
+        result["ansatz_selection"] = dict(ansatz_selection)
 
     record = {"config": cfg, "result": result}
     if cache_enabled and prefix is not None:
@@ -340,6 +362,7 @@ def run_qrte(
     dt: float = 0.05,
     plot: bool = True,
     ansatz_name: str = "UCCSD",
+    ansatz_kwargs: dict[str, Any] | None = None,
     force: bool = False,
     symbols=None,
     coordinates=None,
@@ -418,12 +441,21 @@ def run_qrte(
     molecule_label = problem.molecule_label
     resolved_active_electrons = problem.active_electrons
     resolved_active_orbitals = problem.active_orbitals
-    cache_enabled = problem.cacheable
+    hamiltonian_mode = hamiltonian is not None
+    cache_enabled = bool(problem.cacheable or hamiltonian_mode)
+    resolved_ansatz_name, resolved_ansatz_kwargs, ansatz_selection = (
+        resolve_auto_ansatz(
+            str(ansatz_name),
+            H,
+            int(qubits),
+            ansatz_kwargs=ansatz_kwargs,
+        )
+    )
 
     dev = make_device(int(qubits), noisy=False)
 
     ansatz_fn, params = engine_build_ansatz(
-        str(ansatz_name),
+        str(resolved_ansatz_name),
         int(qubits),
         seed=int(seed),
         symbols=symbols_out,
@@ -434,6 +466,7 @@ def run_qrte(
         active_orbitals=resolved_active_orbitals,
         requires_grad=True,
         hf_state=np.array(hf_state, dtype=int),
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
 
     init_mode = "default"
@@ -468,7 +501,7 @@ def run_qrte(
         dtau=float(dt),
         steps=int(steps),
         molecule_label=molecule_label,
-        ansatz_name=str(ansatz_name),
+        ansatz_name=str(resolved_ansatz_name),
         noise_model_name=None,
         active_electrons=resolved_active_electrons,
         active_orbitals=resolved_active_orbitals,
@@ -476,9 +509,16 @@ def run_qrte(
         reg=float(reg),
         solver=str(solver),
         pinv_rcond=float(pinv_rcond),
+        ansatz_kwargs=resolved_ansatz_kwargs,
     )
     cfg["time_mode"] = "real"
     cfg["initialization"] = init_mode
+    if ansatz_selection is not None:
+        cfg["ansatz_selection"] = dict(ansatz_selection)
+    if hamiltonian_mode:
+        cfg["hamiltonian"] = canonical_hamiltonian(H)
+        cfg["num_qubits"] = int(qubits)
+        cfg["reference_state"] = np.array(hf_state, dtype=int).tolist()
     if initial_params is not None:
         cfg["initial_params"] = np.round(
             np.array(initial_params, dtype=float).ravel(),
@@ -576,7 +616,7 @@ def run_qrte(
             energies,
             molecule=str(molecule_label),
             method="VarQRTE",
-            ansatz=str(ansatz_name),
+            ansatz=str(resolved_ansatz_name),
             step_label="Time Step",
             seed=int(seed),
             dep_prob=0.0,
@@ -596,7 +636,8 @@ def run_qrte(
         "basis": str(basis_out),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
-        "ansatz": str(ansatz_name),
+        "ansatz": str(resolved_ansatz_name),
+        "ansatz_kwargs": dict(cfg.get("ansatz_kwargs", {})),
         "energy": float(final_energy),
         "energies": [float(e) for e in energies],
         "times": [float(t) for t in times],
@@ -619,6 +660,8 @@ def run_qrte(
         "compute_runtime_s": compute_runtime_s,
         "cache_hit": False,
     }
+    if ansatz_selection is not None:
+        result["ansatz_selection"] = dict(ansatz_selection)
 
     record = {"config": cfg, "result": result}
     if cache_enabled and prefix is not None:

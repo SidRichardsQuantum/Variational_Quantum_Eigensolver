@@ -32,6 +32,24 @@ def ensure_dirs() -> None:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _json_safe_mapping(values: dict[str, Any] | None) -> dict[str, Any]:
+    if not values:
+        return {}
+
+    def convert(value):
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, (list, tuple)):
+            return [convert(item) for item in value]
+        if isinstance(value, dict):
+            return {str(k): convert(v) for k, v in sorted(value.items())}
+        if hasattr(value, "tolist"):
+            return convert(value.tolist())
+        return str(value)
+
+    return {str(k): convert(v) for k, v in sorted(values.items())}
+
+
 def make_run_config_dict(
     *,
     symbols,
@@ -58,6 +76,7 @@ def make_run_config_dict(
     reg: float | None = None,
     solver: str | None = None,
     pinv_rcond: float | None = None,
+    ansatz_kwargs: dict[str, Any] | None = None,
 ):
     """
     Build a stable, JSON-serialisable config dict for caching.
@@ -94,6 +113,7 @@ def make_run_config_dict(
         "dtau": float(dtau),
         "steps": int(steps),
         "ansatz": canonicalize_ansatz_name(ansatz_name),
+        "ansatz_kwargs": _json_safe_mapping(ansatz_kwargs),
     }
 
     # Optional VarQITE numerics (kept explicit for stable cache keys)

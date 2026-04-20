@@ -178,6 +178,7 @@ def _call_ansatz(
     reference_state=None,
     prepare_reference: Optional[bool] = None,
     basis: Optional[str] = None,
+    ansatz_kwargs: Optional[dict] = None,
 ):
     """
     Call an ansatz function, forwarding only the keyword arguments it supports.
@@ -221,6 +222,19 @@ def _call_ansatz(
     if "prepare_reference" in supported and prepare_reference is not None:
         kwargs["prepare_reference"] = prepare_reference
 
+    extra_kwargs = dict(ansatz_kwargs or {})
+    reserved = {"params", "wires"}
+    unsupported = sorted(
+        key for key in extra_kwargs if key not in supported or key in reserved
+    )
+    if unsupported:
+        joined = ", ".join(unsupported)
+        raise ValueError(
+            f"Ansatz '{getattr(ansatz_fn, '__name__', ansatz_fn)}' does not support "
+            f"ansatz_kwargs: {joined}."
+        )
+    kwargs.update(extra_kwargs)
+
     return ansatz_fn(params, wires=wires, **kwargs)
 
 
@@ -239,6 +253,7 @@ def build_ansatz(
     active_orbitals: int | None = None,
     requires_grad: bool = True,
     scale: float = 0.01,
+    ansatz_kwargs: Optional[dict] = None,
 ):
     """
     Construct an ansatz function and matching initial parameter vector.
@@ -262,6 +277,7 @@ def build_ansatz(
         basis=basis,
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
+        ansatz_kwargs=ansatz_kwargs,
         seed=seed,
     )
     return ansatz_fn, params
@@ -314,6 +330,7 @@ def make_energy_qnode(
     basis: str = "sto-3g",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    ansatz_kwargs: Optional[dict] = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -339,6 +356,7 @@ def make_energy_qnode(
             active_orbitals=active_orbitals,
             reference_state=reference_state,
             basis=basis,
+            ansatz_kwargs=ansatz_kwargs,
         )
         apply_optional_noise(
             noisy,
@@ -375,6 +393,7 @@ def make_state_qnode(
     basis: str = "sto-3g",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    ansatz_kwargs: Optional[dict] = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -403,6 +422,7 @@ def make_state_qnode(
             active_orbitals=active_orbitals,
             reference_state=reference_state,
             basis=basis,
+            ansatz_kwargs=ansatz_kwargs,
         )
         apply_optional_noise(
             noisy,
@@ -438,6 +458,7 @@ def make_overlap00_fn(
     basis: str = "sto-3g",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
+    ansatz_kwargs: Optional[dict] = None,
     diff_method: Optional[str] = None,
 ):
     """
@@ -465,6 +486,7 @@ def make_overlap00_fn(
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
             basis=basis,
+            ansatz_kwargs=ansatz_kwargs,
         )
         apply_optional_noise(
             noisy,
