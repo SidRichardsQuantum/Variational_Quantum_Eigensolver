@@ -8,6 +8,7 @@ import pytest
 import numpy as np
 
 from common.hamiltonian import build_hamiltonian
+import qpe.__main__ as qpe_main
 from qpe import run_qpe
 from qpe.visualize import plot_qpe_distribution
 
@@ -189,12 +190,23 @@ def test_qpe_distribution_displays_right_to_left_kets(monkeypatch) -> None:
     assert labels == ["|00⟩", "|01⟩", "|10⟩", "|11⟩"]
 
 
-def test_qpe_cli_supports_explicit_geometry() -> None:
-    p = subprocess.run(
+def test_qpe_cli_supports_explicit_geometry(monkeypatch, capsys) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_qpe(**kwargs):
+        captured.update(kwargs)
+        return {
+            "best_bitstring": "0",
+            "energy": -1.0,
+            "hf_energy": -0.9,
+            "num_qubits": 4,
+        }
+
+    monkeypatch.setattr(qpe_main, "ensure_dirs", lambda: None)
+    monkeypatch.setattr(qpe_main, "run_qpe", fake_run_qpe)
+
+    qpe_main.main(
         [
-            sys.executable,
-            "-m",
-            "qpe",
             "--symbols",
             "H,H",
             "--coordinates",
@@ -208,18 +220,27 @@ def test_qpe_cli_supports_explicit_geometry() -> None:
             "--shots",
             "50",
             "--force",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=20,
+        ]
     )
+    out = capsys.readouterr().out
 
-    assert p.returncode == 0
-    assert "QPE completed" in p.stdout
-    assert "system=4, ancillas=1" in p.stdout
+    assert captured["molecule"] == "H2"
+    assert captured["symbols"] == ["H", "H"]
+    assert np.array_equal(
+        captured["coordinates"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]], dtype=float),
+    )
+    assert captured["charge"] == 0
+    assert captured["basis"] == "sto-3g"
+    assert captured["n_ancilla"] == 1
+    assert captured["shots"] == 50
+    assert captured["force"] is True
+    assert "QPE completed" in out
+    assert "system=4, ancillas=1" in out
 
 
+@pytest.mark.slow
+@pytest.mark.cli_subprocess
 def test_qpe_cli_returns_nonzero_on_failure() -> None:
     p = subprocess.run(
         [sys.executable, "-m", "qpe", "--molecule", "DOES_NOT_EXIST"],

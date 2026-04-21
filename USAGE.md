@@ -850,8 +850,17 @@ qite run-qrte --force
 
 ## Testing
 
+The default pytest target runs the fast development suite. Slow chemistry and
+subprocess CLI integration tests are available behind pytest markers.
+
 ```bash
 pytest -q
+```
+
+Run every test, including slow integration coverage:
+
+```bash
+pytest -q -o addopts=''
 ```
 
 ---

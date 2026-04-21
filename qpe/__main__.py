@@ -87,7 +87,7 @@ def _validated_geometry_inputs(
 # ---------------------------------------------------------------------
 # Arguments
 # ---------------------------------------------------------------------
-def parse_args():
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="qpe",
         description="Quantum Phase Estimation (QPE) simulator",
@@ -223,14 +223,18 @@ def parse_args():
         "--force", action="store_true", help="Force rerun even if cached result exists"
     )
 
-    return parser.parse_args()
+    return parser
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    return build_parser().parse_args(argv)
 
 
 # ---------------------------------------------------------------------
 # Main logic
 # ---------------------------------------------------------------------
-def main():
-    args = parse_args()
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
     ensure_dirs()
     symbols, coordinates = _validated_geometry_inputs(args)
     molecule_label = (

@@ -6,6 +6,51 @@ from common.hamiltonian import build_hamiltonian, summarize_registry_coverage
 from common.molecules import get_molecule_config
 from common.units import ANGSTROM_PER_BOHR
 
+REPRESENTATIVE_REGISTRY_MOLECULES = [
+    "H",
+    "H2",
+    "H2+",
+    "H3+",
+    "Li",
+    "He",
+    "HeH+",
+]
+
+FULL_REGISTRY_MOLECULES = [
+    "H",
+    "H-",
+    "He",
+    "He+",
+    "H2",
+    "H2+",
+    "H2-",
+    "H3",
+    "H3+",
+    "Li",
+    "Li+",
+    "B",
+    "B+",
+    "C",
+    "C+",
+    "N",
+    "N+",
+    "O",
+    "O+",
+    "F",
+    "F+",
+    "Ne",
+    "H4",
+    "H4+",
+    "Be",
+    "Be+",
+    "He2",
+    "H5+",
+    "H6",
+    "LiH",
+    "BeH2",
+    "HeH+",
+]
+
 
 def test_build_hamiltonian_h2() -> None:
     cfg = get_molecule_config("H2")
@@ -20,47 +65,27 @@ def test_build_hamiltonian_h2() -> None:
     assert all(hasattr(op, "wires") for op in ops)
 
 
-def test_build_hamiltonian_selected_registry_molecules() -> None:
-    for name in [
-        "H",
-        "H-",
-        "He",
-        "He+",
-        "H2",
-        "H2+",
-        "H2-",
-        "H3",
-        "H3+",
-        "Li",
-        "Li+",
-        "B",
-        "B+",
-        "C",
-        "C+",
-        "N",
-        "N+",
-        "O",
-        "O+",
-        "F",
-        "F+",
-        "Ne",
-        "H4",
-        "H4+",
-        "Be",
-        "Be+",
-        "He2",
-        "H5+",
-        "H6",
-        "LiH",
-        "BeH2",
-        "HeH+",
-    ]:
-        cfg = get_molecule_config(name)
-        hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
+@pytest.mark.parametrize("name", REPRESENTATIVE_REGISTRY_MOLECULES)
+def test_build_hamiltonian_representative_registry_molecules(name: str) -> None:
+    cfg = get_molecule_config(name)
+    hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
 
-        assert n_qubits > 0
-        assert len(hf_state) == n_qubits
-        assert len(hamiltonian) > 0
+    assert n_qubits > 0
+    assert len(hf_state) == n_qubits
+    assert len(hamiltonian) > 0
+
+
+@pytest.mark.slow
+@pytest.mark.chemistry
+@pytest.mark.full_chemistry
+@pytest.mark.parametrize("name", FULL_REGISTRY_MOLECULES)
+def test_build_hamiltonian_full_registry_molecules(name: str) -> None:
+    cfg = get_molecule_config(name)
+    hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
+
+    assert n_qubits > 0
+    assert len(hf_state) == n_qubits
+    assert len(hamiltonian) > 0
 
 
 def test_registry_mode_rejects_basis_and_charge_overrides() -> None:
@@ -162,6 +187,8 @@ def test_summarize_registry_coverage_returns_expected_rows() -> None:
     assert "exact_ground_energy" in h2_row
 
 
+@pytest.mark.slow
+@pytest.mark.chemistry
 def test_active_space_reduces_lih_qubit_count() -> None:
     full_hamiltonian, full_qubits, full_hf = build_hamiltonian(molecule="LiH")
     active_hamiltonian, active_qubits, active_hf = build_hamiltonian(

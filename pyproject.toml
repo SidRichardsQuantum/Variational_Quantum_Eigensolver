@@ -53,6 +53,13 @@ docs = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-m 'not slow'"
+markers = [
+  "slow: tests that are useful integration coverage but too expensive for the default PR loop",
+  "chemistry: tests that build real chemistry Hamiltonians or invoke expensive quantum chemistry backends",
+  "full_chemistry: broad chemistry coverage across many registered molecules",
+  "cli_subprocess: tests that validate python -m entrypoints in a separate interpreter",
+]
 filterwarnings = [
   "error::pennylane.exceptions.PennyLaneDeprecationWarning",
   "error::DeprecationWarning",

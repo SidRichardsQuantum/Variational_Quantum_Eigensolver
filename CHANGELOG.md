@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Faster default pytest target**
+
+  Marked slow chemistry and subprocess CLI integration tests separately so
+  `pytest -q` runs the fast development suite by default. The full integration
+  suite remains available with `pytest -q -o addopts=''`.
+
 - **Tightened public API reference**
 
   Reworked the Sphinx API reference into task-oriented sections for primary

@@ -586,7 +586,7 @@ def handle_special_modes(args) -> bool:
 # ================================================================
 # MAIN ENTRYPOINT
 # ================================================================
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vqe",
         description="VQE / SSVQE / VQD Simulation Toolkit",
@@ -951,7 +951,12 @@ def main() -> None:
     misc.add_argument("--force", action="store_true", help="Ignore cached results")
     misc.add_argument("--plot", action="store_true", help="Plot convergence")
 
-    args = parser.parse_args()
+    return parser
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = build_parser()
+    args = parser.parse_args(argv)
     symbols, coordinates = _validated_geometry_inputs(args)
     explicit_geometry = symbols is not None and coordinates is not None
 
