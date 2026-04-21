@@ -31,8 +31,20 @@ Benchmark Results <benchmarks/results>
 ```{toctree}
 :maxdepth: 1
 :titlesonly:
+:caption: Common
+
+Molecule Registry <common/molecule_registry>
+Expert Mode <common/expert_mode>
+Problem Resolution <common/problem_resolution>
+Caching And Artifacts <common/caching_and_artifacts>
+```
+
+```{toctree}
+:maxdepth: 1
+:titlesonly:
 :caption: VQE
 
+Defaults <vqe/defaults>
 Ansatzes <vqe/ansatzes>
 Optimizers <vqe/optimizers>
 Mappings <vqe/mappings>
@@ -55,6 +67,7 @@ Time Evolution <qpe/time_evolution>
 :caption: QITE
 
 VarQITE <qite/varqite>
+VarQRTE <qite/varqrte>
 ```
 
 ```{toctree}

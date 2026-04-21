@@ -1,403 +1,361 @@
-# Variational Quantum Imaginary Time Evolution (VarQITE)
+# Variational Quantum Imaginary-Time Evolution
 
-## Scope
+Variational Quantum Imaginary-Time Evolution, or VarQITE, approximates
+imaginary-time evolution inside a parameterized quantum circuit. In this
+package it is exposed through `qite.run_qite(...)` and the `qite run` command.
 
-This document describes the VarQITE implementation in this repository, including:
+Use VarQITE when you want a variational route toward a low-energy state that is
+different from optimizer-based VQE. It is most useful as a ground-state
+relaxation method, as a point of comparison against VQE and QPE, or as a state
+preparation step before real-time projected dynamics.
 
-- the McLachlan variational principle
-- the linear-system update rule
-- numerical implementation details
-- solver and regularization options
-- design choices specific to this codebase
+## Quickstart
 
----
+Python:
 
-## Overview
+```python
+from qite import run_qite
 
-Imaginary-time evolution drives a quantum state toward the ground state:
+result = run_qite(
+    molecule="H2",
+    ansatz_name="UCCSD",
+    steps=75,
+    dtau=0.2,
+    plot=False,
+)
 
-$$
+print(result["energy"])
+print(result["energies"][-5:])
+```
+
+CLI:
+
+```bash
+python -m qite run --molecule H2 --ansatz UCCSD --steps 75 --dtau 0.2 --no-show
+```
+
+The default command is also `run`, so this is equivalent:
+
+```bash
+python -m qite --molecule H2 --steps 75 --dtau 0.2
+```
+
+## What The Solver Does
+
+Imaginary-time evolution applies:
+
+```{math}
 |\psi(\tau)\rangle \propto e^{-H\tau} |\psi(0)\rangle
-$$
+```
 
-Expanding in the energy eigenbasis:
+Higher-energy components decay faster than lower-energy components. VarQITE
+does not apply this non-unitary operator directly. Instead, it projects the
+imaginary-time derivative back into the tangent space of an ansatz
+`|psi(theta)>`.
 
-$$
-|\psi(0)\rangle = \sum_k c_k |E_k\rangle
-$$
+The implementation uses McLachlan's variational principle, which gives a
+linear system at each step:
 
-$$
-e^{-H\tau}|\psi(0)\rangle
-=
-\sum_k c_k e^{-E_k \tau} |E_k\rangle
-$$
+```{math}
+A(\theta)\dot{\theta} = -C(\theta)
+```
 
-Higher-energy components decay faster, leaving the ground state dominant.
+with:
 
----
+```{math}
+A_{ij} = \operatorname{Re}\langle \partial_i \psi | \partial_j \psi \rangle
+```
 
-## Variational Formulation (McLachlan Principle)
+and:
 
-Because quantum circuits are unitary, imaginary-time evolution is approximated within a parameterized ansatz:
+```{math}
+C_i = \operatorname{Re}\langle \partial_i \psi |
+(H - \langle H \rangle) | \psi \rangle
+```
 
-$$
-|\psi(\theta)\rangle
-$$
+The discrete parameter update is:
 
-The McLachlan variational principle minimizes:
-
-$$
-\left\| \frac{\partial}{\partial \tau}|\psi(\theta)\rangle + H|\psi(\theta)\rangle \right\|
-$$
-
-This yields a linear system:
-
-$$
-A(\theta)\,\dot{\theta} = -C(\theta)
-$$
-
----
-
-## Matrix Definitions
-
-### Overlap matrix
-
-$$
-A_{ij} = \Re \langle \partial_i \psi | \partial_j \psi \rangle
-$$
-
-### Force vector
-
-$$
-C_i = \Re \langle \partial_i \psi | (H - \langle H \rangle) | \psi \rangle
-$$
-
----
-
-## Parameter Update
-
-A discrete step of size $\Delta\tau$:
-
-$$
+```{math}
 \theta \leftarrow \theta + \Delta\tau\,\dot{\theta}
-$$
+```
 
-This update is applied iteratively.
+## Inputs
 
----
+`run_qite(...)` uses the same shared problem-resolution layer as the VQE and
+QPE modules. You can run against a built-in molecule, an explicit geometry, an
+active-space chemistry problem, or an expert-mode qubit Hamiltonian.
 
-## Implementation (This Repository)
-
-### Core loop
-
-The update is performed via:
+### Registry Molecule
 
 ```python
-params = qite_step(...)
+from qite import run_qite
+
+result = run_qite(molecule="H2", steps=75, dtau=0.2, plot=False)
 ```
 
-inside `run_qite(...)`.
-
-At each iteration:
-
-1. construct (A) and (C)
-2. solve linear system
-3. update parameters
-4. evaluate energy
-
----
-
-### Finite-difference derivatives
-
-Tangent vectors are computed via finite differences:
-
-- controlled by `fd_eps`
-- used to approximate:
-
-  - ( \partial_i |\psi\rangle )
-
-Trade-off:
-
-- small `fd_eps` → numerical noise
-- large `fd_eps` → approximation error
-
----
-
-## Linear System Solvers
-
-The system:
-
-[
-A \dot{\theta} = -C
-]
-
-is solved using one of two methods.
-
----
-
-### 1. Direct solve
+### Explicit Geometry
 
 ```python
-solver="solve"
+from qite import run_qite
+
+result = run_qite(
+    symbols=["H", "H"],
+    coordinates=[[0.0, 0.0, 0.0], [0.0, 0.0, 0.7414]],
+    basis="sto-3g",
+    charge=0,
+    unit="angstrom",
+    steps=75,
+    dtau=0.2,
+    plot=False,
+)
 ```
 
-- uses linear solve (`np.linalg.solve`)
-- fast and accurate if (A) is well-conditioned
-- fails if (A) is singular or ill-conditioned
+CLI equivalent:
 
----
+```bash
+python -m qite run \
+  --symbols H,H \
+  --coordinates "0,0,0; 0,0,0.7414" \
+  --basis sto-3g \
+  --steps 75 \
+  --dtau 0.2
+```
 
-### 2. Pseudoinverse
+### Active Space
 
 ```python
-solver="pinv"
+from qite import run_qite
+
+result = run_qite(
+    molecule="LiH",
+    active_electrons=2,
+    active_orbitals=2,
+    steps=75,
+    dtau=0.15,
+    plot=False,
+)
 ```
 
-- uses Moore–Penrose pseudoinverse
-- controlled by `pinv_rcond`
-- more stable for ill-conditioned systems
-- slightly more expensive
-
----
-
-## Regularization
-
-To stabilize the system, a diagonal regularizer is added:
-
-[
-A \rightarrow A + \lambda I
-]
-
-controlled by:
+### Expert-Mode Hamiltonian
 
 ```python
-reg = 1e-6
+import pennylane as qml
+
+from qite import run_qite
+
+hamiltonian = qml.Hamiltonian(
+    [1.0, -0.7, 0.25],
+    [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(0) @ qml.PauliZ(1)],
+)
+
+result = run_qite(
+    hamiltonian=hamiltonian,
+    num_qubits=2,
+    reference_state=[1, 0],
+    ansatz_name="auto",
+    steps=40,
+    dtau=0.1,
+    plot=False,
+)
 ```
 
-Effects:
+Expert-mode runs are cacheable. The cache key includes a canonical
+Hamiltonian fingerprint, the qubit count, and the reference state.
 
-- improves conditioning
-- reduces numerical instability
-- introduces small bias
+## Ansatz Selection
 
----
+The default ansatz is `UCCSD`, which is appropriate for the small chemistry
+examples used throughout the repository. VarQITE delegates ansatz construction
+to the VQE ansatz plumbing where possible, so charge-aware and active-space
+chemistry ansatz behavior stays consistent across the packages.
 
-## Caching and Reproducibility
+Common choices:
 
-VarQITE runs are fully cached using:
+| Ansatz | Use when |
+| ------ | -------- |
+| `UCCSD` | Small chemistry problems with a chemistry reference state |
+| `RY-CZ` | Lightweight hardware-efficient smoke tests |
+| `StronglyEntanglingLayers` | Generic variational baselines |
+| `auto` | Expert-mode qubit Hamiltonians where the package should pick a conservative ansatz |
 
-- deterministic configuration hashing
-- JSON run records
-
-Cache keys include:
-
-- molecule and geometry
-- ansatz
-- mapping
-- `dtau`, `steps`
-- numerical parameters:
-
-  - `fd_eps`
-  - `reg`
-  - `solver`
-  - `pinv_rcond`
-
-Implication:
-
-> Changing any numerical setting triggers recomputation.
-
----
-
-## Device and State Requirements
-
-VarQITE requires:
-
-- **pure statevectors**
-- exact overlap and derivative access
-
-Therefore:
-
-| Feature       | Support |
-| ------------- | ------- |
-| Noiseless run | Yes     |
-| Noisy run     | No      |
-
----
-
-## Noise Design (Important)
-
-### Key design choice
-
-> **VarQITE optimization is always noiseless.**
-
-Noise is handled separately via:
-
-```
-qite eval-noise
-```
-
-This performs:
-
-- noisy evaluation of converged parameters
-- without re-running optimization
-
----
-
-### Why this design?
-
-The McLachlan update requires:
-
-- accurate derivatives
-- stable linear solves
-
-Noise would:
-
-- corrupt (A) and (C)
-- destabilize the linear system
-- break convergence
-
----
-
-### Resulting workflow
-
-```
-Step 1: run_qite (noiseless)
-    → converged parameters
-
-Step 2: eval-noise
-    → noisy energy evaluation
-```
-
----
-
-## Energy Convergence
-
-Energy is tracked at each step:
+Additional ansatz options can be passed with `ansatz_kwargs`:
 
 ```python
-energies = [...]
+result = run_qite(
+    molecule="H2",
+    ansatz_name="StronglyEntanglingLayers",
+    ansatz_kwargs={"layers": 2},
+    steps=50,
+    dtau=0.1,
+    plot=False,
+)
 ```
 
-Typical behaviour:
+## Numerical Controls
 
-- monotonic decrease (approximate)
-- eventual convergence plateau
-- sensitivity to:
+The main VarQITE controls are:
 
-  - ansatz
-  - dtau
-  - conditioning of A
+| Parameter | Default | Meaning |
+| --------- | ------- | ------- |
+| `steps` | `75` | Number of imaginary-time updates |
+| `dtau` | `0.2` | Imaginary-time step size |
+| `fd_eps` | `1e-3` | Central finite-difference step for tangent vectors |
+| `reg` | `1e-6` | Diagonal regularization added to the McLachlan matrix |
+| `solver` | `"solve"` | Linear-system backend: `"solve"`, `"lstsq"`, or `"pinv"` |
+| `pinv_rcond` | `1e-10` | Cutoff used by the pseudoinverse solver |
 
----
+Use smaller `dtau` values when the energy trace oscillates or diverges. Increase
+`steps` when the trace is still decreasing at the end of a run. Use
+`solver="pinv"` or `solver="lstsq"` when the direct solve is unstable for an
+ill-conditioned ansatz tangent space.
 
-## Hyperparameters
+CLI example:
 
-### Time step
+```bash
+python -m qite run \
+  --molecule H2 \
+  --steps 100 \
+  --dtau 0.1 \
+  --solver pinv \
+  --reg 1e-5 \
+  --pinv-rcond 1e-9
+```
+
+## Outputs
+
+`run_qite(...)` returns a dictionary with the final energy, convergence trace,
+final state, final parameters, timing metadata, and VarQITE numerical settings.
+
+Important fields:
+
+| Field | Meaning |
+| ----- | ------- |
+| `energy` | Final energy in Hartree |
+| `energies` | Energy after initialization and each VarQITE step |
+| `final_params` | Flattened final ansatz parameters |
+| `final_params_shape` | Shape needed to reconstruct the parameter array |
+| `final_state_real`, `final_state_imag` | Final statevector components |
+| `varqite` | `fd_eps`, `reg`, `solver`, and `pinv_rcond` used for the run |
+| `compute_runtime_s` | Time spent computing or original cached compute time |
+| `runtime_s` | Wall time for this call, including cache lookup |
+| `cache_hit` | Whether the returned result came from cache |
+
+Reconstructing parameters:
 
 ```python
-dtau
+import numpy as np
+
+params = np.array(result["final_params"]).reshape(result["final_params_shape"])
 ```
 
-- controls update size
-- too large → instability
-- too small → slow convergence
+## Caching
 
-Typical values:
+VarQITE stores JSON run records under the package's standard `results/qite/`
+location. Cache keys include the resolved problem, ansatz, seed, step count,
+`dtau`, active-space settings, and numerical controls such as `fd_eps`, `reg`,
+`solver`, and `pinv_rcond`.
 
-- `0.05 – 0.3`
-
----
-
-### Steps
+Use `force=True` or `--force` to ignore an existing cache record:
 
 ```python
-steps
+result = run_qite(molecule="H2", force=True, plot=False)
 ```
 
-- number of iterations
-- determines total imaginary time
+```bash
+python -m qite run --molecule H2 --force
+```
 
----
+## Noise Policy
 
-### Finite difference
+VarQITE parameter updates require pure statevectors and stable derivatives.
+Noisy or mixed-state optimization is therefore intentionally rejected by
+`run_qite(...)`.
+
+If you want to evaluate a converged VarQITE circuit under noise, use the CLI
+post-evaluation workflow:
+
+```bash
+python -m qite eval-noise \
+  --molecule H2 \
+  --steps 75 \
+  --dtau 0.2 \
+  --depolarizing-prob 0.02 \
+  --pretty
+```
+
+For noise sweeps:
+
+```bash
+python -m qite eval-noise \
+  --molecule H2 \
+  --steps 75 \
+  --dtau 0.2 \
+  --sweep-noise-type depolarizing \
+  --sweep-levels 0,0.01,0.02,0.04 \
+  --seeds 0,1,2,3,4 \
+  --json
+```
+
+This workflow first obtains the noiseless converged parameters, using the cache
+when available, then evaluates the resulting circuit on `default.mixed`.
+
+## Plotting
+
+By default, `run_qite(...)` plots and saves the convergence curve. In scripts,
+CI, or docs examples, disable plotting:
 
 ```python
-fd_eps
+result = run_qite(molecule="H2", plot=False)
 ```
 
-- derivative resolution
-- typical: `1e-3`
+For CLI runs, `--no-show` is useful in headless environments:
 
----
-
-### Regularization
-
-```python
-reg
+```bash
+python -m qite run --molecule H2 --no-show
 ```
 
-- stabilizes linear system
-- typical: `1e-6`
+## Method Selection
 
----
+Use VarQITE when:
 
-### Solver
+- you want a projected imaginary-time relaxation workflow
+- you need a comparison point against VQE optimizer behavior
+- you want converged parameters for post-evaluation or projected dynamics
+- the problem is small enough for statevector derivative calculations
 
-```python
-solver = "solve" | "pinv"
-```
+Prefer VQE when:
 
-Guidelines:
+- you want direct optimizer control and broader noisy-evaluation comparisons
+- you are primarily benchmarking ansatz and optimizer choices
+- you do not need imaginary-time dynamics diagnostics
 
-- use `"solve"` if stable
-- use `"pinv"` if conditioning issues appear
+Prefer QPE when:
 
----
+- phase or spectral information is the main target
+- you want to study ancilla, shot, and time-evolution tradeoffs
 
-## Practical Guidance
+## Troubleshooting
 
-- start with:
+| Symptom | Likely cause | Try |
+| ------- | ------------ | --- |
+| Energy oscillates or increases sharply | `dtau` is too large or the tangent-space solve is unstable | Lower `dtau`, increase `reg`, or use `solver="pinv"` |
+| Direct solve fails | McLachlan matrix is singular or ill-conditioned | Use `solver="lstsq"` or `solver="pinv"` |
+| Run is slow | Finite-difference state derivatives scale with parameter count | Use a smaller ansatz, fewer steps, or a smaller active space |
+| `ValueError` about noise | VarQITE updates are pure-state only | Use `qite eval-noise` for post-evaluation |
+| Repeated run returns immediately | Cache hit | Use `force=True` or `--force` to recompute |
 
-  - `dtau = 0.1 – 0.2`
-  - `solver="solve"`
-- if unstable:
+## Further Reading
 
-  - increase `reg`
-  - switch to `"pinv"`
-- monitor energy convergence
-- compare with VQE baseline
+The implementation details live in:
 
----
+- `qite.core.run_qite`
+- `qite.engine.qite_step`
+- `qite.engine.make_state_qnode`
+- `qite.engine.make_energy_qnode`
 
-## Limitations
+Related notebooks:
 
-- no noisy optimization
-- finite-difference overhead
-- scaling limited by parameter count
-- sensitive to ill-conditioning of (A)
-
----
-
-## Summary
-
-| Feature            | Status                   |
-| ------------------ | ------------------------ |
-| McLachlan update   | Implemented              |
-| Finite differences | Yes (`fd_eps`)           |
-| Regularization     | Yes (`reg`)              |
-| Solver control     | Yes (`solve` / `pinv`)   |
-| Noisy optimization | Not supported            |
-| Noisy evaluation   | Supported (CLI)          |
-| Caching            | Deterministic + complete |
-
----
-
-## Key Takeaway
-
-> VarQITE in this repository is implemented as a **stable, reproducible linear-system solver with explicit numerical control**, and a deliberate separation between **optimization (noiseless)** and **evaluation (noisy)**.
-
-This design prioritizes:
-
-- numerical stability
-- reproducibility
-- clear separation of concerns
+- `notebooks/getting_started/07_getting_started_qite_h2.ipynb`
+- `notebooks/benchmarks/defaults/VarQITE_Default_Calibration.ipynb`
+- `notebooks/benchmarks/comparisons/H2/Cross_Method_Comparison.ipynb`
+- `notebooks/benchmarks/comparisons/LiH/Cross_Method_Comparison.ipynb`
