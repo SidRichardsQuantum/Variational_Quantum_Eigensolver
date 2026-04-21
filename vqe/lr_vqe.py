@@ -139,6 +139,42 @@ def run_lr_vqe(
     show: bool = True,
     save: bool = False,
 ) -> Dict[str, Any]:
+    """
+    Estimate low-lying excitation energies with a linear-response VQE model.
+
+    The routine first obtains a VQE reference with the requested ansatz and
+    optimizer settings, then builds finite-difference tangent vectors around
+    the optimized parameters. It solves a projected generalized eigenvalue
+    problem in that tangent space and reports excitation energies above the VQE
+    reference.
+
+    Parameters
+    ----------
+    molecule:
+        Molecule registry key.
+    k:
+        Maximum number of positive excitation roots to return.
+    ansatz_name, optimizer_name, steps, stepsize, seed:
+        Settings for the underlying VQE reference calculation. When
+        ``stepsize`` is omitted, the calibrated optimizer default is used.
+    mapping:
+        Fermion-to-qubit mapping passed to the shared Hamiltonian builder.
+    fd_eps:
+        Finite-difference displacement used to estimate tangent vectors.
+    eps:
+        Numerical cutoff used when conditioning the overlap matrix.
+    force:
+        Recompute instead of reusing a matching cached result.
+    plot, show, save:
+        Controls for the optional spectrum comparison plot.
+
+    Returns
+    -------
+    dict
+        Result dictionary with ``reference_energy``, ``excitations``,
+        ``eigenvalues``, solver ``diagnostics``, the cache ``config``, and
+        serialized tangent-space matrices ``S`` and ``A``.
+    """
     ensure_dirs()
     resolved_stepsize = (
         get_optimizer_stepsize(str(optimizer_name))

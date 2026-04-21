@@ -80,6 +80,22 @@ def plot_qpe_distribution(
     show: bool = True,
     save: bool = True,
 ) -> None:
+    """
+    Plot the measured ancilla probability distribution from a QPE result.
+
+    Parameters
+    ----------
+    result:
+        Dictionary returned by ``run_qpe``. The plot uses ``probs``,
+        ``molecule``, ``n_ancilla``, ``t``, and optional ``noise`` metadata.
+    order:
+        Bar ordering. Use ``"binary_asc"`` for computational-basis order or the
+        other internal ordering modes accepted by ``_sort_items``.
+    show:
+        Display the figure after plotting.
+    save:
+        Save the figure through the shared plotting path conventions.
+    """
     plt = _pyplot()
     probs = result.get("probs", {})
     if not probs:
@@ -158,6 +174,14 @@ def plot_qpe_sweep(
     save: bool = True,
     seed: int = 0,
 ) -> None:
+    """
+    Plot a QPE sweep with optional error bars and reference line.
+
+    ``x_values`` define the swept control parameter, ``y_means`` are the values
+    to plot, and ``y_stds`` optionally supplies matching standard deviations.
+    Metadata such as ``molecule``, ``ancilla``, ``t``, ``noise_params``, and
+    ``seed`` is used for labels and saved filenames.
+    """
     plt = _pyplot()
     mol_raw = str(molecule)
     molecule = format_molecule_name(mol_raw)

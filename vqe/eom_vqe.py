@@ -213,6 +213,44 @@ def run_eom_vqe(
     show: bool = True,
     save: bool = False,
 ) -> Dict[str, Any]:
+    """
+    Estimate excitation energies with a full-response EOM-VQE approximation.
+
+    The routine computes a VQE reference, constructs finite-difference tangent
+    vectors at the optimized parameters, and solves a symplectic response
+    problem using tangent and conjugate-tangent coupling blocks. It is intended
+    as a compact small-system diagnostic rather than a production chemistry
+    implementation.
+
+    Parameters
+    ----------
+    molecule:
+        Molecule registry key.
+    k:
+        Maximum number of positive excitation roots to return.
+    ansatz_name, optimizer_name, steps, stepsize, seed:
+        Settings for the underlying VQE reference calculation. When
+        ``stepsize`` is omitted, the calibrated optimizer default is used.
+    mapping:
+        Fermion-to-qubit mapping passed to the shared Hamiltonian builder.
+    fd_eps:
+        Finite-difference displacement used to estimate tangent vectors.
+    eps:
+        Numerical cutoff used when conditioning the overlap matrix.
+    omega_eps:
+        Minimum positive response frequency retained in the output.
+    force:
+        Recompute instead of reusing a matching cached result.
+    plot, show, save:
+        Controls for the optional spectrum comparison plot.
+
+    Returns
+    -------
+    dict
+        Result dictionary with ``reference_energy``, ``excitations``,
+        ``eigenvalues``, solver ``diagnostics``, the cache ``config``, and
+        serialized response matrices ``S``, ``A``, and ``B``.
+    """
     ensure_dirs()
     resolved_stepsize = (
         get_optimizer_stepsize(str(optimizer_name))

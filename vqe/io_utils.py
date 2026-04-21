@@ -30,6 +30,7 @@ RESULTS_DIR: Path = results_dir("vqe")
 
 
 def ensure_dirs() -> None:
+    """Create the VQE results directory if it does not already exist."""
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -120,6 +121,7 @@ def make_run_config_dict(
 
 
 def run_signature(cfg: Dict[str, Any]) -> str:
+    """Return the stable hash used in VQE-family cache filenames."""
     return stable_hash_cfg(cfg, ndigits=8, n_hex=12)
 
 

@@ -34,6 +34,19 @@ def build_hamiltonian(
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
 ) -> Tuple[qml.Hamiltonian, int, np.ndarray, List[str], np.ndarray, str, int, str, str]:
+    """
+    Build a chemistry Hamiltonian using the shared ``common`` implementation.
+
+    This compatibility wrapper keeps the historical ``qite.build_hamiltonian``
+    import path while delegating molecule lookup, explicit geometry,
+    active-space resolution, and mapping behavior to ``common.build_hamiltonian``.
+
+    Returns
+    -------
+    tuple
+        ``(hamiltonian, num_qubits, hf_state, symbols, coordinates, basis,
+        charge, mapping, unit)``.
+    """
     mapping_out = str(mapping).strip().lower()
     unit_in = str(unit).strip().lower()
 

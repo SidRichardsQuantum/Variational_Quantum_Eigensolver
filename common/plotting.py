@@ -155,6 +155,12 @@ def build_filename(
     t: Optional[float] = None,
     tag: Optional[str] = None,
 ) -> str:
+    """
+    Build a normalized PNG filename from run and plotting metadata.
+
+    This helper centralizes filename tokens for notebooks and plotting helpers.
+    It does not create directories or write files.
+    """
     topic = str(topic).strip().lower().replace(" ", "_")
     parts: list[str] = [topic]
 
@@ -201,6 +207,20 @@ def save_plot(
     molecule: Optional[str] = None,
     show: bool = True,
 ) -> str:
+    """
+    Save the current Matplotlib figure under the shared images directory.
+
+    Parameters
+    ----------
+    filename:
+        Filename to write. ``.png`` is appended when omitted.
+    kind:
+        Top-level image category, such as ``"vqe"``, ``"qpe"``, or ``"qite"``.
+    molecule:
+        Optional molecule subdirectory.
+    show:
+        Display the figure after saving. When false, the figure is closed.
+    """
     plt = _pyplot()
     target_dir = ensure_plot_dirs(kind=kind, molecule=molecule)
 

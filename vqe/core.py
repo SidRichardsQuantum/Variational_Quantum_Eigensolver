@@ -184,6 +184,64 @@ def run_vqe(
     num_qubits: int | None = None,
     reference_state=None,
 ):
+    """
+    Run a ground-state VQE optimization.
+
+    The input problem can be provided in three modes:
+
+    - registry mode with ``molecule="H2"`` or another registered name
+    - explicit-geometry mode with ``symbols`` and ``coordinates``
+    - expert mode with a prebuilt ``hamiltonian``, ``num_qubits``, and an
+      optional computational-basis ``reference_state``
+
+    Parameters
+    ----------
+    molecule:
+        Molecule registry key or label used for explicit/expert-mode runs.
+    seed:
+        Random seed used when initializing ansatz parameters.
+    steps:
+        Number of optimizer steps. The returned energy history includes the
+        initial energy, so ``len(result["energies"]) == steps + 1``.
+    stepsize:
+        Optimizer step size. When omitted, the calibrated package default for
+        ``optimizer_name`` is used.
+    ansatz_name:
+        Ansatz name from the VQE registry. ``"auto"`` selects a conservative
+        ansatz from the Hamiltonian structure for supported model problems.
+    ansatz_kwargs:
+        Extra ansatz-specific keyword arguments included in cache signatures.
+    optimizer_name:
+        Optimizer registry key, for example ``"Adam"``.
+    noisy:
+        Whether to use a mixed-state device and insert configured noise
+        channels during energy evaluation.
+    depolarizing_prob, amplitude_damping_prob, phase_damping_prob,
+    bit_flip_prob, phase_flip_prob:
+        Per-operation noise probabilities. They are ignored unless ``noisy`` is
+        true, but remain part of normalized run metadata.
+    force:
+        Recompute even when a matching cached JSON result exists.
+    symbols, coordinates:
+        Explicit molecular geometry. Use with ``basis``, ``charge``,
+        ``multiplicity``, ``unit``, and optional active-space settings.
+    mapping:
+        Fermion-to-qubit mapping passed to the shared Hamiltonian builder.
+    active_electrons, active_orbitals:
+        Optional active-space controls for chemistry Hamiltonians.
+    hamiltonian, num_qubits, reference_state:
+        Expert-mode problem definition. Non-contiguous Hamiltonian wires are
+        remapped to ``range(num_qubits)`` by the shared resolver.
+
+    Returns
+    -------
+    dict
+        Result dictionary containing ``energy``, ``energies``, ``steps``,
+        ``final_state_real``, ``final_state_imag``, ``num_qubits``, active-space
+        metadata, resolved ``ansatz``, ``ansatz_kwargs``, ``final_params``,
+        ``params_history``, ``runtime_s``, ``compute_runtime_s``,
+        ``cache_hit``, and ``ansatz_selection`` when auto-selection was used.
+    """
     start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))

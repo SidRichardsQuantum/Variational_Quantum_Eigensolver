@@ -55,7 +55,6 @@ def plot_convergence(
     amp_prob: float = 0.0,
     noise_type: Optional[str] = None,
 ) -> None:
-    plt = _pyplot()
     """
     Plot energy convergence vs iteration.
 
@@ -64,6 +63,7 @@ def plot_convergence(
     VarQITE runs are noiseless by design; noise metadata is supported only for
     consistency with shared filename conventions (e.g. post-evaluation plots).
     """
+    plt = _pyplot()
     mol_title = format_molecule_title(molecule)
 
     plt.figure(figsize=(8, 5))
@@ -125,13 +125,13 @@ def plot_noise_statistics(
     show: bool = True,
     save: bool = True,
 ) -> None:
-    plt = _pyplot()
     """
     Plot ΔE and (optionally) fidelity vs noise level.
 
     Intended for post-evaluation noise studies (e.g., evaluating converged VarQITE
     parameters under default.mixed).
     """
+    plt = _pyplot()
     mol_title = format_molecule_title(molecule)
     nt = str(noise_type).strip().lower()
 
@@ -241,10 +241,10 @@ def plot_diagnostics(
     show: bool = True,
     save: bool = True,
 ) -> None:
-    plt = _pyplot()
     """
     Generic single-curve diagnostic plot (e.g., residual norms, step sizes, etc.).
     """
+    plt = _pyplot()
     mol_title = format_molecule_title(molecule)
 
     plt.figure(figsize=(8, 5))

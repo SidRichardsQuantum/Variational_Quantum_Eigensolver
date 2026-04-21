@@ -54,6 +54,13 @@ def signature_hash(
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
 ) -> str:
+    """
+    Return the stable cache key for a QPE run configuration.
+
+    The key includes normalized geometry, basis, charge, mapping, unit,
+    active-space settings, QPE controls, shot mode, noise parameters, and expert
+    Hamiltonian/reference fingerprints when provided.
+    """
     nz = canonical_noise(
         noisy=True,
         p_dep=float((noise or {}).get("p_dep", 0.0)),
@@ -143,6 +150,13 @@ def cache_path(
 
 
 def save_qpe_result(result: Dict[str, Any]) -> str:
+    """
+    Persist a QPE result as a cache JSON file.
+
+    The destination path is derived from the same normalized signature used by
+    ``load_qpe_result``. The input dictionary must contain the run metadata
+    emitted by ``run_qpe``.
+    """
     ensure_dirs()
 
     noise = result.get("noise", {}) or {}
@@ -205,6 +219,13 @@ def load_qpe_result(
     hamiltonian: Dict[str, Any] | None = None,
     reference_state: list[int] | None = None,
 ) -> Optional[Dict[str, Any]]:
+    """
+    Load a cached QPE result matching the provided normalized configuration.
+
+    Returns ``None`` when no matching cache file exists. Callers are responsible
+    for validating whether old cache records contain any runtime metadata they
+    require.
+    """
     key = signature_hash(
         molecule=molecule,
         symbols=symbols,

@@ -6,6 +6,12 @@ from __future__ import annotations
 
 
 def format_molecule_name(mol: str) -> str:
+    """
+    Normalize a molecule label for filenames and cache paths.
+
+    Plus signs are expanded to ``plus`` and whitespace or unsupported filename
+    characters are replaced with underscores.
+    """
     s = str(mol).strip()
     s = s.replace("+", "plus").replace("-", "minus").replace(" ", "_")
     s = "".join(ch if (ch.isalnum() or ch == "_") else "_" for ch in s)

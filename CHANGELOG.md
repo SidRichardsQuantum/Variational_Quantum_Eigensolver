@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **Tightened public API reference**
+
+  Reworked the Sphinx API reference into task-oriented sections for primary
+  workflows, VQE comparisons, excited-state methods, problem/Hamiltonian
+  helpers, QPE analysis, benchmark utilities, plotting, advanced I/O, and QITE
+  engine helpers.
+
+  Added missing docstrings for exported workflow, problem-resolution,
+  Hamiltonian-wrapper, plotting, cache, naming, and signature helpers so the
+  generated API docs distinguish stable user-facing entrypoints from advanced
+  reproducibility utilities more clearly.
+
+---
+
 ## [0.3.24] - April 20, 2026
 
 ### Added

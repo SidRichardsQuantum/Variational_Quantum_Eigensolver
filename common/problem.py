@@ -22,6 +22,15 @@ from .molecules import get_molecule_config
 
 @dataclass(frozen=True)
 class ResolvedProblem:
+    """
+    Normalized problem description shared by solver entrypoints.
+
+    ``cacheable`` is true for registry and explicit-geometry chemistry inputs.
+    Expert-mode Hamiltonian inputs are normalized by ``resolve_problem`` but
+    callers decide how to include the Hamiltonian fingerprint in their cache
+    signature.
+    """
+
     hamiltonian: qml.Hamiltonian
     num_qubits: int
     reference_state: np.ndarray | None
@@ -57,6 +66,49 @@ def resolve_problem(
     require_reference_state: bool = False,
     reference_name: str = "reference_state",
 ) -> ResolvedProblem:
+    """
+    Resolve molecule, explicit-geometry, or expert-mode inputs.
+
+    Registry mode uses ``molecule`` to look up symbols, coordinates, basis,
+    charge, multiplicity, and active-space defaults. Explicit-geometry mode
+    uses caller-provided ``symbols`` and ``coordinates`` with the supplied
+    chemistry settings. Expert mode uses a prebuilt PennyLane ``hamiltonian``
+    and optional ``reference_state``; Hamiltonian wires are remapped to
+    contiguous integer wires when needed.
+
+    Parameters
+    ----------
+    molecule:
+        Registry key in chemistry modes, or a label for expert-mode runs.
+    symbols, coordinates:
+        Explicit molecular geometry. Both are required when bypassing the
+        molecule registry.
+    basis, charge, multiplicity, mapping, unit:
+        Chemistry settings forwarded to the shared Hamiltonian builder.
+    active_electrons, active_orbitals:
+        Optional active-space controls.
+    hamiltonian:
+        Prebuilt qubit Hamiltonian for expert mode.
+    num_qubits:
+        Number of system qubits in expert mode. If omitted, it is inferred from
+        the Hamiltonian wires.
+    reference_state:
+        Computational-basis bitstring used by solvers that need an initial
+        state.
+    default_reference_state:
+        In expert mode, create an all-zero reference state when no
+        ``reference_state`` is provided.
+    require_reference_state:
+        In expert mode, raise when no reference state is provided.
+    reference_name:
+        Name used in validation error messages.
+
+    Returns
+    -------
+    ResolvedProblem
+        Normalized Hamiltonian, qubit count, reference state, chemistry
+        metadata, active-space metadata, and cacheability flag.
+    """
     mapping_norm = str(mapping).strip().lower()
     basis_norm = str(basis).strip().lower()
     unit_norm = str(unit).strip().lower()

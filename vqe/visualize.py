@@ -372,6 +372,7 @@ def plot_convergence(
     seed: int | None = None,
     show: bool = True,
 ):
+    """Plot VQE energy convergence, optionally comparing noisy and noiseless traces."""
     plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
@@ -435,6 +436,7 @@ def plot_optimizer_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    """Plot convergence traces from a VQE optimizer comparison run."""
     plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
@@ -466,6 +468,7 @@ def plot_ansatz_comparison(
     seed: int | None = None,
     show: bool = True,
 ):
+    """Plot convergence traces from a VQE ansatz comparison run."""
     plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     plt.figure(figsize=(8, 5))
@@ -502,6 +505,7 @@ def plot_noise_statistics(
     noise_type: str = "Depolarizing",
     show: bool = True,
 ):
+    """Plot mean energy error and fidelity against a VQE noise-level sweep."""
     plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
@@ -559,6 +563,7 @@ def plot_multi_state_convergence(
     state_labels: Optional[Sequence[str]] = None,
     order: Optional[Sequence[int]] = None,
 ):
+    """Plot per-state convergence traces for SSVQE or VQD runs."""
     plt = _pyplot()
     molecule_title = format_molecule_title(molecule)
 
