@@ -20,6 +20,38 @@ def _run_help(module: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _assert_help_does_not_import_pennylane(module: str) -> None:
+    code = f"""
+import contextlib
+import io
+import runpy
+import sys
+
+sys.argv = [{module!r}, "--help"]
+
+try:
+    with contextlib.redirect_stdout(io.StringIO()):
+        runpy.run_module({module + ".__main__"!r}, run_name="__main__")
+except SystemExit as exc:
+    if exc.code not in (0, None):
+        raise
+
+imported = sorted(
+    name for name in sys.modules
+    if name == "pennylane" or name.startswith("pennylane.")
+)
+if imported:
+    raise SystemExit("Unexpected PennyLane imports: " + ", ".join(imported[:10]))
+"""
+    subprocess.run(
+        [sys.executable, "-c", code],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+
+
 @pytest.mark.parametrize(
     "build_parser",
     [vqe_main.build_parser, qpe_main.build_parser, qite_main.build_parser],
@@ -29,7 +61,6 @@ def test_cli_help_is_available_in_process(build_parser) -> None:
     assert "usage" in out.lower()
 
 
-@pytest.mark.slow
 @pytest.mark.cli_subprocess
 @pytest.mark.parametrize("module", ["vqe", "qpe", "qite"])
 def test_module_cli_help(module: str) -> None:
@@ -37,6 +68,12 @@ def test_module_cli_help(module: str) -> None:
     assert p.returncode == 0
     out = (p.stdout or "") + (p.stderr or "")
     assert "usage" in out.lower()
+
+
+@pytest.mark.cli_subprocess
+@pytest.mark.parametrize("module", ["vqe", "qpe", "qite"])
+def test_module_cli_help_does_not_import_pennylane(module: str) -> None:
+    _assert_help_does_not_import_pennylane(module)
 
 
 def test_vqe_cli_omitted_stepsize_preserves_auto_default(

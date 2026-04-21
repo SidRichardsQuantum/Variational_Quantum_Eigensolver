@@ -13,14 +13,17 @@ This package provides:
 Design notes
 ------------
 - Keep imports lightweight and stable for downstream users.
-- Prefer re-exporting the primary entrypoints rather than internal helpers.
+- Public entrypoints are resolved lazily so command-line help does not import
+  PennyLane/OpenFermion-heavy solver modules.
 """
 
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from typing import Any
 
 from common import mpl_env as _mpl_env  # noqa: F401
+from common.lazy import LazyExports, list_exports, load_export
 
 # Version ----------------------------------------------------------------------
 try:
@@ -30,93 +33,64 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 
-# Core VQE APIs ----------------------------------------------------------------
-from .core import (  # noqa: E402
-    run_vqe,
-    run_vqe_ansatz_comparison,
-    run_vqe_geometry_scan,
-    run_vqe_low_qubit_benchmark,
-    run_vqe_mapping_comparison,
-    run_vqe_multi_seed_noise,
-    run_vqe_optimizer_comparison,
-)
-
-# ADAPT-VQE ----------------------------------------------------------------------
-from .adapt import run_adapt_vqe  # noqa: E402
-
-# Ansatz registry & utilities ---------------------------------------------------
-from .ansatz import ANSATZES, get_ansatz, init_params  # noqa: E402
-
-# Optimizers -------------------------------------------------------------------
-from .optimizer import get_optimizer, get_optimizer_stepsize, OPTIMIZERS  # noqa: E402
-
-# Hamiltonian & geometry --------------------------------------------------------
-from .hamiltonian import build_hamiltonian, generate_geometry  # noqa: E402
-
-# I/O utilities (config, hashing, results) -------------------------------------
-from .io_utils import (
-    ensure_dirs,
-    make_run_config_dict,
-    run_signature,
-    save_run_record,
-)  # noqa: E402
-
-# Visualization utilities -------------------------------------------------------
-from .visualize import (  # noqa: E402
-    plot_ansatz_comparison,
-    plot_convergence,
-    plot_multi_state_convergence,
-    plot_noise_statistics,
-    plot_optimizer_comparison,
-)
-
-# Excited-state methods ---------------------------------------------------------
-from .ssvqe import run_ssvqe  # noqa: E402
-from .vqd import run_vqd  # noqa: E402
-from .qse import run_qse  # noqa: E402
-from .lr_vqe import run_lr_vqe  # noqa: E402
-from .eom_vqe import run_eom_vqe  # noqa: E402
-from .eom_qse import run_eom_qse  # noqa: E402
+_EXPORTS: LazyExports = {
+    # Core VQE workflows
+    "run_vqe": ("vqe.core", "run_vqe"),
+    "run_vqe_optimizer_comparison": ("vqe.core", "run_vqe_optimizer_comparison"),
+    "run_vqe_ansatz_comparison": ("vqe.core", "run_vqe_ansatz_comparison"),
+    "run_vqe_multi_seed_noise": ("vqe.core", "run_vqe_multi_seed_noise"),
+    "run_vqe_geometry_scan": ("vqe.core", "run_vqe_geometry_scan"),
+    "run_vqe_low_qubit_benchmark": ("vqe.core", "run_vqe_low_qubit_benchmark"),
+    "run_vqe_mapping_comparison": ("vqe.core", "run_vqe_mapping_comparison"),
+    # Excited-state methods
+    "run_ssvqe": ("vqe.ssvqe", "run_ssvqe"),
+    "run_vqd": ("vqe.vqd", "run_vqd"),
+    "run_lr_vqe": ("vqe.lr_vqe", "run_lr_vqe"),
+    "run_qse": ("vqe.qse", "run_qse"),
+    "run_eom_vqe": ("vqe.eom_vqe", "run_eom_vqe"),
+    "run_eom_qse": ("vqe.eom_qse", "run_eom_qse"),
+    # Ansatz / optimizer registries
+    "ANSATZES": ("vqe.ansatz", "ANSATZES"),
+    "get_ansatz": ("vqe.ansatz", "get_ansatz"),
+    "init_params": ("vqe.ansatz", "init_params"),
+    "get_optimizer": ("vqe.optimizer", "get_optimizer"),
+    "get_optimizer_stepsize": ("vqe.optimizer", "get_optimizer_stepsize"),
+    "OPTIMIZERS": ("vqe.optimizer", "OPTIMIZERS"),
+    # Hamiltonian / geometry
+    "build_hamiltonian": ("vqe.hamiltonian", "build_hamiltonian"),
+    "generate_geometry": ("vqe.hamiltonian", "generate_geometry"),
+    # I/O helpers
+    "make_run_config_dict": ("vqe.io_utils", "make_run_config_dict"),
+    "run_signature": ("vqe.io_utils", "run_signature"),
+    "save_run_record": ("vqe.io_utils", "save_run_record"),
+    "ensure_dirs": ("vqe.io_utils", "ensure_dirs"),
+    # Plotting
+    "plot_convergence": ("vqe.visualize", "plot_convergence"),
+    "plot_optimizer_comparison": ("vqe.visualize", "plot_optimizer_comparison"),
+    "plot_ansatz_comparison": ("vqe.visualize", "plot_ansatz_comparison"),
+    "plot_noise_statistics": ("vqe.visualize", "plot_noise_statistics"),
+    "plot_multi_state_convergence": ("vqe.visualize", "plot_multi_state_convergence"),
+    # ADAPT-VQE
+    "run_adapt_vqe": ("vqe.adapt", "run_adapt_vqe"),
+}
 
 __all__ = [
     # Package metadata
     "__version__",
-    # Core VQE workflows
-    "run_vqe",
-    "run_vqe_optimizer_comparison",
-    "run_vqe_ansatz_comparison",
-    "run_vqe_multi_seed_noise",
-    "run_vqe_geometry_scan",
-    "run_vqe_low_qubit_benchmark",
-    "run_vqe_mapping_comparison",
-    # Excited-state methods
-    "run_ssvqe",
-    "run_vqd",
-    "run_lr_vqe",
-    "run_qse",
-    "run_eom_vqe",
-    "run_eom_qse",
-    # Ansatz / optimizer registries
-    "ANSATZES",
-    "get_ansatz",
-    "init_params",
-    "get_optimizer",
-    "get_optimizer_stepsize",
-    "OPTIMIZERS",
-    # Hamiltonian / geometry
-    "build_hamiltonian",
-    "generate_geometry",
-    # I/O helpers
-    "make_run_config_dict",
-    "run_signature",
-    "save_run_record",
-    "ensure_dirs",
-    # Plotting
-    "plot_convergence",
-    "plot_optimizer_comparison",
-    "plot_ansatz_comparison",
-    "plot_noise_statistics",
-    "plot_multi_state_convergence",
-    # ADAPT-VQE
-    "run_adapt_vqe",
+    *_EXPORTS.keys(),
 ]
+
+
+def __getattr__(name: str) -> Any:
+    return load_export(
+        package_name=__name__,
+        package_globals=globals(),
+        exports=_EXPORTS,
+        name=name,
+    )
+
+
+def __dir__() -> list[str]:
+    import sys
+
+    return list_exports(sys.modules[__name__], _EXPORTS)

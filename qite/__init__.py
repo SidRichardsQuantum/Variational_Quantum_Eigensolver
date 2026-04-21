@@ -3,25 +3,17 @@ qite.__init__.py
 ----------------
 Public API surface for the QITE / projected-dynamics subpackage.
 
-This package provides:
-- Variational imaginary-time evolution (VarQITE) workflows
-- Variational real-time evolution (VarQRTE) workflows
-- Reproducible caching and I/O helpers
-- Plotting utilities for QITE notebooks
-- Circuit / device plumbing for advanced users
-
-Design notes
-------------
-- VarQITE parameter updates are pure-state only (McLachlan principle).
-- Noise is supported only for post-evaluation, not for parameter updates.
-- The public surface mirrors vqe/qpe where appropriate, but remains minimal.
+Public entrypoints are resolved lazily so command-line help remains lightweight
+while preserving ``from qite import run_qite`` style imports.
 """
 
 from __future__ import annotations
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from typing import Any
 
 from common import mpl_env as _mpl_env  # noqa: F401
+from common.lazy import LazyExports, list_exports, load_export
 
 # ---------------------------------------------------------------------
 # Version
@@ -32,62 +24,48 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "0.0.0"
 
 
-# ---------------------------------------------------------------------
-# Public API Imports
-# ---------------------------------------------------------------------
-from .core import run_qite, run_qrte  # noqa: E402
+_EXPORTS: LazyExports = {
+    # Core workflow
+    "run_qite": ("qite.core", "run_qite"),
+    "run_qrte": ("qite.core", "run_qrte"),
+    # Hamiltonian
+    "build_hamiltonian": ("qite.hamiltonian", "build_hamiltonian"),
+    # Engine utilities (advanced / notebooks)
+    "make_device": ("qite.engine", "make_device"),
+    "make_energy_qnode": ("qite.engine", "make_energy_qnode"),
+    "make_state_qnode": ("qite.engine", "make_state_qnode"),
+    "build_ansatz": ("qite.engine", "build_ansatz"),
+    "qite_step": ("qite.engine", "qite_step"),
+    "qrte_step": ("qite.engine", "qrte_step"),
+    # I/O helpers
+    "ensure_dirs": ("qite.io_utils", "ensure_dirs"),
+    "make_run_config_dict": ("qite.io_utils", "make_run_config_dict"),
+    "run_signature": ("qite.io_utils", "run_signature"),
+    "save_run_record": ("qite.io_utils", "save_run_record"),
+    "make_filename_prefix": ("qite.io_utils", "make_filename_prefix"),
+    # Plotting
+    "plot_convergence": ("qite.visualize", "plot_convergence"),
+    "plot_noise_statistics": ("qite.visualize", "plot_noise_statistics"),
+    "plot_diagnostics": ("qite.visualize", "plot_diagnostics"),
+}
 
-from .engine import (  # noqa: E402
-    build_ansatz,
-    make_device,
-    make_energy_qnode,
-    make_state_qnode,
-    qrte_step,
-    qite_step,
-)
-
-from .hamiltonian import build_hamiltonian  # noqa: E402
-
-from .io_utils import (  # noqa: E402
-    ensure_dirs,
-    make_filename_prefix,
-    make_run_config_dict,
-    run_signature,
-    save_run_record,
-)
-
-from .visualize import (  # noqa: E402
-    plot_convergence,
-    plot_diagnostics,
-    plot_noise_statistics,
-)
-
-# ---------------------------------------------------------------------
-# Public API Surface
-# ---------------------------------------------------------------------
 __all__ = [
     # Package metadata
     "__version__",
-    # Core workflow
-    "run_qite",
-    "run_qrte",
-    # Hamiltonian
-    "build_hamiltonian",
-    # Engine utilities (advanced / notebooks)
-    "make_device",
-    "make_energy_qnode",
-    "make_state_qnode",
-    "build_ansatz",
-    "qite_step",
-    "qrte_step",
-    # I/O helpers
-    "ensure_dirs",
-    "make_run_config_dict",
-    "run_signature",
-    "save_run_record",
-    "make_filename_prefix",
-    # Plotting
-    "plot_convergence",
-    "plot_noise_statistics",
-    "plot_diagnostics",
+    *_EXPORTS.keys(),
 ]
+
+
+def __getattr__(name: str) -> Any:
+    return load_export(
+        package_name=__name__,
+        package_globals=globals(),
+        exports=_EXPORTS,
+        name=name,
+    )
+
+
+def __dir__() -> list[str]:
+    import sys
+
+    return list_exports(sys.modules[__name__], _EXPORTS)

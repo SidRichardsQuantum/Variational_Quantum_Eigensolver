@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+---
+
+## [0.3.25] - April 21, 2026
+
 ### Changed
 
 - **Faster default pytest target**
@@ -13,6 +19,29 @@ All notable changes to this project will be documented in this file.
   Marked slow chemistry and subprocess CLI integration tests separately so
   `pytest -q` runs the fast development suite by default. The full integration
   suite remains available with `pytest -q -o addopts=''`.
+
+- **Split fast and full test CI**
+
+  Updated the tests workflow so pull requests and pushes run the fast pytest
+  matrix, while the full integration suite runs on a scheduled/manual Python
+  3.12 job.
+
+- **Lightweight CLI help startup**
+
+  Made package and CLI public-entrypoint imports lazy so `python -m vqe --help`,
+  `python -m qpe --help`, and `python -m qite --help` avoid importing the
+  PennyLane/OpenFermion stack until a command actually runs.
+
+- **Shared lazy public API exports**
+
+  Added a small shared lazy-export helper and used it across `common`, `vqe`,
+  `qpe`, and `qite` so public imports remain stable without duplicating
+  package-level `__getattr__` boilerplate.
+
+- **Slimmer fast excited-state smoke coverage**
+
+  Split EOM-VQE and EOM-QSE fast tests into single-run smoke checks while
+  keeping the more expensive deterministic rerun checks in the full slow suite.
 
 - **Tightened public API reference**
 

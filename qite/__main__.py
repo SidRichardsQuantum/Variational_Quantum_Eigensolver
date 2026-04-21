@@ -31,13 +31,58 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
-from qite.core import run_qite, run_qrte
-from qite.engine import build_ansatz, make_device, make_energy_qnode, make_state_qnode
-from qite.hamiltonian import build_hamiltonian
+
+def _np():
+    import numpy as np
+
+    return np
+
+
+def run_qite(*args, **kwargs):
+    from qite.core import run_qite as _run_qite
+
+    return _run_qite(*args, **kwargs)
+
+
+def run_qrte(*args, **kwargs):
+    from qite.core import run_qrte as _run_qrte
+
+    return _run_qrte(*args, **kwargs)
+
+
+def build_ansatz(*args, **kwargs):
+    from qite.engine import build_ansatz as _build_ansatz
+
+    return _build_ansatz(*args, **kwargs)
+
+
+def make_device(*args, **kwargs):
+    from qite.engine import make_device as _make_device
+
+    return _make_device(*args, **kwargs)
+
+
+def make_energy_qnode(*args, **kwargs):
+    from qite.engine import make_energy_qnode as _make_energy_qnode
+
+    return _make_energy_qnode(*args, **kwargs)
+
+
+def make_state_qnode(*args, **kwargs):
+    from qite.engine import make_state_qnode as _make_state_qnode
+
+    return _make_state_qnode(*args, **kwargs)
+
+
+def build_hamiltonian(*args, **kwargs):
+    from qite.hamiltonian import build_hamiltonian as _build_hamiltonian
+
+    return _build_hamiltonian(*args, **kwargs)
 
 
 def _parse_int_list(s: Optional[str]) -> Optional[list[int]]:
@@ -69,6 +114,8 @@ def _parse_coordinates(s: Optional[str]) -> Optional[np.ndarray]:
     -------
     np.ndarray of shape (N, 3)
     """
+    np = _np()
+
     if s is None or str(s).strip() == "":
         return None
 
@@ -486,6 +533,8 @@ def _noisy_eval_energy_and_diag(
     """
     Evaluate Tr[rho H] under noise on default.mixed and also return diag(rho).
     """
+    np = _np()
+
     dev = make_device(int(qubits), noisy=True)
 
     ansatz_fn, _ = build_ansatz(
@@ -554,6 +603,8 @@ def _unpack_hamiltonian_metadata(
     -------
     (H, n_qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out)
     """
+    np = _np()
+
     if symbols is not None and coordinates is not None:
         out = build_hamiltonian(
             molecule=None,
@@ -645,6 +696,8 @@ def _unpack_hamiltonian_metadata(
 
 
 def eval_noise(args) -> dict:
+    np = _np()
+
     symbols_in, coordinates_in = _validated_geometry_inputs(args)
 
     H, qubits, hf_state, symbols, coordinates, basis, charge, mapping_out, unit_out = (

@@ -17,12 +17,28 @@ from __future__ import annotations
 
 import argparse
 import time
+from typing import TYPE_CHECKING
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
-from qpe.core import run_qpe
-from qpe.io_utils import ensure_dirs
-from qpe.visualize import plot_qpe_distribution
+
+def run_qpe(*args, **kwargs):
+    from qpe.core import run_qpe as _run_qpe
+
+    return _run_qpe(*args, **kwargs)
+
+
+def ensure_dirs() -> None:
+    from qpe.io_utils import ensure_dirs as _ensure_dirs
+
+    _ensure_dirs()
+
+
+def plot_qpe_distribution(*args, **kwargs):
+    from qpe.visualize import plot_qpe_distribution as _plot_qpe_distribution
+
+    return _plot_qpe_distribution(*args, **kwargs)
 
 
 def _parse_symbols(s: str | None) -> list[str] | None:
@@ -32,6 +48,8 @@ def _parse_symbols(s: str | None) -> list[str] | None:
 
 
 def _parse_coordinates(s: str | None) -> np.ndarray | None:
+    import numpy as np
+
     if s is None or str(s).strip() == "":
         return None
 

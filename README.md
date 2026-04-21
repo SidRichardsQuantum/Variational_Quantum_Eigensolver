@@ -401,8 +401,8 @@ Variational_Quantum_Eigensolver/
 
 ## Testing
 
-The default pytest target is the fast development suite. Slow chemistry and
-subprocess CLI integration tests are marked separately.
+The default pytest target is the fast development suite. Slow chemistry checks
+and selected subprocess CLI integration tests are marked separately.
 
 ```bash
 pytest -q

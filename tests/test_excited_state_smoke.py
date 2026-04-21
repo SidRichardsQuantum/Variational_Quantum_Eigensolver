@@ -117,13 +117,13 @@ def test_lr_vqe_deterministic() -> None:
     assert np.allclose(exc1, exc2, atol=1e-8, rtol=0.0)
 
 
-def test_eom_vqe_deterministic() -> None:
-    cfg = dict(
+def _eom_vqe_cfg(*, steps: int = 25) -> dict[str, object]:
+    return dict(
         molecule="H2",
         k=2,
         ansatz_name="UCCSD",
         optimizer_name="Adam",
-        steps=25,
+        steps=steps,
         stepsize=0.2,
         seed=0,
         mapping="jordan_wigner",
@@ -135,6 +135,20 @@ def test_eom_vqe_deterministic() -> None:
         show=False,
         save=False,
     )
+
+
+def test_eom_vqe_smoke() -> None:
+    res = run_eom_vqe(**_eom_vqe_cfg(steps=4))
+    exc = np.asarray(res["excitations"], dtype=float)
+
+    assert exc.size >= 1
+    assert np.all(np.isfinite(exc))
+    assert np.all(exc > 0.0)
+
+
+@pytest.mark.slow
+def test_eom_vqe_deterministic() -> None:
+    cfg = _eom_vqe_cfg()
 
     r1 = run_eom_vqe(**cfg)
     r2 = run_eom_vqe(**cfg)
@@ -149,13 +163,13 @@ def test_eom_vqe_deterministic() -> None:
     assert np.allclose(exc1, exc2, atol=1e-8, rtol=0.0)
 
 
-def test_eom_qse_smoke_and_deterministic() -> None:
-    cfg = dict(
+def _eom_qse_cfg(*, steps: int = 20) -> dict[str, object]:
+    return dict(
         molecule="H2",
         k=3,
         ansatz_name="UCCSD",
         optimizer_name="Adam",
-        steps=20,
+        steps=steps,
         stepsize=0.2,
         seed=0,
         mapping="jordan_wigner",
@@ -166,6 +180,19 @@ def test_eom_qse_smoke_and_deterministic() -> None:
         omega_eps=1e-12,
         force=True,
     )
+
+
+def test_eom_qse_smoke() -> None:
+    res = run_eom_qse(**_eom_qse_cfg(steps=4))
+    eigs = np.asarray(res["eigenvalues"], dtype=float)
+
+    assert eigs.size >= 1
+    assert np.all(np.isfinite(eigs))
+
+
+@pytest.mark.slow
+def test_eom_qse_deterministic() -> None:
+    cfg = _eom_qse_cfg()
 
     r1 = run_eom_qse(**cfg)
     r2 = run_eom_qse(**cfg)

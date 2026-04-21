@@ -25,26 +25,100 @@ All CLI modes dispatch into vqe.core.* or vqe.ssvqe.run_ssvqe / vqe.vqd.run_vqd.
 from __future__ import annotations
 
 import argparse
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
-import numpy as np
+if TYPE_CHECKING:
+    import numpy as np
 
-from vqe import (
-    plot_convergence,
-    run_adapt_vqe,
-    run_eom_qse,
-    run_eom_vqe,
-    run_lr_vqe,
-    run_qse,
-    run_ssvqe,
-    run_vqd,
-    run_vqe,
-    run_vqe_ansatz_comparison,
-    run_vqe_geometry_scan,
-    run_vqe_mapping_comparison,
-    run_vqe_multi_seed_noise,
-    run_vqe_optimizer_comparison,
-)
+
+def _np():
+    import numpy as np
+
+    return np
+
+
+def plot_convergence(*args, **kwargs):
+    from vqe import plot_convergence as _plot_convergence
+
+    return _plot_convergence(*args, **kwargs)
+
+
+def run_adapt_vqe(*args, **kwargs):
+    from vqe import run_adapt_vqe as _run_adapt_vqe
+
+    return _run_adapt_vqe(*args, **kwargs)
+
+
+def run_eom_qse(*args, **kwargs):
+    from vqe import run_eom_qse as _run_eom_qse
+
+    return _run_eom_qse(*args, **kwargs)
+
+
+def run_eom_vqe(*args, **kwargs):
+    from vqe import run_eom_vqe as _run_eom_vqe
+
+    return _run_eom_vqe(*args, **kwargs)
+
+
+def run_lr_vqe(*args, **kwargs):
+    from vqe import run_lr_vqe as _run_lr_vqe
+
+    return _run_lr_vqe(*args, **kwargs)
+
+
+def run_qse(*args, **kwargs):
+    from vqe import run_qse as _run_qse
+
+    return _run_qse(*args, **kwargs)
+
+
+def run_ssvqe(*args, **kwargs):
+    from vqe import run_ssvqe as _run_ssvqe
+
+    return _run_ssvqe(*args, **kwargs)
+
+
+def run_vqd(*args, **kwargs):
+    from vqe import run_vqd as _run_vqd
+
+    return _run_vqd(*args, **kwargs)
+
+
+def run_vqe(*args, **kwargs):
+    from vqe import run_vqe as _run_vqe
+
+    return _run_vqe(*args, **kwargs)
+
+
+def run_vqe_ansatz_comparison(*args, **kwargs):
+    from vqe import run_vqe_ansatz_comparison as _run_vqe_ansatz_comparison
+
+    return _run_vqe_ansatz_comparison(*args, **kwargs)
+
+
+def run_vqe_geometry_scan(*args, **kwargs):
+    from vqe import run_vqe_geometry_scan as _run_vqe_geometry_scan
+
+    return _run_vqe_geometry_scan(*args, **kwargs)
+
+
+def run_vqe_mapping_comparison(*args, **kwargs):
+    from vqe import run_vqe_mapping_comparison as _run_vqe_mapping_comparison
+
+    return _run_vqe_mapping_comparison(*args, **kwargs)
+
+
+def run_vqe_multi_seed_noise(*args, **kwargs):
+    from vqe import run_vqe_multi_seed_noise as _run_vqe_multi_seed_noise
+
+    return _run_vqe_multi_seed_noise(*args, **kwargs)
+
+
+def run_vqe_optimizer_comparison(*args, **kwargs):
+    from vqe import run_vqe_optimizer_comparison as _run_vqe_optimizer_comparison
+
+    return _run_vqe_optimizer_comparison(*args, **kwargs)
 
 
 def _cli_stepsize(value: Optional[float]) -> Optional[float]:
@@ -89,6 +163,8 @@ def _parse_coordinates(s: Optional[str]) -> Optional[np.ndarray]:
     -------
     np.ndarray of shape (N, 3)
     """
+    np = _np()
+
     if s is None or str(s).strip() == "":
         return None
 
@@ -436,7 +512,7 @@ def handle_special_modes(args) -> bool:
         if args.range is None:
             raise ValueError("--scan-geometry requires --range START END NUM")
         start, end, num = args.range
-        values = np.linspace(float(start), float(end), int(num))
+        values = _np().linspace(float(start), float(end), int(num))
         run_vqe_geometry_scan(
             molecule=args.scan_geometry,
             param_name=args.param_name,
