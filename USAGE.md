@@ -119,46 +119,19 @@ Use `molecule="..."` with the built-in molecule registry when a named system is 
 
 Current registry molecules:
 
-- `H`
-- `H-`
-- `He`
-- `He+`
-- `B`
-- `B+`
-- `C`
-- `C+`
-- `H2`
-- `H2+`
-- `H2-`
-- `H3`
-- `H3+`
-- `N`
-- `N+`
-- `O`
-- `O+`
-- `F`
-- `F+`
-- `Ne`
-- `Li`
-- `Li+`
-- `H4`
-- `H4+`
-- `H5+`
-- `H6`
-- `Be`
-- `Be+`
-- `He2`
-- `HeH+`
-- `LiH`
-- `H2O`
-- `BeH2`
+| Category | Molecules |
+| --- | --- |
+| Hydrogen atoms and ions | `H`, `H-` |
+| Helium systems | `He`, `He+`, `He2`, `HeH+` |
+| First-row atoms and ions | `Li`, `Li+`, `Be`, `Be+`, `B`, `B+`, `C`, `C+`, `N`, `N+`, `O`, `O+`, `F`, `F+`, `Ne` |
+| Hydrogen clusters | `H2`, `H2+`, `H2-`, `H3`, `H3+`, `H4`, `H4+`, `H5+`, `H6` |
+| Small molecules | `LiH`, `H2O`, `BeH2` |
 
 Several common aliases are normalized automatically, for example:
 
 - `h2` -> `H2`
 - `H3PLUS` -> `H3+`
 - `H2_PLUS` -> `H2+`
-- `H4PLUS` -> `H4+`
 
 ### 2. Parametric geometry tags
 
@@ -191,7 +164,8 @@ H, n_qubits, hf_state = build_hamiltonian(
 
 This same explicit-geometry input style is supported by the high-level runners such as `run_vqe(...)`, `run_qpe(...)`, `run_qite(...)`, and `run_qrte(...)`.
 
-If `molecule="..."` is not a supported registry key or geometry tag, the builder raises a `KeyError`. In that case, use explicit geometry mode instead of expert mode whenever possible.
+If `molecule="..."` is not a supported registry key or geometry tag, the builder raises a `KeyError`.
+In that case, use explicit geometry mode instead of expert mode whenever possible.
 
 To inspect the currently supported built-in registry programmatically:
 
@@ -430,8 +404,7 @@ Guidance:
 | GradientDescent  | baseline                                |
 | NesterovMomentum | faster convergence on smooth landscapes |
 
-If `stepsize` / `--stepsize` is omitted for VQE workflows, the calibrated
-default for the selected optimizer is used.
+If `stepsize` / `--stepsize` is omitted for VQE workflows, the calibrated default for the selected optimizer is used.
 
 See:
 
@@ -476,8 +449,7 @@ Noise options:
 
 ## Low-qubit benchmark
 
-Use this when you want one decision-grade VQE summary across the supported
-small molecules instead of a single-molecule sweep.
+Use this when you want one decision-grade VQE summary across the supported small molecules instead of a single-molecule sweep.
 
 Python:
 
@@ -510,13 +482,10 @@ Reported per molecule:
 - mean / standard deviation of absolute error against exact diagonalization
 - mean / standard deviation of original compute runtime
 
-By default, molecules that cannot be run with the selected ansatz are skipped and
-reported under `bench["skipped"]`. Set `skip_failures=False` if you want the
-first incompatible case to raise immediately.
+By default, molecules that cannot be run with the selected ansatz are skipped and reported under `bench["skipped"]`.
+Set `skip_failures=False` if you want the first incompatible case to raise immediately.
 
-When cached artifacts already exist, the benchmark prefers each run's stored
-`compute_runtime_s` value over the current cache-hit wall time, so runtime
-tables still reflect the original compute cost.
+When cached artifacts already exist, the benchmark prefers each run's stored `compute_runtime_s` value over the current cache-hit wall time, so runtime tables still reflect the original compute cost.
 
 ---
 
@@ -850,9 +819,8 @@ qite run-qrte --force
 
 ## Testing
 
-The default pytest target runs the fast development suite. Slow chemistry
-checks and selected subprocess CLI integration tests are available behind
-pytest markers.
+The default pytest target runs the fast development suite.
+Slow chemistry checks and selected subprocess CLI integration tests are available behind pytest markers.
 
 ```bash
 pytest -q

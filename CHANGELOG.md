@@ -16,9 +16,8 @@ No unreleased changes.
 
 - **Faster default pytest target**
 
-  Marked slow chemistry and subprocess CLI integration tests separately so
-  `pytest -q` runs the fast development suite by default. The full integration
-  suite remains available with `pytest -q -o addopts=''`.
+  Marked slow chemistry and subprocess CLI integration tests separately so `pytest -q` runs the fast development suite by default.
+  The full integration suite remains available with `pytest -q -o addopts=''`.
 
 - **Split fast and full test CI**
 
@@ -225,7 +224,8 @@ No unreleased changes.
 
 - **Auto ansatz selection for model Hamiltonians**
 
-  Added `ansatz_name="auto"` for expert-mode qubit-Hamiltonian runs. The selector inspects Pauli-term structure and chooses a conservative concrete ansatz:
+  Added `ansatz_name="auto"` for expert-mode qubit-Hamiltonian runs.
+  The selector inspects Pauli-term structure and chooses a conservative concrete ansatz:
 
   - `TFIM-HVA` for nearest-neighbor `ZZ` couplings with transverse `X` fields
   - `XXZ-HVA` for nearest-neighbor `XX + YY + ZZ` exchange models
@@ -252,7 +252,9 @@ No unreleased changes.
 
 - **Expert-mode Hamiltonian caching**
 
-  VQE, VarQITE, VarQRTE, and QPE expert-mode runs with prebuilt `qml.Hamiltonian` inputs now participate in caching. Cache signatures include a canonical Pauli-term Hamiltonian fingerprint, qubit count, reference bitstring, resolved ansatz, `ansatz_kwargs`, solver settings, seed, and noise settings. `force=True` recomputes these non-molecule runs; matching `force=False` runs reuse cached JSON records.
+  VQE, VarQITE, VarQRTE, and QPE expert-mode runs with prebuilt `qml.Hamiltonian` inputs now participate in caching.
+  Cache signatures include a canonical Pauli-term Hamiltonian fingerprint, qubit count, reference bitstring, resolved ansatz, `ansatz_kwargs`, solver settings, seed, and noise settings.
+  `force=True` recomputes these non-molecule runs; matching `force=False` runs reuse cached JSON records.
 
 ## [0.3.20] - April 20, 2026
 
@@ -461,9 +463,8 @@ No unreleased changes.
 
 - **VQE CLI now matches calibrated optimizer-default behaviour**
 
-  `vqe --stepsize` is now optional. When omitted, the CLI preserves the same
-  calibrated per-optimizer default stepsize behaviour as the Python APIs
-  instead of forcing a legacy fixed `0.2` learning rate.
+  `vqe --stepsize` is now optional.
+  When omitted, the CLI preserves the same calibrated per-optimizer default stepsize behaviour as the Python APIs instead of forcing a legacy fixed `0.2` learning rate.
 
 ### Fixed
 

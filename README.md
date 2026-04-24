@@ -284,10 +284,8 @@ Built-in registry molecules currently include:
 - `B`, `B+`, `C`, `C+`, `N`, `N+`, `O`, `O+`, `F`, `F+`, `Ne`
 - `H2O`
 
-If a target system is not in the registry, use explicit geometry inputs such as
-`symbols=...`, `coordinates=...`, `charge=...`, `multiplicity=...`, and `basis=...`.
-That keeps the run on the standard chemistry path and avoids expert mode unless you
-already have a prebuilt qubit Hamiltonian.
+If a target system is not in the registry, use explicit geometry inputs such as `symbols=...`, `coordinates=...`, `charge=...`, `multiplicity=...`, and `basis=...`.
+That keeps the run on the standard chemistry path and avoids expert mode unless you already have a prebuilt qubit Hamiltonian.
 
 For a ready-made inventory of the built-in registry, use:
 
@@ -337,7 +335,8 @@ General behavior:
 - cached records missing runtime metadata are treated as stale and recomputed automatically
 - `--force` recomputes instead of loading cache
 
-For sampled QPE runs with finite `shots`, `seed` still matters because the measured bitstring distribution is stochastic. In analytic mode (`shots=None`), the seed is effectively irrelevant.
+For sampled QPE runs with finite `shots`, `seed` still matters because the measured bitstring distribution is stochastic.
+In analytic mode (`shots=None`), the seed is effectively irrelevant.
 
 ## Notebooks
 
@@ -401,8 +400,8 @@ Variational_Quantum_Eigensolver/
 
 ## Testing
 
-The default pytest target is the fast development suite. Slow chemistry checks
-and selected subprocess CLI integration tests are marked separately.
+The default pytest target is the fast development suite.
+Slow chemistry checks and selected subprocess CLI integration tests are marked separately.
 
 ```bash
 pytest -q

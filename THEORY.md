@@ -1,6 +1,7 @@
 # Theory and Methodology
 
-This document summarizes the main algorithms, physical assumptions, and implementation choices used in this project. It covers:
+This document summarizes the main algorithms, physical assumptions, and implementation choices used in this project.
+It covers:
 
 - molecular systems and shared chemistry infrastructure
 - the Variational Quantum Eigensolver (VQE)
@@ -92,13 +93,13 @@ $$
 E_0 \le \langle \psi | H | \psi \rangle
 $$
 
-Minimizing the expectation value over a parameterized state family
+Use a parameterized state family:
 
 $$
 |\psi(\theta)\rangle
 $$
 
-produces the best approximation to the ground state accessible within the chosen ansatz manifold.
+Minimizing the expectation value over that family produces the best approximation to the ground state accessible within the chosen ansatz manifold.
 
 Variational methods rely on:
 
@@ -110,7 +111,8 @@ Variational methods rely on:
 
 ## Why qubit mappings are needed
 
-Electronic Hamiltonians are expressed using fermionic creation and annihilation operators. Quantum circuits act on qubits, so the Hamiltonian must be mapped to qubit operators.
+Electronic Hamiltonians are expressed using fermionic creation and annihilation operators.
+Quantum circuits act on qubits, so the Hamiltonian must be mapped to qubit operators.
 
 Common mappings:
 
@@ -584,7 +586,8 @@ Practical distinction in this repository:
 - `QPE` is a spectral / phase-estimation workflow
 - `VarQRTE` is a dynamics workflow used after a relevant state has already been prepared
 
-For a time-independent Hamiltonian, real-time evolution should conserve energy up to numerical error. For that reason, the most useful VarQRTE diagnostics are usually:
+For a time-independent Hamiltonian, real-time evolution should conserve energy up to numerical error.
+For that reason, the most useful VarQRTE diagnostics are usually:
 
 - time-dependent observables
 - fidelity to exact evolution on small systems
@@ -604,7 +607,8 @@ Conceptually:
 3. solve a linear system for parameter velocities
 4. integrate the parameter trajectory forward in time
 
-Unlike VarQITE, VarQRTE does not try to suppress excited-state components or minimize the energy. Its role is to approximate the time evolution of a chosen initial state under a fixed Hamiltonian.
+Unlike VarQITE, VarQRTE does not try to suppress excited-state components or minimize the energy.
+Its role is to approximate the time evolution of a chosen initial state under a fixed Hamiltonian.
 
 That means a good correctness question for VarQRTE is:
 
