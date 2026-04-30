@@ -370,7 +370,8 @@ Use these in order:
 1. [`README.md`](README.md) for orientation and quickstart
 2. [`USAGE.md`](USAGE.md) for CLI and Python entrypoints
 3. [`THEORY.md`](THEORY.md) for algorithmic background
-4. [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md) for notebook navigation
+4. [`RESEARCH.md`](RESEARCH.md) for benchmark evidence standards
+5. [`notebooks/README_notebooks.md`](notebooks/README_notebooks.md) for notebook navigation
 
 Deeper implementation notes:
 
@@ -411,6 +412,24 @@ Run the full suite, including slow integration coverage, with:
 
 ```bash
 pytest -q -o addopts=''
+```
+
+Run a registered benchmark suite and write reproducible artifacts with:
+
+```bash
+python -m common.benchmarks run --suite expert-z-cross-method --out benchmark_runs
+```
+
+List available suites with:
+
+```bash
+python -m common.benchmarks list
+```
+
+Compare two benchmark runs with:
+
+```bash
+python -m common.benchmarks compare --base old_run/h2-cross-method --head new_run/h2-cross-method
 ```
 
 ---

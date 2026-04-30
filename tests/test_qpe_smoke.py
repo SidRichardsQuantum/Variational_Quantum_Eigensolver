@@ -37,6 +37,9 @@ def test_qpe_minimal_smoke() -> None:
     assert "runtime_s" in res
     assert "compute_runtime_s" in res
     assert "cache_hit" in res
+    assert "environment" in res
+    assert res["environment"]["python"]
+    assert "pennylane" in res["environment"]["packages"]
 
 
 def test_qpe_probability_dict_has_mass() -> None:
@@ -137,6 +140,8 @@ def test_qpe_hamiltonian_override_uses_cache() -> None:
     assert "phase" in res
     assert fresh["cache_hit"] is False
     assert res["cache_hit"] is True
+    assert "environment" in fresh
+    assert "environment" in res
 
 
 def test_qpe_cache_hit_reports_cached_timing_metadata() -> None:

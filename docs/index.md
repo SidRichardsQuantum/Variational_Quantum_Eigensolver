@@ -9,6 +9,7 @@ Overview <user/readme>
 Usage <user/usage>
 Theory <user/theory>
 Notebooks <user/notebooks>
+Research Use <research>
 ```
 
 ```{toctree}

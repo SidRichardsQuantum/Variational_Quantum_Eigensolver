@@ -1,0 +1,65 @@
+{
+  "description": "Curated benchmark artifacts exported from saved benchmark notebook outputs. Raw results/ and images/ files are local caches, not this published evidence set.",
+  "figures": [
+    {
+      "notebook": "vqe/H2/Ansatz_Comparison.ipynb",
+      "path": "_artifacts/figures/h2_ansatz_comparison.png",
+      "title": "H2 Ansatz Comparison"
+    },
+    {
+      "notebook": "vqe/H2/Mapping_Comparison.ipynb",
+      "path": "_artifacts/figures/h2_mapping_comparison_uccsd.png",
+      "title": "H2 Mapping Comparison"
+    },
+    {
+      "notebook": "comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb",
+      "path": "_artifacts/figures/low_qubit_vqe.png",
+      "title": "Low-Qubit VQE Benchmark"
+    }
+  ],
+  "schema_version": 1,
+  "tables": [
+    {
+      "csv": "_artifacts/tables/h2_cross_method_runtime.csv",
+      "md": "_artifacts/tables/h2_cross_method_runtime.md",
+      "notebook": "comparisons/H2/Cross_Method_Comparison.ipynb",
+      "title": "H2 Cross-Method Runtime"
+    },
+    {
+      "csv": "_artifacts/tables/lih_problem_summary.csv",
+      "md": "_artifacts/tables/lih_problem_summary.md",
+      "notebook": "comparisons/LiH/Cross_Method_Comparison.ipynb",
+      "title": "LiH Problem Summary"
+    },
+    {
+      "csv": "_artifacts/tables/lih_cross_method_results.csv",
+      "md": "_artifacts/tables/lih_cross_method_results.md",
+      "notebook": "comparisons/LiH/Cross_Method_Comparison.ipynb",
+      "title": "LiH Cross-Method Results"
+    },
+    {
+      "csv": "_artifacts/tables/qpe_h2_best_configurations.csv",
+      "md": "_artifacts/tables/qpe_h2_best_configurations.md",
+      "notebook": "qpe/H2/Calibration_Decision_Map.ipynb",
+      "title": "QPE H2 Best Configurations"
+    },
+    {
+      "csv": "_artifacts/tables/qpe_h2_ranked_summary.csv",
+      "md": "_artifacts/tables/qpe_h2_ranked_summary.md",
+      "notebook": "qpe/H2/Calibration_Decision_Map.ipynb",
+      "title": "QPE H2 Ranked Summary"
+    },
+    {
+      "csv": "_artifacts/tables/low_qubit_vqe_summary.csv",
+      "md": "_artifacts/tables/low_qubit_vqe_summary.md",
+      "notebook": "comparisons/multi_molecule/Low_Qubit_VQE_Benchmark.ipynb",
+      "title": "Low-Qubit VQE Summary"
+    },
+    {
+      "csv": "_artifacts/tables/h2_noise_reference.csv",
+      "md": "_artifacts/tables/h2_noise_reference.md",
+      "notebook": "vqe/H2/Noise_Robustness_Benchmark.ipynb",
+      "title": "H2 Noise Robustness Reference"
+    }
+  ]
+}

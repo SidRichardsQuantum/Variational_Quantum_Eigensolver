@@ -1,21 +1,32 @@
 from __future__ import annotations
 
+import csv
+import json
+import shutil
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import numpy as np
 
 from common import (
     analyze_qpe_result,
+    compare_benchmark_runs,
     compute_fidelity,
     exact_ground_energy_for_problem,
     ionization_energy_panel,
+    list_benchmark_suites,
     qpe_branch_candidates,
     qpe_calibration_plan,
+    run_benchmark_suite,
     summarize_problem,
     summary_stats,
     timed_call,
 )
 from common.persist import cached_compute_runtime
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_summary_stats_returns_basic_moments() -> None:
@@ -217,3 +228,154 @@ def test_qpe_calibration_plan_runs_analytic_once_and_sampled_across_seeds() -> N
         {"ancillas": 2, "t": 1.0, "trotter_steps": 1, "shots": 100, "seed": 4},
         {"ancillas": 2, "t": 1.0, "trotter_steps": 1, "shots": 100, "seed": 5},
     ]
+
+
+def test_benchmark_suite_registry_includes_fast_expert_suite() -> None:
+    suites = list_benchmark_suites()
+    ids = {suite["id"] for suite in suites}
+
+    assert "expert-z-cross-method" in ids
+    assert "h2-cross-method" in ids
+    assert all(suite["title"] for suite in suites)
+
+
+def test_run_benchmark_suite_writes_research_artifacts(tmp_path) -> None:
+    result = run_benchmark_suite(
+        "expert-z-cross-method",
+        out_dir=tmp_path,
+        force=True,
+        suppress_stdout=True,
+    )
+
+    artifact_paths = {
+        key: tmp_path / "expert-z-cross-method" / name
+        for key, name in {
+            "json": "results.json",
+            "csv": "results.csv",
+            "markdown": "report.md",
+            "manifest": "manifest.json",
+        }.items()
+    }
+    for path in artifact_paths.values():
+        assert path.exists()
+
+    payload = json.loads(artifact_paths["json"].read_text(encoding="utf-8"))
+    manifest = json.loads(artifact_paths["manifest"].read_text(encoding="utf-8"))
+
+    assert result["suite"]["id"] == "expert-z-cross-method"
+    assert payload["suite"]["id"] == "expert-z-cross-method"
+    assert payload["schema_version"] == 1
+    assert payload["environment"]["python"]
+    assert len(payload["rows"]) == 3
+    assert {row["method"] for row in payload["rows"]} == {"VQE", "VarQITE", "QPE"}
+    assert manifest["row_count"] == 3
+    assert manifest["artifacts"]["csv"] == "results.csv"
+
+    with artifact_paths["csv"].open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert len(rows) == 3
+    assert {"benchmark_id", "method", "energy", "abs_error", "cache_hit"} <= set(
+        rows[0]
+    )
+
+
+def test_benchmark_cli_lists_and_runs_suite(tmp_path) -> None:
+    listed = subprocess.run(
+        [sys.executable, "-m", "common.benchmarks", "list"],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert "expert-z-cross-method" in listed.stdout
+
+    out_dir = tmp_path / "cli"
+    ran = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "common.benchmarks",
+            "run",
+            "--suite",
+            "expert-z-cross-method",
+            "--out",
+            str(out_dir),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+
+    assert "Ran suite: expert-z-cross-method" in ran.stdout
+    assert (out_dir / "expert-z-cross-method" / "results.csv").exists()
+
+
+def test_compare_benchmark_runs_detects_metric_drift(tmp_path) -> None:
+    run_benchmark_suite(
+        "expert-z-cross-method",
+        out_dir=tmp_path / "base",
+        force=True,
+        suppress_stdout=True,
+    )
+    base_dir = tmp_path / "base" / "expert-z-cross-method"
+    head_dir = tmp_path / "head" / "expert-z-cross-method"
+    shutil.copytree(base_dir, head_dir)
+
+    clean = compare_benchmark_runs(base_dir, head_dir)
+    assert clean["passed"] is True
+    assert clean["changes"] == []
+
+    head_json = head_dir / "results.json"
+    payload = json.loads(head_json.read_text(encoding="utf-8"))
+    payload["rows"][0]["energy"] = float(payload["rows"][0]["energy"]) + 0.01
+    payload["rows"][0]["abs_error"] = float(payload["rows"][0]["abs_error"]) + 0.01
+    head_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    drift = compare_benchmark_runs(base_dir, head_dir, energy_tol=1e-6)
+    assert drift["passed"] is False
+    assert any(change["field"] == "energy" for change in drift["changes"])
+
+
+def test_benchmark_cli_compare_returns_nonzero_on_drift(tmp_path) -> None:
+    run_benchmark_suite(
+        "expert-z-cross-method",
+        out_dir=tmp_path / "base",
+        force=True,
+        suppress_stdout=True,
+    )
+    base_dir = tmp_path / "base" / "expert-z-cross-method"
+    head_dir = tmp_path / "head" / "expert-z-cross-method"
+    shutil.copytree(base_dir, head_dir)
+
+    head_json = head_dir / "results.json"
+    payload = json.loads(head_json.read_text(encoding="utf-8"))
+    payload["rows"][0]["compute_runtime_s"] = (
+        float(payload["rows"][0]["compute_runtime_s"]) * 10.0 + 1.0
+    )
+    head_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    report_path = tmp_path / "compare.json"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "common.benchmarks",
+            "compare",
+            "--base",
+            str(base_dir),
+            "--head",
+            str(head_dir),
+            "--out",
+            str(report_path),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 1
+    assert report_path.exists()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["passed"] is False
+    assert any(change["field"] == "compute_runtime_s" for change in report["changes"])

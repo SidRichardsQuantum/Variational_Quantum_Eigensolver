@@ -12,6 +12,7 @@ BENCHMARKS = ROOT / "notebooks" / "benchmarks"
 ARTIFACTS = BENCHMARKS / "_artifacts"
 FIGURES = ARTIFACTS / "figures"
 TABLES = ARTIFACTS / "tables"
+MANIFEST = ARTIFACTS / "benchmark_manifest.json"
 RESULTS_MD = BENCHMARKS / "RESULTS.md"
 
 START = "<!-- benchmark-artifacts:start -->"
@@ -231,6 +232,23 @@ def export_tables() -> list[dict[str, str]]:
     return exported
 
 
+def write_manifest(figures: list[dict[str, str]], tables: list[dict[str, str]]) -> None:
+    payload = {
+        "schema_version": 1,
+        "description": (
+            "Curated benchmark artifacts exported from saved benchmark notebook "
+            "outputs. Raw results/ and images/ files are local caches, not this "
+            "published evidence set."
+        ),
+        "figures": figures,
+        "tables": tables,
+    }
+    MANIFEST.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _generated_section(
     figures: list[dict[str, str]], tables: list[dict[str, str]]
 ) -> str:
@@ -296,6 +314,7 @@ def main() -> None:
     _ensure_dirs()
     figures = export_figures()
     tables = export_tables()
+    write_manifest(figures, tables)
     update_results_md(figures, tables)
     print(f"Exported {len(figures)} figures and {len(tables)} tables.")
 

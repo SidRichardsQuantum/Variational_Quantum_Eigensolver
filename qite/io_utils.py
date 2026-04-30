@@ -15,6 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
+from common.environment import ensure_environment_metadata
 from common.paths import results_dir
 from common.persist import (
     atomic_write_json,
@@ -139,7 +140,10 @@ def load_run_record(prefix: str) -> Dict[str, Any] | None:
     path = _result_path_from_prefix(prefix)
     if not path.exists():
         return None
-    return read_json(path)
+    record = read_json(path)
+    if isinstance(record.get("result"), dict):
+        ensure_environment_metadata(record["result"])
+    return record
 
 
 def _result_path_from_prefix(prefix: str) -> Path:
@@ -149,6 +153,8 @@ def _result_path_from_prefix(prefix: str) -> Path:
 def save_run_record(prefix: str, record: Dict[str, Any]) -> str:
     """Save run record JSON under results/qite/<prefix>.json."""
     ensure_dirs()
+    if isinstance(record.get("result"), dict):
+        ensure_environment_metadata(record["result"])
     path = _result_path_from_prefix(prefix)
     atomic_write_json(path, record)
     return str(path)

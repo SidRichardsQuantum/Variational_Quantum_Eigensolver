@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from common.environment import ensure_environment_metadata
 from common.naming import format_molecule_name
 from common.paths import results_dir
 from common.persist import (
@@ -158,6 +159,7 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
     emitted by ``run_qpe``.
     """
     ensure_dirs()
+    ensure_environment_metadata(result)
 
     noise = result.get("noise", {}) or {}
     seed = int(result.get("seed", 0))
@@ -260,7 +262,7 @@ def load_qpe_result(
     if not path.exists():
         return None
 
-    return read_json(path)
+    return ensure_environment_metadata(read_json(path))
 
 
 def save_qpe_plot(

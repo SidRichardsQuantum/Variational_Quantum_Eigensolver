@@ -27,12 +27,15 @@ def test_vqe_minimal_smoke() -> None:
     assert "runtime_s" in res
     assert "compute_runtime_s" in res
     assert "cache_hit" in res
+    assert "environment" in res
 
     assert np.isfinite(float(res["energy"]))
     assert len(res["energies"]) >= 1
     assert int(res["num_qubits"]) > 0
     assert float(res["runtime_s"]) >= 0.0
     assert float(res["compute_runtime_s"]) >= 0.0
+    assert res["environment"]["python"]
+    assert "pennylane" in res["environment"]["packages"]
 
 
 def test_vqe_deterministic_given_seed_and_force() -> None:
@@ -82,6 +85,8 @@ def test_vqe_prebuilt_hamiltonian_smoke_and_cache_hit() -> None:
     assert int(res["num_qubits"]) == 1
     assert fresh["cache_hit"] is False
     assert res["cache_hit"] is True
+    assert "environment" in fresh
+    assert "environment" in res
 
 
 def test_vqe_routes_ansatz_kwargs_to_non_molecule_ansatz() -> None:
