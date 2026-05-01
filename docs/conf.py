@@ -13,6 +13,7 @@ copyright = "2026, Sid Richards"
 extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
+    "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
     "sphinxcontrib.mermaid",
 ]
@@ -31,7 +32,9 @@ html_static_path = ["_static"]
 html_css_files = ["portfolio.css"]
 
 myst_enable_extensions = [
+    "amsmath",
     "colon_fence",
+    "dollarmath",
 ]
 myst_fence_as_directive = ["mermaid"]
 myst_heading_anchors = 3

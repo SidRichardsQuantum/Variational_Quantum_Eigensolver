@@ -38,3 +38,7 @@ jobs:
       - name: Build docs
         run: |
           python -m sphinx -W -b html docs docs/_build/html
+
+      - name: Check generated docs HTML
+        run: |
+          python scripts/check_docs_html.py docs/_build/html

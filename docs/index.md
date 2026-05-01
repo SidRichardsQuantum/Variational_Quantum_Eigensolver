@@ -287,7 +287,7 @@
 
 Overview <user/readme>
 Usage <user/usage>
-Theory <user/theory>
+Theory Overview <user/theory>
 Notebooks <user/notebooks>
 Research Use <research>
 ```

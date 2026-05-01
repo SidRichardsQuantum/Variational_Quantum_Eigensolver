@@ -1,0 +1,19 @@
+{% extends "!page.html" %}
+
+{% block left_sidebar %}
+{% if pagename != master_doc %}
+{{ super() }}
+{% endif %}
+{% endblock left_sidebar %}
+
+{% block right_sidebar %}
+{% if pagename != master_doc %}
+{{ super() }}
+{% endif %}
+{% endblock right_sidebar %}
+
+{% block footer %}
+{% if pagename != master_doc %}
+{{ super() }}
+{% endif %}
+{% endblock footer %}

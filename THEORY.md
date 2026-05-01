@@ -215,8 +215,7 @@ Unitary Coupled Cluster Singles and Doubles:
 
 $$
 |\psi(\theta)\rangle
-====================
-
+=
 e^{T(\theta)-T^\dagger(\theta)}
 |HF\rangle
 $$
@@ -264,8 +263,7 @@ Optimization minimizes:
 
 $$
 E(\theta)
-=========
-
+=
 \langle \psi(\theta) | H | \psi(\theta) \rangle
 $$
 
@@ -356,15 +354,13 @@ where:
 
 $$
 H_{ij}
-======
-
+=
 \langle \psi|O_i^\dagger H O_j|\psi\rangle
 $$
 
 $$
 S_{ij}
-======
-
+=
 \langle \psi|O_i^\dagger O_j|\psi\rangle
 $$
 
@@ -376,8 +372,7 @@ Commutator-based reduced problem:
 
 $$
 A_{ij}
-======
-
+=
 \langle \psi|O_i^\dagger[H,O_j]|\psi\rangle
 $$
 
@@ -399,15 +394,13 @@ Tangent-space linear response around converged parameters:
 
 $$
 S_{ij}
-======
-
+=
 \langle \partial_i\psi|\partial_j\psi\rangle
 $$
 
 $$
 A_{ij}
-======
-
+=
 \langle \partial_i\psi|(H-E_0)|\partial_j\psi\rangle
 $$
 
@@ -503,8 +496,7 @@ Ansatz:
 
 $$
 U_k(\theta)
-===========
-
+=
 \prod_j
 e^{\theta_j A_j}
 $$
@@ -538,8 +530,7 @@ Eigenstate relation:
 
 $$
 U|\psi\rangle
-=============
-
+=
 e^{-iEt}|\psi\rangle
 $$
 
@@ -568,8 +559,7 @@ Imaginary-time evolution:
 
 $$
 |\psi(\tau)\rangle
-==================
-
+=
 e^{-H\tau}
 |\psi(0)\rangle
 $$
@@ -622,8 +612,7 @@ Linear system:
 
 $$
 A(\theta)\dot{\theta}
-=====================
-
+=
 -C(\theta)
 $$
 
@@ -631,16 +620,14 @@ with:
 
 $$
 A_{ij}
-======
-
+=
 \Re
 \langle \partial_i\psi|\partial_j\psi\rangle
 $$
 
 $$
 C_i
-===
-
+=
 \Re
 \langle \partial_i\psi|
 (H-\langle H\rangle)
@@ -686,8 +673,7 @@ Noise placement:
 
 $$
 \mathcal{E}(\rho)
-=================
-
+=
 (1-p)\rho
 +
 \frac{p}{3}
@@ -707,13 +693,13 @@ Produces isotropic decoherence.
 $$
 E_0 =
 \begin{pmatrix}
-1 & 0 \
+1 & 0 \\
 0 & \sqrt{1-p}
 \end{pmatrix}
 \quad
 E_1 =
 \begin{pmatrix}
-0 & \sqrt{p} \
+0 & \sqrt{p} \\
 0 & 0
 \end{pmatrix}
 $$
