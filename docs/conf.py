@@ -27,6 +27,8 @@ exclude_patterns = ["_build", "benchmarks/_artifacts", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
 html_title = project
+html_static_path = ["_static"]
+html_css_files = ["portfolio.css"]
 
 myst_enable_extensions = [
     "colon_fence",
