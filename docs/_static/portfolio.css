@@ -14,6 +14,7 @@ body {
   --accent-soft: #dceff3;
   --code-bg: #eef2f1;
   --shadow: 0 18px 45px rgba(34, 41, 47, 0.08);
+  --shadow-soft: 0 10px 30px rgba(34, 41, 47, 0.06);
 
   --font-stack:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -52,6 +53,10 @@ body {
   --color-sidebar-search-background--focus: var(--surface);
   --color-sidebar-search-border: var(--line);
   --color-sidebar-search-icon: var(--muted);
+  --color-search-background: var(--surface);
+  --color-search-border: var(--line);
+  --color-search-foreground: var(--text);
+  --color-search-muted: var(--muted);
   --color-header-background: color-mix(in srgb, var(--bg) 88%, transparent);
   --color-header-border: var(--line);
   --color-header-text: var(--text);
@@ -87,6 +92,7 @@ body[data-theme="dark"] {
   --accent-soft: #17333a;
   --code-bg: #11191c;
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -102,6 +108,7 @@ body[data-theme="dark"] {
     --accent-soft: #17333a;
     --code-bg: #11191c;
     --shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
   }
 }
 
@@ -441,6 +448,7 @@ article[role="main"] table.docutils td {
   --accent-soft: #dceff3;
   --code-bg: #eef2f1;
   --shadow: 0 18px 45px rgba(34, 41, 47, 0.08);
+  --shadow-soft: 0 10px 30px rgba(34, 41, 47, 0.06);
   min-height: 100vh;
   margin: -2rem;
   background: var(--bg);
@@ -464,7 +472,68 @@ article[role="main"] table.docutils td {
     --accent-soft: #17333a;
     --code-bg: #11191c;
     --shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
   }
+}
+
+body[data-theme="dark"] .portfolio-page {
+  --bg: #101416;
+  --surface: #171d20;
+  --surface-muted: #20282b;
+  --text: #edf1f2;
+  --muted: #a9b4b8;
+  --line: #2e393d;
+  --accent: #66c5d7;
+  --accent-strong: #9eddea;
+  --accent-soft: #17333a;
+  --code-bg: #11191c;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+html[data-theme="dark"] .portfolio-page {
+  --bg: #101416;
+  --surface: #171d20;
+  --surface-muted: #20282b;
+  --text: #edf1f2;
+  --muted: #a9b4b8;
+  --line: #2e393d;
+  --accent: #66c5d7;
+  --accent-strong: #9eddea;
+  --accent-soft: #17333a;
+  --code-bg: #11191c;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+body[data-theme="light"] .portfolio-page {
+  --bg: #f7f7f4;
+  --surface: #ffffff;
+  --surface-muted: #ededeb;
+  --text: #1d2328;
+  --muted: #5b6670;
+  --line: #d7d9d6;
+  --accent: #126c83;
+  --accent-strong: #0f5364;
+  --accent-soft: #dceff3;
+  --code-bg: #eef2f1;
+  --shadow: 0 18px 45px rgba(34, 41, 47, 0.08);
+  --shadow-soft: 0 10px 30px rgba(34, 41, 47, 0.06);
+}
+
+html[data-theme="light"] .portfolio-page {
+  --bg: #f7f7f4;
+  --surface: #ffffff;
+  --surface-muted: #ededeb;
+  --text: #1d2328;
+  --muted: #5b6670;
+  --line: #d7d9d6;
+  --accent: #126c83;
+  --accent-strong: #0f5364;
+  --accent-soft: #dceff3;
+  --code-bg: #eef2f1;
+  --shadow: 0 18px 45px rgba(34, 41, 47, 0.08);
+  --shadow-soft: 0 10px 30px rgba(34, 41, 47, 0.06);
 }
 
 .portfolio-page * {
@@ -479,6 +548,12 @@ article[role="main"] table.docutils td {
 
 .portfolio-page a:hover {
   color: var(--accent-strong);
+}
+
+.portfolio-page a:focus-visible,
+.portfolio-page main:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .portfolio-page .site-header {
@@ -537,16 +612,16 @@ article[role="main"] table.docutils td {
 
 .portfolio-page .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
   align-items: center;
-  gap: clamp(2rem, 6vw, 5rem);
+  gap: clamp(2rem, 5vw, 4rem);
   min-height: calc(100vh - 5rem);
 }
 
 .portfolio-page .hero-copy h1 {
-  max-width: 12ch;
+  max-width: 16ch;
   margin: 0;
-  font-size: clamp(3.6rem, 11vw, 7.6rem);
+  font-size: clamp(2.8rem, 6vw, 5rem);
   line-height: 0.9;
   letter-spacing: 0;
 }
@@ -604,6 +679,11 @@ article[role="main"] table.docutils td {
   font-weight: 700;
   text-decoration: none;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
 }
 
 .portfolio-page .button.primary {
@@ -614,6 +694,62 @@ article[role="main"] table.docutils td {
 
 .portfolio-page .button:hover {
   transform: translateY(-1px);
+}
+
+.portfolio-page .hero-side {
+  display: grid;
+  gap: 1rem;
+  align-self: center;
+}
+
+.portfolio-page .hero-visual {
+  aspect-ratio: 13 / 9;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.portfolio-page .hero-visual svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.portfolio-page .visual-bg {
+  fill: var(--surface);
+}
+
+.portfolio-page .visual-grid {
+  opacity: 0.5;
+}
+
+.portfolio-page .hero-visual pattern path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.portfolio-page .visual-circuit {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 6;
+}
+
+.portfolio-page .visual-circuit circle,
+.portfolio-page .visual-circuit rect {
+  fill: var(--surface);
+}
+
+.portfolio-page .visual-labels {
+  fill: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0;
 }
 
 .portfolio-page .focus-panel {
@@ -671,7 +807,18 @@ article[role="main"] table.docutils td {
   border-radius: 8px;
   padding: 1.25rem;
   background: var(--surface);
-  box-shadow: 0 8px 28px rgba(35, 43, 48, 0.05);
+  box-shadow: var(--shadow-soft);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.portfolio-page .project-card:hover,
+.portfolio-page .project-card:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
 }
 
 .portfolio-page .project-card h3,
@@ -740,6 +887,15 @@ article[role="main"] table.docutils td {
   border-radius: 8px;
   padding: 1rem;
   background: var(--surface);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.portfolio-page .package-row:focus-within,
+.portfolio-page .package-row:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: var(--shadow-soft);
 }
 
 .portfolio-page code {
@@ -812,6 +968,15 @@ article[role="main"] table.docutils td {
     min-height: auto;
   }
 
+  .portfolio-page .hero-side {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+    align-items: stretch;
+  }
+
+  .portfolio-page .hero-visual {
+    align-self: stretch;
+  }
+
   .portfolio-page .project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -851,6 +1016,10 @@ article[role="main"] table.docutils td {
     grid-template-columns: 1fr;
   }
 
+  .portfolio-page .hero-side {
+    grid-template-columns: 1fr;
+  }
+
   .portfolio-page .project-card {
     min-height: 0;
   }
@@ -862,5 +1031,22 @@ article[role="main"] table.docutils td {
   .portfolio-page .site-footer {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portfolio-page *,
+  .portfolio-page *::before,
+  .portfolio-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .portfolio-page .button:hover,
+  .portfolio-page .project-card:hover,
+  .portfolio-page .project-card:focus-within {
+    transform: none;
   }
 }

@@ -1,11 +1,11 @@
-# Quantum Simulation Suite
+# Variational Quantum Algorithms for Quantum Chemistry
 
 ```{raw} html
 <div class="portfolio-page" id="top">
   <header class="site-header">
-    <a class="brand" href="#top" aria-label="Quantum Simulation Suite home">
-      <span class="brand-mark">QSS</span>
-      <span>Quantum Simulation Suite</span>
+    <a class="brand" href="#top" aria-label="Variational Quantum Algorithms for Quantum Chemistry home">
+      <span class="brand-mark">VQA</span>
+      <span>Variational Quantum Algorithms</span>
     </a>
     <nav class="nav-links" aria-label="Primary navigation">
       <a href="#methods">Methods</a>
@@ -19,11 +19,11 @@
     <section class="hero section">
       <div class="hero-copy">
         <p class="eyebrow">PennyLane quantum chemistry and simulation</p>
-        <h1>Quantum Simulation Suite</h1>
+        <h1>Variational Quantum Algorithms for Quantum Chemistry</h1>
         <p class="hero-text">
-          A modular research toolkit for small-molecule variational algorithms,
-          phase estimation, imaginary-time evolution, real-time dynamics, and
-          reproducible benchmark workflows.
+          A modular PennyLane research toolkit for small-molecule VQE studies,
+          excited-state methods, phase estimation, imaginary-time evolution,
+          real-time dynamics, and reproducible benchmark workflows.
         </p>
         <div class="badges" aria-label="Project badges">
           <a href="https://pypi.org/project/vqe-pennylane/">
@@ -40,21 +40,56 @@
           </a>
         </div>
         <div class="hero-actions" aria-label="Project links">
-          <a class="button primary" href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver">GitHub</a>
+          <a class="button primary" href="user/readme.html">Read the Docs</a>
+          <a class="button" href="api.html">API Reference</a>
+          <a class="button" href="https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver">GitHub</a>
           <a class="button" href="https://pypi.org/project/vqe-pennylane/">PyPI</a>
-          <a class="button" href="#docs">Documentation</a>
         </div>
       </div>
 
-      <aside class="focus-panel" aria-label="Project focus">
-        <h2>Project Scope</h2>
-        <ul>
-          <li>Ground-state VQE, ADAPT-VQE, and ansatz comparisons</li>
-          <li>Excited-state solvers including QSE, EOM, LR-VQE, SSVQE, and VQD</li>
-          <li>QPE, VarQITE, VarQRTE, noise studies, and calibration notebooks</li>
-          <li>Shared chemistry, Hamiltonian, caching, plotting, and benchmark tooling</li>
-        </ul>
-      </aside>
+      <div class="hero-side">
+        <div class="hero-visual" aria-hidden="true">
+          <svg viewBox="0 0 520 360" role="presentation" focusable="false">
+            <defs>
+              <pattern id="landing-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M40 0H0V40" />
+              </pattern>
+            </defs>
+            <rect class="visual-bg" width="520" height="360" rx="8" />
+            <rect class="visual-grid" width="520" height="360" rx="8" fill="url(#landing-grid)" />
+            <g class="visual-circuit">
+              <path d="M72 82h360M72 142h360M72 202h360M72 262h360" />
+              <path d="M156 82v120M252 142v120M352 82v180" />
+              <circle cx="156" cy="82" r="13" />
+              <circle cx="156" cy="202" r="13" />
+              <circle cx="252" cy="142" r="13" />
+              <circle cx="252" cy="262" r="13" />
+              <circle cx="352" cy="82" r="13" />
+              <circle cx="352" cy="262" r="13" />
+              <path d="M104 64v36M86 82h36M216 124l36 36M252 124l-36 36M322 184l60 36M382 184l-60 36" />
+              <rect x="188" y="62" width="52" height="40" rx="8" />
+              <rect x="390" y="122" width="52" height="40" rx="8" />
+            </g>
+            <g class="visual-labels">
+              <text x="64" y="322">VQE</text>
+              <text x="146" y="322">QSE</text>
+              <text x="228" y="322">QPE</text>
+              <text x="312" y="322">QITE</text>
+              <text x="402" y="322">PyPI</text>
+            </g>
+          </svg>
+        </div>
+
+        <aside class="focus-panel" aria-label="Project focus">
+          <h2>Project Scope</h2>
+          <ul>
+            <li>Ground-state VQE, ADAPT-VQE, and ansatz comparisons</li>
+            <li>Excited-state solvers including QSE, EOM, LR-VQE, SSVQE, and VQD</li>
+            <li>QPE, VarQITE, VarQRTE, noise studies, and calibration notebooks</li>
+            <li>Shared chemistry, Hamiltonian, caching, plotting, and benchmark tooling</li>
+          </ul>
+        </aside>
+      </div>
     </section>
 
     <section id="methods" class="section">
@@ -62,9 +97,10 @@
         <p class="eyebrow">Research workflows</p>
         <h2>One shared pipeline for quantum simulation methods</h2>
         <p>
-          The repository keeps VQE, QPE, and QITE workflows on a common problem
-          resolution layer so small-system studies can be compared with consistent
-          Hamiltonians, run signatures, outputs, and exact references.
+          The repository keeps variational algorithms, QPE, and QITE workflows
+          on a common problem resolution layer so small-system chemistry studies
+          can be compared with consistent Hamiltonians, run signatures, outputs,
+          and exact references.
         </p>
       </div>
 
@@ -206,7 +242,7 @@
         <article class="package-row">
           <div>
             <h3>vqe-pennylane</h3>
-            <p>Quantum Simulation Suite with VQE, QPE, and QITE modules.</p>
+            <p>Variational quantum chemistry tooling with VQE, QPE, and QITE modules.</p>
           </div>
           <code>pip install vqe-pennylane</code>
           <a href="https://pypi.org/project/vqe-pennylane/">PyPI</a>
@@ -267,6 +303,7 @@
         <a class="button" href="user/usage.html">Usage</a>
         <a class="button" href="user/theory.html">Theory</a>
         <a class="button" href="research.html">Research</a>
+        <a class="button" href="search.html">Search</a>
       </div>
     </section>
   </main>
