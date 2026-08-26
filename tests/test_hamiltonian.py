@@ -8,8 +8,6 @@ from common.units import ANGSTROM_PER_BOHR
 
 REPRESENTATIVE_REGISTRY_MOLECULES = [
     "H",
-    "H2",
-    "H2+",
     "H3+",
     "Li",
     "He",
@@ -94,15 +92,6 @@ def test_registry_mode_rejects_basis_and_charge_overrides() -> None:
 
     with pytest.raises(ValueError, match="Registry mode does not accept `charge`"):
         build_hamiltonian(molecule="H2", charge=1)
-
-
-def test_registry_mode_uses_open_shell_multiplicity_defaults() -> None:
-    hamiltonian, n_qubits, hf_state = build_hamiltonian(molecule="H2+")
-
-    assert n_qubits == 4
-    assert len(hf_state) == n_qubits
-    assert int(sum(hf_state)) == 1
-    assert len(hamiltonian) > 0
 
 
 def test_registry_mode_converts_coordinates_for_bohr_metadata() -> None:

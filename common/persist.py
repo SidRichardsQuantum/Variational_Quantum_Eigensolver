@@ -9,8 +9,6 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-import pennylane as qml
-
 
 def round_floats(x: Any, ndigits: int = 8) -> Any:
     if isinstance(x, float):
@@ -129,6 +127,8 @@ def canonical_hamiltonian(hamiltonian: Any, ndigits: int = 10) -> Dict[str, Any]
     The representation is based on PennyLane's PauliSentence so equivalent
     Pauli-term orderings produce the same cache key.
     """
+    import pennylane as qml
+
     sentence = qml.pauli.pauli_sentence(hamiltonian)
     terms = []
     for word, coeff in sentence.items():

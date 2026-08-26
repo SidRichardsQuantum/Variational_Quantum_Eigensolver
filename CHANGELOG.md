@@ -10,6 +10,56 @@ No unreleased changes.
 
 ---
 
+## [0.3.26] - August 26, 2026
+
+### Changed
+
+- **Faster pytest suite without reduced behavioral coverage**
+
+  Reduced the local default-suite runtime from 26.86 seconds to 8.49 seconds
+  (approximately 68%) while retaining dedicated real-solver, artifact, cache,
+  subprocess-entrypoint, notebook, and full chemistry integration coverage.
+
+  Benchmark CLI adapter tests now mock the expensive solver boundary while the
+  dedicated benchmark integration tests continue to execute VQE, VarQITE, and
+  QPE and validate their generated artifacts. The comparison integration test
+  now covers both numerical and compute-runtime drift directly.
+
+- **Pruned redundant tests**
+
+  Consolidated overlapping CLI help checks so each module is tested once for
+  successful help output and avoidance of eager PennyLane imports. Removed
+  duplicate H2 and H2+ representative-Hamiltonian cases and an open-shell
+  registry test superseded by the stricter fallback-warning regression test.
+
+  The resulting suite contains 170 default tests plus 36 opt-in slow tests; all
+  206 tests pass when the full suite is enabled.
+
+### Fixed
+
+- **Clean NumPy 1.x test output with PennyLane 0.44**
+
+  Narrowly filtered PennyLane 0.44's import-time notice about future NumPy 1.x
+  support. NumPy 1.x remains inside the project's declared support range, and
+  all other PennyLane deprecation warnings continue to be treated as errors.
+
+### Internal
+
+- **Deferred quantum-stack imports for lightweight commands**
+
+  Deferred PennyLane and chemistry imports in benchmark and persistence helpers
+  until quantum-specific functionality is called. This keeps
+  `python -m common.benchmarks list` lightweight while preserving the existing
+  APIs and Hamiltonian fingerprint behavior.
+
+- **Shared Matplotlib test cache**
+
+  Reused one writable Matplotlib configuration directory across tests and
+  subprocesses instead of rebuilding the font cache in every isolated test
+  directory.
+
+---
+
 ## [0.3.25] - April 21, 2026
 
 ### Changed

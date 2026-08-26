@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import common.benchmarks as benchmarks
 
 from common import (
     analyze_qpe_result,
@@ -279,7 +280,7 @@ def test_run_benchmark_suite_writes_research_artifacts(tmp_path) -> None:
     )
 
 
-def test_benchmark_cli_lists_and_runs_suite(tmp_path) -> None:
+def test_benchmark_cli_lists_and_runs_suite(tmp_path, monkeypatch, capsys) -> None:
     listed = subprocess.run(
         [sys.executable, "-m", "common.benchmarks", "list"],
         cwd=ROOT,
@@ -290,25 +291,40 @@ def test_benchmark_cli_lists_and_runs_suite(tmp_path) -> None:
     assert "expert-z-cross-method" in listed.stdout
 
     out_dir = tmp_path / "cli"
-    ran = subprocess.run(
+    calls = []
+
+    def fake_run_benchmark_suite(suite_id, **kwargs):
+        calls.append((suite_id, kwargs))
+        artifact = out_dir / suite_id / "results.csv"
+        return {
+            "suite": {"id": suite_id},
+            "artifacts": {"csv": str(artifact)},
+        }
+
+    monkeypatch.setattr(benchmarks, "run_benchmark_suite", fake_run_benchmark_suite)
+    returncode = benchmarks.main(
         [
-            sys.executable,
-            "-m",
-            "common.benchmarks",
             "run",
             "--suite",
             "expert-z-cross-method",
             "--out",
             str(out_dir),
-        ],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=True,
+        ]
     )
+    output = capsys.readouterr().out
 
-    assert "Ran suite: expert-z-cross-method" in ran.stdout
-    assert (out_dir / "expert-z-cross-method" / "results.csv").exists()
+    assert returncode == 0
+    assert "Ran suite: expert-z-cross-method" in output
+    assert calls == [
+        (
+            "expert-z-cross-method",
+            {
+                "out_dir": str(out_dir),
+                "force": True,
+                "suppress_stdout": True,
+            },
+        )
+    ]
 
 
 def test_compare_benchmark_runs_detects_metric_drift(tmp_path) -> None:
@@ -330,37 +346,38 @@ def test_compare_benchmark_runs_detects_metric_drift(tmp_path) -> None:
     payload = json.loads(head_json.read_text(encoding="utf-8"))
     payload["rows"][0]["energy"] = float(payload["rows"][0]["energy"]) + 0.01
     payload["rows"][0]["abs_error"] = float(payload["rows"][0]["abs_error"]) + 0.01
-    head_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-
-    drift = compare_benchmark_runs(base_dir, head_dir, energy_tol=1e-6)
-    assert drift["passed"] is False
-    assert any(change["field"] == "energy" for change in drift["changes"])
-
-
-def test_benchmark_cli_compare_returns_nonzero_on_drift(tmp_path) -> None:
-    run_benchmark_suite(
-        "expert-z-cross-method",
-        out_dir=tmp_path / "base",
-        force=True,
-        suppress_stdout=True,
-    )
-    base_dir = tmp_path / "base" / "expert-z-cross-method"
-    head_dir = tmp_path / "head" / "expert-z-cross-method"
-    shutil.copytree(base_dir, head_dir)
-
-    head_json = head_dir / "results.json"
-    payload = json.loads(head_json.read_text(encoding="utf-8"))
     payload["rows"][0]["compute_runtime_s"] = (
         float(payload["rows"][0]["compute_runtime_s"]) * 10.0 + 1.0
     )
     head_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
+    drift = compare_benchmark_runs(base_dir, head_dir, energy_tol=1e-6)
+    assert drift["passed"] is False
+    assert any(change["field"] == "energy" for change in drift["changes"])
+    assert any(change["field"] == "compute_runtime_s" for change in drift["changes"])
+
+
+def test_benchmark_cli_compare_returns_nonzero_on_drift(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    base_dir = tmp_path / "base" / "expert-z-cross-method"
+    head_dir = tmp_path / "head" / "expert-z-cross-method"
+    calls = []
+
+    def fake_compare_benchmark_runs(base, head, **kwargs):
+        calls.append((base, head, kwargs))
+        return {
+            "passed": False,
+            "changes": [{"field": "compute_runtime_s"}],
+        }
+
+    monkeypatch.setattr(
+        benchmarks, "compare_benchmark_runs", fake_compare_benchmark_runs
+    )
+
     report_path = tmp_path / "compare.json"
-    result = subprocess.run(
+    returncode = benchmarks.main(
         [
-            sys.executable,
-            "-m",
-            "common.benchmarks",
             "compare",
             "--base",
             str(base_dir),
@@ -368,14 +385,23 @@ def test_benchmark_cli_compare_returns_nonzero_on_drift(tmp_path) -> None:
             str(head_dir),
             "--out",
             str(report_path),
-        ],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
+        ]
     )
 
-    assert result.returncode == 1
+    assert returncode == 1
     assert report_path.exists()
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report["passed"] is False
     assert any(change["field"] == "compute_runtime_s" for change in report["changes"])
+    assert calls == [
+        (
+            str(base_dir),
+            str(head_dir),
+            {
+                "energy_tol": 1e-8,
+                "abs_error_tol": 1e-8,
+                "runtime_ratio": 2.0,
+            },
+        )
+    ]
+    assert '"passed": false' in capsys.readouterr().out

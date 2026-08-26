@@ -19,10 +19,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 import numpy as np
-import pennylane as qml
 
 from common.environment import environment_metadata
-from common.hamiltonian import build_hamiltonian
 from common.persist import atomic_write_json
 
 HARTREE_TO_EV = 27.211386245988
@@ -316,6 +314,10 @@ def exact_ground_energy_for_problem(**problem_spec) -> float:
     """
     Exact ground energy from the resolved qubit Hamiltonian for a problem spec.
     """
+    import pennylane as qml
+
+    from common.hamiltonian import build_hamiltonian
+
     H, n_qubits, _ = build_hamiltonian(**problem_spec)
     matrix = np.asarray(
         qml.matrix(H, wire_order=list(range(int(n_qubits)))),
@@ -329,6 +331,10 @@ def summarize_problem(**problem_spec) -> dict[str, object]:
     """
     Build one compact summary row for a resolved problem specification.
     """
+    import pennylane as qml
+
+    from common.hamiltonian import build_hamiltonian
+
     H, n_qubits, _ = build_hamiltonian(**problem_spec)
     matrix = np.asarray(
         qml.matrix(H, wire_order=list(range(int(n_qubits)))),
@@ -403,6 +409,8 @@ def _row_from_result(
 def _exact_ground_and_term_count(
     hamiltonian: Any, num_qubits: int
 ) -> tuple[float, int]:
+    import pennylane as qml
+
     matrix = np.asarray(
         qml.matrix(hamiltonian, wire_order=list(range(int(num_qubits)))),
         dtype=complex,
@@ -416,6 +424,8 @@ def _expert_z_cross_method_suite(
     force: bool,
     suppress_stdout: bool,
 ) -> dict[str, Any]:
+    import pennylane as qml
+
     benchmark_id = "expert-z-cross-method"
     question = (
         "Do VQE, VarQITE, and QPE run through one expert-mode benchmark contract?"
@@ -545,6 +555,8 @@ def _h2_cross_method_suite(
     force: bool,
     suppress_stdout: bool,
 ) -> dict[str, Any]:
+    from common.hamiltonian import build_hamiltonian
+
     benchmark_id = "h2-cross-method"
     question = (
         "How do VQE, VarQITE, and QPE compare on the canonical H2 STO-3G problem?"

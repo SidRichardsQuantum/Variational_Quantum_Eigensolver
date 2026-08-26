@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.25"
+version = "0.3.26"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -62,6 +62,7 @@ markers = [
   "cli_subprocess: tests that validate python -m entrypoints in a separate interpreter",
 ]
 filterwarnings = [
+  "ignore:PennyLane v0\\.44 has dropped maintainence support for NumPy < 2\\.0\\.0\\..*:UserWarning",
   "error::pennylane.exceptions.PennyLaneDeprecationWarning",
   "error::DeprecationWarning",
   "error::SyntaxWarning",
