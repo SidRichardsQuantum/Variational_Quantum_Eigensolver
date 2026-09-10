@@ -33,6 +33,7 @@ from qite.engine import (
     make_state_qnode,
     qite_step,
     qrte_step,
+    validate_solver,
 )
 from qite.io_utils import (
     ensure_dirs,
@@ -60,6 +61,7 @@ def run_qite(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     active_electrons: int | None = None,
@@ -103,6 +105,7 @@ def run_qite(
         }
     """
     start_time = time.perf_counter()
+    solver = validate_solver(solver)
     ensure_dirs()
     np.random.seed(int(seed))
 
@@ -127,6 +130,7 @@ def run_qite(
         coordinates=coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         mapping=mapping,
         unit=unit,
         active_electrons=active_electrons,
@@ -188,6 +192,7 @@ def run_qite(
         pinv_rcond=float(pinv_rcond),
         ansatz_kwargs=resolved_ansatz_kwargs,
     )
+    cfg["multiplicity"] = problem.multiplicity
     if ansatz_selection is not None:
         cfg["ansatz_selection"] = dict(ansatz_selection)
     if hamiltonian_mode:
@@ -228,6 +233,8 @@ def run_qite(
     ansatz_fn, params = engine_build_ansatz(
         str(resolved_ansatz_name),
         int(qubits),
+        mapping=mapping_out,
+        multiplicity=problem.multiplicity,
         seed=int(seed),
         symbols=symbols_out,
         coordinates=np.array(coordinates_out, dtype=float),
@@ -319,6 +326,7 @@ def run_qite(
         "mapping": str(mapping_out),
         "unit": str(unit_out),
         "charge": int(charge_out),
+        "multiplicity": problem.multiplicity,
         "basis": str(basis_out),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
@@ -337,6 +345,7 @@ def run_qite(
             "fd_eps": float(fd_eps),
             "reg": float(reg),
             "solver": str(solver),
+            "solver_history": engine_cache.get("solver_history", []),
             "pinv_rcond": float(pinv_rcond),
         },
         "runtime_s": compute_runtime_s,
@@ -368,6 +377,7 @@ def run_qrte(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     mapping: str = "jordan_wigner",
     unit: str = "angstrom",
     active_electrons: int | None = None,
@@ -396,6 +406,7 @@ def run_qrte(
     Noisy/mixed-state optimization is intentionally not supported here.
     """
     start_time = time.perf_counter()
+    solver = validate_solver(solver)
     ensure_dirs()
     np.random.seed(int(seed))
 
@@ -419,6 +430,7 @@ def run_qrte(
         coordinates=coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         mapping=mapping,
         unit=unit,
         active_electrons=active_electrons,
@@ -457,6 +469,8 @@ def run_qrte(
     ansatz_fn, params = engine_build_ansatz(
         str(resolved_ansatz_name),
         int(qubits),
+        mapping=mapping_out,
+        multiplicity=problem.multiplicity,
         seed=int(seed),
         symbols=symbols_out,
         coordinates=np.array(coordinates_out, dtype=float),
@@ -513,6 +527,7 @@ def run_qrte(
     )
     cfg["time_mode"] = "real"
     cfg["initialization"] = init_mode
+    cfg["multiplicity"] = problem.multiplicity
     if ansatz_selection is not None:
         cfg["ansatz_selection"] = dict(ansatz_selection)
     if hamiltonian_mode:
@@ -633,6 +648,7 @@ def run_qrte(
         "mapping": str(mapping_out),
         "unit": str(unit_out),
         "charge": int(charge_out),
+        "multiplicity": problem.multiplicity,
         "basis": str(basis_out),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,
@@ -654,6 +670,7 @@ def run_qrte(
             "fd_eps": float(fd_eps),
             "reg": float(reg),
             "solver": str(solver),
+            "solver_history": engine_cache.get("solver_history", []),
             "pinv_rcond": float(pinv_rcond),
         },
         "runtime_s": compute_runtime_s,

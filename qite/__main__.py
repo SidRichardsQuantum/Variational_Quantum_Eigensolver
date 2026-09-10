@@ -529,6 +529,7 @@ def _noisy_eval_energy_and_diag(
     phase: float,
     bit: float,
     phase_flip: float,
+    mapping: str = "jordan_wigner",
 ):
     """
     Evaluate Tr[rho H] under noise on default.mixed and also return diag(rho).
@@ -540,6 +541,7 @@ def _noisy_eval_energy_and_diag(
     ansatz_fn, _ = build_ansatz(
         str(ansatz),
         int(qubits),
+        mapping=mapping,
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
@@ -756,6 +758,7 @@ def eval_noise(args) -> dict:
         theta = np.array(res["final_params"], dtype=float).reshape(theta_shape)
 
         E_val, diag = _noisy_eval_energy_and_diag(
+            mapping=str(mapping_out),
             H=H,
             qubits=int(qubits),
             symbols=symbols,
@@ -812,6 +815,7 @@ def eval_noise(args) -> dict:
             th = np.array(r["final_params"], dtype=float).reshape(th_shape)
 
             E_val, _diag = _noisy_eval_energy_and_diag(
+                mapping=str(mapping_out),
                 H=H,
                 qubits=int(qubits),
                 symbols=symbols,

@@ -29,6 +29,8 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
+from common.spin import reference_excitations, reference_occupation
+
 
 # ================================================================
 # BASIC / TOY ANSATZES
@@ -352,8 +354,8 @@ def _build_ucc_data(
             electrons = int(mol.n_electrons) - 2 * len(core)
             spin_orbitals = 2 * len(active)
 
-        singles, doubles = qchem.excitations(electrons, spin_orbitals)
-        hf_state = qchem.hf_state(electrons, spin_orbitals)
+        hf_state = reference_occupation(electrons, spin_orbitals, int(multiplicity))
+        singles, doubles = reference_excitations(hf_state)
 
         singles = [tuple(ex) for ex in singles]
         doubles = [tuple(ex) for ex in doubles]

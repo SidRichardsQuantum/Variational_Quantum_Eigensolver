@@ -196,11 +196,18 @@ Because phase is modulo 1:
 \theta \in [0,1)
 ]
 
-Energy must satisfy:
+Without a reference, the decoder selects the principal energy branch:
 
 [
 E \in \left[-\frac{\pi}{t}, \frac{\pi}{t}\right]
 ]
+
+`run_qpe` instead chooses the branch nearest the Hartree–Fock reference energy,
+using any integer multiple of `2π/t`. That reference selects the branch; it cannot
+remove physical aliasing when multiple eigenvalues share the measured phase.
+Bitstrings are decoded in fixed most-significant-bit order, not selected between
+two bit orders by proximity to the reference. Evolution time must be finite and
+positive.
 
 ---
 

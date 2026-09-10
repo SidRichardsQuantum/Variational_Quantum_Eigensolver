@@ -73,8 +73,9 @@ def resolve_problem(
     charge, multiplicity, and active-space defaults. Explicit-geometry mode
     uses caller-provided ``symbols`` and ``coordinates`` with the supplied
     chemistry settings. Expert mode uses a prebuilt PennyLane ``hamiltonian``
-    and optional ``reference_state``; Hamiltonian wires are remapped to
-    contiguous integer wires when needed.
+    and optional ``reference_state``. Integer wires within the resolved register
+    retain their labels; otherwise labels map to integers in first-appearance order.
+    Reference bits follow integer wire order after that normalization.
 
     Parameters
     ----------
@@ -115,6 +116,9 @@ def resolve_problem(
     charge_int = int(charge)
     multiplicity_int = int(multiplicity)
 
+    if (symbols is None) != (coordinates is None):
+        raise ValueError("symbols and coordinates must be provided together.")
+
     if hamiltonian is not None:
         H = hamiltonian
         wire_order = list(H.wires)
@@ -122,12 +126,16 @@ def resolve_problem(
         resolved_num_qubits = (
             int(num_qubits) if num_qubits is not None else inferred_qubits
         )
+        integer_wires = all(
+            isinstance(w, (int, np.integer)) and 0 <= w < resolved_num_qubits
+            for w in wire_order
+        )
         if resolved_num_qubits < inferred_qubits:
             raise ValueError(
-                "num_qubits cannot be smaller than the number of wires used by the "
+                "num_qubits cannot be smaller than the register required by the "
                 "provided Hamiltonian."
             )
-        if wire_order != list(range(inferred_qubits)):
+        if not integer_wires:
             H = H.map_wires({w: i for i, w in enumerate(wire_order)})
 
         if reference_state is None:

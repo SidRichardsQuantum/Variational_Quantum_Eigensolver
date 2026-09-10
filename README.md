@@ -64,6 +64,7 @@ Implemented packages:
 - [Outputs And Reproducibility](#outputs-and-reproducibility)
 - [Notebooks](#notebooks)
 - [Documentation](#documentation)
+- [Project Roadmap](#project-roadmap)
 - [Repository Layout](#repository-layout)
 - [Testing](#testing)
 - [Support Development](#support-development)
@@ -101,6 +102,10 @@ Use `VarQRTE` when you already have a relevant state and want to evolve it in re
 Use expert-mode Hamiltonian inputs when you want to benchmark algorithms on non-chemistry qubit models without going through the molecule / geometry pipeline.
 
 ## Install
+
+Supported Python versions are **3.10–3.12**, with `numpy>=1.23,<2.0` and
+`pennylane>=0.42,<0.45`. Python 3.13 support is deferred until the NumPy 2
+compatibility migration is complete.
 
 From PyPI:
 
@@ -309,14 +314,24 @@ Currently supported:
 Notes:
 
 - this is a Python expert-mode API, not a CLI feature
-- arbitrary qubit wire labels are normalized internally
+- integer wire labels that fit the resolved register are preserved; otherwise labels are normalized in first-appearance order, which defines the reference bitstring order
 - `run_qpe(...)` expert mode requires both `hamiltonian` and `hf_state`
 - `ansatz_name="auto"` can select a conservative model ansatz for recognized Pauli structures such as TFIM, XXZ/Heisenberg, and SSH-like hopping chains
 - chemistry-specific ansatzes like `UCCSD` still require chemistry metadata; for generic or unclassified model Hamiltonians use `ansatz_name="auto"` or explicit non-chemistry ansatzes such as `RY-CZ`, `Minimal`, or `StronglyEntanglingLayers`
 
 ## Outputs And Reproducibility
 
-Generated outputs are written under:
+Generated outputs are written under the user data directory:
+
+- Linux: `${XDG_DATA_HOME:-~/.local/share}/vqe-pennylane`
+- macOS: `~/Library/Application Support/vqe-pennylane`
+- Windows: `%LOCALAPPDATA%/vqe-pennylane`
+
+Set `VQE_PENNYLANE_DATA_DIR` to choose a different root. For repository-local
+output, run `export VQE_PENNYLANE_DATA_DIR="$PWD"` from the checkout. The override
+is read when artifacts are accessed, including after Python imports.
+
+Paths beneath that root are:
 
 ```text
 results/vqe/
@@ -333,6 +348,7 @@ General behavior:
 - matching runs reuse cached JSON records
 - expert-mode Hamiltonian runs cache by canonical Pauli-term fingerprint, reference bitstring, resolved ansatz, and solver settings
 - cached records missing runtime metadata are treated as stale and recomputed automatically
+- v0.3.27 versions cache signatures to recompute results affected by numerical fixes, including spin references and QPE term order; old files are retained
 - `--force` recomputes instead of loading cache
 
 For sampled QPE runs with finite `shots`, `seed` still matters because the measured bitstring distribution is stochastic.
@@ -380,6 +396,13 @@ Deeper implementation notes:
 - `more_docs/qpe/`
 - `more_docs/qite/`
 
+## Project Roadmap
+
+- [`ROADMAP.md`](ROADMAP.md) tracks package engineering work for installation,
+  numerical API correctness, CI, and distribution quality.
+- [`notebooks/BENCHMARK_ROADMAP.md`](notebooks/BENCHMARK_ROADMAP.md) remains the
+  focused backlog for research-validation notebooks.
+
 ## Repository Layout
 
 ```text
@@ -394,6 +417,7 @@ Variational_Quantum_Eigensolver/
 ├── results/
 ├── images/
 ├── README.md
+├── ROADMAP.md
 ├── USAGE.md
 ├── THEORY.md
 └── pyproject.toml

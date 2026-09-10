@@ -25,7 +25,9 @@ import pennylane as qml
 from pennylane import qchem
 
 from common.geometry import generate_geometry
+from common.encoding import encoding_cnots, occupation_bits
 from common.molecules import get_molecule_config
+from common.spin import reference_occupation
 from common.units import convert_coordinates, convert_length, normalize_coordinate_unit
 
 
@@ -151,6 +153,7 @@ def hartree_fock_state_from_molecule(
     multiplicity: int = 1,
     basis: str,
     n_qubits: int,
+    mapping: str = "jordan_wigner",
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
 ) -> np.ndarray:
@@ -177,7 +180,10 @@ def hartree_fock_state_from_molecule(
         active_electrons=active_electrons,
         active_orbitals=active_orbitals,
     )
-    return qchem.hf_state(electrons, spin_orbitals)
+    bits = reference_occupation(electrons, spin_orbitals, multiplicity)
+    for control, target in encoding_cnots(spin_orbitals, mapping):
+        bits[target] ^= bits[control]
+    return bits
 
 
 def _make_molecule(
@@ -298,8 +304,8 @@ def build_molecular_hamiltonian(
         Standard molecular inputs.
     mapping:
         Optional fermion-to-qubit mapping ("jordan_wigner", "bravyi_kitaev", "parity").
-        If the installed PennyLane version does not support mapping=, we fall back
-        gracefully to the default (typically Jordan–Wigner).
+        Backend retries preserve the requested mapping; failures never silently
+        substitute a different encoding.
     unit:
         Coordinate unit for `coordinates`. Supported values are `angstrom` and `bohr`.
         This affects geometry only. Energies returned by downstream solvers remain in Hartree.
@@ -313,9 +319,10 @@ def build_molecular_hamiltonian(
     unit_norm = normalize_coordinate_unit(unit)
     coords = np.array(coordinates, dtype=float)
     mapping_kw = None if mapping is None else str(mapping).strip().lower()
+    encoding_cnots(0, mapping_kw or "jordan_wigner")
     force_openfermion = int(multiplicity) != 1
 
-    def _call_molecular_hamiltonian(*, method: str | None, include_mapping: bool):
+    def _call_molecular_hamiltonian(*, method: str | None):
         kwargs: Dict[str, Any] = dict(
             symbols=symbols,
             coordinates=coords,
@@ -330,46 +337,18 @@ def build_molecular_hamiltonian(
             kwargs["active_electrons"] = int(active_electrons)
         if active_orbitals is not None:
             kwargs["active_orbitals"] = int(active_orbitals)
-        if include_mapping and mapping_kw is not None:
+        if mapping_kw is not None:
             kwargs["mapping"] = mapping_kw
         return qchem.molecular_hamiltonian(**kwargs)
 
     if force_openfermion:
-        try:
-            H, n_qubits = _call_molecular_hamiltonian(
-                method="openfermion",
-                include_mapping=True,
-            )
-            return H, int(n_qubits)
-        except TypeError:
-            H, n_qubits = _call_molecular_hamiltonian(
-                method="openfermion",
-                include_mapping=False,
-            )
-            return H, int(n_qubits)
+        H, n_qubits = _call_molecular_hamiltonian(method="openfermion")
+        return H, int(n_qubits)
 
     # --- Attempt 1: default qchem backend, with mapping if supported ---
     try:
-        H, n_qubits = _call_molecular_hamiltonian(
-            method=None,
-            include_mapping=True,
-        )
+        H, n_qubits = _call_molecular_hamiltonian(method=None)
         return H, int(n_qubits)
-
-    except TypeError as exc_type:
-        # Retry without mapping if that was provided.
-        if mapping_kw is not None:
-            try:
-                H, n_qubits = _call_molecular_hamiltonian(
-                    method=None,
-                    include_mapping=False,
-                )
-                return H, int(n_qubits)
-            except Exception:
-                # Fall through to global fallback below
-                e_primary: Exception = exc_type
-        else:
-            e_primary = exc_type
 
     except Exception as exc_primary:
         e_primary = exc_primary
@@ -383,20 +362,7 @@ def build_molecular_hamiltonian(
 
     print("⚠️ Default PennyLane-qchem backend failed — retrying with OpenFermion...")
     try:
-        if mapping_kw is not None:
-            try:
-                H, n_qubits = _call_molecular_hamiltonian(
-                    method="openfermion",
-                    include_mapping=True,
-                )
-                return H, int(n_qubits)
-            except TypeError:
-                pass
-
-        H, n_qubits = _call_molecular_hamiltonian(
-            method="openfermion",
-            include_mapping=False,
-        )
+        H, n_qubits = _call_molecular_hamiltonian(method="openfermion")
         return H, int(n_qubits)
 
     except Exception as e_fallback:
@@ -498,6 +464,9 @@ def build_hamiltonian(
             symbols = molecule  # type: ignore[assignment]
             molecule = None
 
+    if (symbols is None) != (coordinates is None):
+        raise ValueError("symbols and coordinates must be provided together.")
+
     # ------------------------------------------------------------
     # Explicit molecule mode (symbols + coordinates provided)
     # ------------------------------------------------------------
@@ -526,6 +495,7 @@ def build_hamiltonian(
             active_orbitals=active_orbitals,
         )
         hf_state = hartree_fock_state_from_molecule(
+            mapping=mapping_norm,
             symbols=sym,
             coordinates=coords,
             charge=chg,
@@ -631,6 +601,7 @@ def build_hamiltonian(
         active_orbitals=active_orbitals,
     )
     hf_state = hartree_fock_state_from_molecule(
+        mapping=mapping_norm,
         symbols=list(sym),
         coordinates=np.array(coords, dtype=float),
         charge=int(chg),
@@ -749,7 +720,9 @@ def summarize_registry_coverage(
             "charge": int(charge),
             "multiplicity": int(cfg.get("multiplicity", 1)),
             "basis": str(basis).strip().lower(),
-            "num_electrons": int(np.sum(hf_state)),
+            "num_electrons": int(
+                np.sum(occupation_bits(hf_state, str(mapping).strip().lower()))
+            ),
             "num_qubits": int(num_qubits),
             "hamiltonian_terms": int(len(hamiltonian)),
             "exact_ground_energy": exact_ground_energy,

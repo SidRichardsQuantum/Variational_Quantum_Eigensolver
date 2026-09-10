@@ -179,6 +179,10 @@ rows = summarize_registry_coverage()
 
 ## Installation
 
+Supported Python versions are **3.10–3.12**, with `numpy>=1.23,<2.0` and
+`pennylane>=0.42,<0.45`. Python 3.13 support is deferred until the NumPy 2
+compatibility migration is complete.
+
 ### PyPI
 
 ```bash
@@ -203,12 +207,25 @@ python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 
 ## General Conventions
 
-Output structure:
+Output structure, relative to the runtime data root:
 
 ```
 results/{vqe,qpe,qite}/
 images/{vqe,qpe,qite}/
 ```
+
+The default root is `~/.local/share/vqe-pennylane` on Linux (or
+`$XDG_DATA_HOME/vqe-pennylane`), `~/Library/Application Support/vqe-pennylane` on
+macOS, and `%LOCALAPPDATA%/vqe-pennylane` on Windows. Generated artifacts are
+stored outside the installed package.
+
+Set `VQE_PENNYLANE_DATA_DIR` to override the root. To retain the old checkout-local
+layout, run `export VQE_PENNYLANE_DATA_DIR="$PWD"` from the repository. Python
+code can also set this environment variable after importing the solvers.
+
+Version 0.3.27 versions cache signatures to invalidate results from earlier
+numerical implementations, including spin-reference and QPE term-order fixes.
+Old files remain available for inspection; matching runs are recomputed once.
 
 Execution behaviour:
 

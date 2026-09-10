@@ -101,6 +101,10 @@ jobs:
           if any(name.endswith("tests/test_benchmark_artifacts.py") for name in sdist_names):
               raise SystemExit("Repository-only benchmark artifact tests must not be included in sdist")
 
+          for target in ("ROADMAP.md", "PROBLEM.md", "more_docs/common/caching_and_artifacts.md"):
+              if not any(name.endswith("/" + target) for name in sdist_names):
+                  raise SystemExit(f"Missing packaged documentation: {target}")
+
           print(f"wheel: {wheel.name} ({len(wheel_names)} files)")
           print(f"sdist: {sdist.name} ({len(sdist_names)} files)")
           PY
@@ -110,7 +114,13 @@ jobs:
           python -m venv /tmp/vqe-wheel-smoke
           /tmp/vqe-wheel-smoke/bin/python -m pip install --upgrade pip
           /tmp/vqe-wheel-smoke/bin/python -m pip install dist/*.whl
+          cd /tmp
+          export XDG_DATA_HOME=/tmp/vqe-wheel-data
           /tmp/vqe-wheel-smoke/bin/python - <<'PY'
+          from pathlib import Path
+          import sys
+
+          import pennylane as qml
           import common
           import qite
           import qpe
@@ -118,6 +128,27 @@ jobs:
 
           for module in (common, qite, qpe, vqe):
               print(module.__file__)
+              package_dir = Path(module.__file__).resolve().parent
+              assert package_dir.is_relative_to(Path(sys.prefix))
+              for path in package_dir.rglob("*"):
+                  path.chmod(0o555 if path.is_dir() else 0o444)
+              package_dir.chmod(0o555)
+
+          # Exercise save and cache reuse from a wheel whose package directories
+          # are read-only, outside the source checkout, using default user storage.
+          H = qml.Hamiltonian([1.0], [qml.Z(0)])
+          for run, options in (
+              (vqe.run_vqe, dict(ansatz_name="RY-CZ", steps=1, reference_state=[1])),
+              (qite.run_qite, dict(ansatz_name="RY-CZ", steps=1, reference_state=[1])),
+              (qite.run_qrte, dict(ansatz_name="RY-CZ", steps=1, reference_state=[1])),
+              (qpe.run_qpe, dict(n_ancilla=2, shots=None, hf_state=[1])),
+          ):
+              fresh = run(hamiltonian=H, plot=False, force=True, **options)
+              cached = run(hamiltonian=H, plot=False, **options)
+              assert fresh["cache_hit"] is False
+              assert cached["cache_hit"] is True
+          from common.paths import data_root
+          assert data_root() == Path("/tmp/vqe-wheel-data/vqe-pennylane")
           PY
           /tmp/vqe-wheel-smoke/bin/vqe --help >/tmp/vqe-help.txt
           /tmp/vqe-wheel-smoke/bin/qpe --help >/tmp/qpe-help.txt

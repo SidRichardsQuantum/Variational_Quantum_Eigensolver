@@ -28,11 +28,15 @@ from common.persist import (
 )
 from common.plotting import build_filename, save_plot
 
-RESULTS_DIR: Path = results_dir("qpe")
+
+def __getattr__(name: str):
+    if name == "RESULTS_DIR":
+        return results_dir("qpe")
+    raise AttributeError(name)
 
 
 def ensure_dirs() -> None:
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    results_dir("qpe").mkdir(parents=True, exist_ok=True)
 
 
 def signature_hash(
@@ -147,7 +151,7 @@ def cache_path(
         fname = fname.removesuffix(".png") + "_" + "_".join(extra_noise) + ".png"
 
     fname = fname.removesuffix(".png") + ".json"
-    return RESULTS_DIR / f"{mol}_{fname}"
+    return results_dir("qpe") / f"{mol}_{fname}"
 
 
 def save_qpe_result(result: Dict[str, Any]) -> str:

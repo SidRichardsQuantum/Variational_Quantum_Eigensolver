@@ -358,6 +358,7 @@ def run_vqe(
     ansatz_fn, params0 = engine_build_ansatz(
         str(resolved_ansatz_name),
         int(qubits),
+        mapping=mapping_norm,
         seed=int(seed),
         symbols=symbols_out,
         coordinates=coordinates_out,
@@ -425,11 +426,10 @@ def run_vqe(
 
     for step in range(int(steps)):
         try:
-            params, cost = opt.step_and_cost(energy_qnode, params)
-            e = float(cost)
+            params, _ = opt.step_and_cost(energy_qnode, params)
         except AttributeError:
             params = opt.step(energy_qnode, params)
-            e = float(energy_qnode(params))
+        e = float(energy_qnode(params))
 
         energies.append(float(e))
         params_history.append(

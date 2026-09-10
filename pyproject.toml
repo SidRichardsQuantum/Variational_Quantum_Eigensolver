@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.26"
+version = "0.3.27"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 
 dependencies = [
   "pennylane>=0.42,<0.45",
@@ -30,7 +30,6 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering :: Physics",
 ]
 

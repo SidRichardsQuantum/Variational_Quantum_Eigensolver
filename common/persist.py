@@ -155,4 +155,6 @@ def canonical_hamiltonian(hamiltonian: Any, ndigits: int = 10) -> Dict[str, Any]
 
 
 def stable_hash_cfg(cfg: Dict[str, Any], *, ndigits: int = 8, n_hex: int = 12) -> str:
-    return stable_hash_dict(cfg, ndigits=ndigits, n_hex=n_hex)
+    # Bump when numerical semantics change; preserve old artifacts but never
+    # reuse results computed before the v0.3.27 numerical fixes.
+    return stable_hash_dict({"schema": 3, "config": cfg}, ndigits=ndigits, n_hex=n_hex)

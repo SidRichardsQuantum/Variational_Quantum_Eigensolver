@@ -5,6 +5,7 @@ common.paths
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 from common.naming import format_molecule_name
@@ -15,6 +16,7 @@ def project_root() -> Path:
 
 
 def data_root() -> Path:
+    """Resolve runtime storage on each call, independently of installation paths."""
     override = os.environ.get("VQE_PENNYLANE_DATA_DIR", "").strip()
     if override:
         p = Path(override).expanduser().resolve()
@@ -22,9 +24,19 @@ def data_root() -> Path:
             raise ValueError(
                 f"VQE_PENNYLANE_DATA_DIR must point to a directory (got {str(p)!r})"
             )
-        p.mkdir(parents=True, exist_ok=True)
         return p
-    return project_root()
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        xdg = os.environ.get("XDG_DATA_HOME", "")
+        base = (
+            Path(xdg)
+            if xdg and Path(xdg).is_absolute()
+            else Path.home() / ".local" / "share"
+        )
+    return base / "vqe-pennylane"
 
 
 def results_root() -> Path:

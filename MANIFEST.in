@@ -4,6 +4,9 @@ include USAGE.md
 include THEORY.md
 include RESEARCH.md
 include CHANGELOG.md
+include ROADMAP.md
+include PROBLEM.md
+recursive-include more_docs *.md
 include LICENSE
 include pyproject.toml
 

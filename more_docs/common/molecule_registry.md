@@ -160,3 +160,10 @@ Good registry candidates:
 Avoid adding entries that are too expensive for routine CI or examples unless
 they are clearly marked as benchmark-only usage.
 
+
+## Spin-reference interpretation
+
+Hartree–Fock occupations reflect the registry multiplicity in the highest-weight
+spin projection, including triplets and quartets. The UCC/ADAPT excitation pools
+preserve that projection. This does not generally enforce an exact total-spin
+eigenstate; see [spin references](problem_resolution.md#spin-references).

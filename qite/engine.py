@@ -25,9 +25,38 @@ import inspect
 from typing import Any, Callable, Optional, Tuple
 
 import pennylane as qml
+from numpy.linalg import LinAlgError
 from pennylane import numpy as np
 
 from common.noise import apply_builtin_noise
+from common.spin import reference_multiplicity
+
+
+def validate_solver(solver: str) -> str:
+    """Normalize a solver name before numerical fallback or cache lookup."""
+    name = str(solver).strip().lower()
+    if name not in {"solve", "lstsq", "pinv"}:
+        raise ValueError("solver must be one of: 'solve', 'lstsq', 'pinv'.")
+    return name
+
+
+def _solve_update(A, b, *, solver: str, pinv_rcond: float, cache: dict | None):
+    candidates = list(dict.fromkeys([solver, "lstsq", "pinv"]))
+    for i, candidate in enumerate(candidates):
+        try:
+            if candidate == "solve":
+                v = np.linalg.solve(A, b)
+            elif candidate == "lstsq":
+                v, *_ = np.linalg.lstsq(A, b, rcond=None)
+            else:
+                v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
+        except LinAlgError:
+            if i == len(candidates) - 1:
+                raise
+            continue
+        if cache is not None:
+            cache.setdefault("solver_history", []).append(candidate)
+        return v
 
 
 # =============================================================================
@@ -135,12 +164,14 @@ def build_ansatz(
     symbols=None,
     coordinates=None,
     charge: int = 0,
+    multiplicity: int | None = None,
     basis: Optional[str] = None,
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
     requires_grad: bool = True,
     hf_state: Optional[np.ndarray] = None,
     ansatz_kwargs: Optional[dict[str, Any]] = None,
+    mapping: str = "jordan_wigner",
 ) -> Tuple[Callable[[np.ndarray], None], np.ndarray]:
     """
     Build an ansatz callable and an initial parameter array.
@@ -156,6 +187,8 @@ def build_ansatz(
     np.random.seed(int(seed))
 
     hf = None if hf_state is None else np.array(hf_state, dtype=int)
+    if multiplicity is None:
+        multiplicity = 1 if hf is None else reference_multiplicity(hf, mapping)
     extra_ansatz_kwargs = dict(ansatz_kwargs or {})
 
     # Preferred: reuse the VQE ansatz plumbing so chemistry ansatzes
@@ -175,6 +208,14 @@ def build_ansatz(
                 "requires_grad": bool(requires_grad),
             }
             builder_supported = set(inspect.signature(inner_builder).parameters)
+            if "multiplicity" in builder_supported:
+                builder_kwargs["multiplicity"] = int(multiplicity)
+            if "mapping" in builder_supported:
+                builder_kwargs["mapping"] = mapping
+            elif mapping != "jordan_wigner":
+                raise ValueError(
+                    "The ansatz builder does not support the requested mapping."
+                )
             if "active_electrons" in builder_supported:
                 builder_kwargs["active_electrons"] = active_electrons
             if "active_orbitals" in builder_supported:
@@ -205,6 +246,7 @@ def build_ansatz(
                     symbols=symbols,
                     coordinates=coordinates,
                     charge=int(charge),
+                    multiplicity=int(multiplicity),
                     active_electrons=active_electrons,
                     active_orbitals=active_orbitals,
                     reference_state=(hf if chemistry_style else None),
@@ -456,6 +498,7 @@ def qite_step(
     where A_ij = Re(<∂i ψ|∂j ψ>) and C_i = Re(<∂i ψ|(H-E)|ψ>),
     with tangent-space projection applied to the derivatives.
     """
+    solver = validate_solver(solver)
     if hamiltonian is None:
         raise ValueError("qite_step requires `hamiltonian`.")
 
@@ -464,6 +507,8 @@ def qite_step(
     )
     P = int(dpsi.shape[0])
     if P == 0:
+        if cache is not None:
+            cache.setdefault("solver_history", []).append("none")
         return np.array(params, requires_grad=True)
 
     # Tangent-space projection
@@ -489,22 +534,7 @@ def qite_step(
     A = A + float(reg) * np.eye(P, dtype=float)
     b = -C
 
-    solver_l = str(solver).strip().lower()
-    try:
-        if solver_l == "solve":
-            v = np.linalg.solve(A, b)
-        elif solver_l == "lstsq":
-            v, *_ = np.linalg.lstsq(A, b, rcond=None)
-        elif solver_l == "pinv":
-            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
-        else:
-            raise ValueError("solver must be one of: 'solve', 'lstsq', 'pinv'.")
-    except Exception:
-        # Robust fallback cascade
-        try:
-            v, *_ = np.linalg.lstsq(A, b, rcond=None)
-        except Exception:
-            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
+    v = _solve_update(A, b, solver=solver, pinv_rcond=pinv_rcond, cache=cache)
 
     flat, shape = _flatten_params(params)
     new_flat = np.array(flat, dtype=float) + float(dtau) * np.array(v, dtype=float)
@@ -535,6 +565,7 @@ def qrte_step(
           C_i  = Im(<∂i ψ|(H-E)|ψ>),
     with tangent-space projection applied to the derivatives.
     """
+    solver = validate_solver(solver)
     if hamiltonian is None:
         raise ValueError("qrte_step requires `hamiltonian`.")
 
@@ -543,6 +574,8 @@ def qrte_step(
     )
     P = int(dpsi.shape[0])
     if P == 0:
+        if cache is not None:
+            cache.setdefault("solver_history", []).append("none")
         return np.array(params, requires_grad=True)
 
     dpsi_t = np.stack([_project_tangent(psi, dpsi[i]) for i in range(P)], axis=0)
@@ -565,21 +598,7 @@ def qrte_step(
     A = A + float(reg) * np.eye(P, dtype=float)
     b = C
 
-    solver_l = str(solver).strip().lower()
-    try:
-        if solver_l == "solve":
-            v = np.linalg.solve(A, b)
-        elif solver_l == "lstsq":
-            v, *_ = np.linalg.lstsq(A, b, rcond=None)
-        elif solver_l == "pinv":
-            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
-        else:
-            raise ValueError("solver must be one of: 'solve', 'lstsq', 'pinv'.")
-    except Exception:
-        try:
-            v, *_ = np.linalg.lstsq(A, b, rcond=None)
-        except Exception:
-            v = np.linalg.pinv(A, rcond=float(pinv_rcond)) @ b
+    v = _solve_update(A, b, solver=solver, pinv_rcond=pinv_rcond, cache=cache)
 
     flat, shape = _flatten_params(params)
     new_flat = np.array(flat, dtype=float) + float(dt) * np.array(v, dtype=float)

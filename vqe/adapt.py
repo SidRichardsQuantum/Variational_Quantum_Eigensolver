@@ -24,6 +24,9 @@ from typing import Callable, List, Optional, Sequence, Tuple
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.encoding import apply_encoding
+from common.spin import reference_multiplicity
+
 from .ansatz import _build_ucc_data
 from .engine import apply_optional_noise, build_optimizer, make_device
 from .hamiltonian import build_hamiltonian
@@ -50,12 +53,14 @@ def _make_ucc_pool(
     basis: str,
     charge: int,
     pool: str,
+    multiplicity: int = 1,
 ) -> Tuple[List[PoolOp], np.ndarray]:
     singles, doubles, hf_state = _build_ucc_data(
         symbols,
         coordinates,
         basis=basis,
         charge=int(charge),
+        multiplicity=multiplicity,
     )
 
     pool_key = str(pool).strip().lower()
@@ -114,10 +119,12 @@ def _energy_qnode_factory(
     phase_flip_prob: float,
     noise_model: Optional[Callable[[list[int]], None]],
     diff_method: str,
+    mapping: str = "jordan_wigner",
 ):
     @qml.qnode(dev, diff_method=diff_method)
     def energy(theta):
         _apply_selected_ops(theta, hf_state=hf_state, ops=ops, num_wires=num_wires)
+        apply_encoding(range(int(num_wires)), mapping)
         apply_optional_noise(
             bool(noisy),
             float(depolarizing_prob),
@@ -156,11 +163,10 @@ def _inner_optimize(
 
     for _ in range(int(steps)):
         try:
-            theta, cost = opt.step_and_cost(energy_qnode, theta)
-            e = float(cost)
+            theta, _ = opt.step_and_cost(energy_qnode, theta)
         except AttributeError:
             theta = opt.step(energy_qnode, theta)
-            e = float(energy_qnode(theta))
+        e = float(energy_qnode(theta))
         energies.append(e)
 
     return theta, energies
@@ -223,12 +229,15 @@ def run_adapt_vqe(
 
     basis = str(basis).strip().lower()
 
+    multiplicity = reference_multiplicity(hf_state_meta, str(mapping).strip().lower())
+
     # Pool + HF (pool HF is the one consistent with qchem excitation bookkeeping)
     pool_ops, hf_state_pool = _make_ucc_pool(
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
         charge=int(charge),
+        multiplicity=multiplicity,
         pool=str(pool),
     )
 
@@ -276,6 +285,7 @@ def run_adapt_vqe(
         phase_flip_prob=float(phase_flip_prob),
         molecule_label=str(molecule).strip(),
     )
+    cfg["multiplicity"] = multiplicity
     cfg["adapt_pool"] = str(pool).strip().lower()
     cfg["adapt_max_ops"] = int(max_ops)
     cfg["adapt_grad_tol"] = float(grad_tol)
@@ -320,6 +330,7 @@ def run_adapt_vqe(
     for _outer in range(int(max_ops) + 1):
         # Inner optimization for current ansatz
         energy_qnode = _energy_qnode_factory(
+            mapping=mapping_norm,
             H=H,
             dev=dev,
             hf_state=hf_state,
@@ -361,6 +372,7 @@ def run_adapt_vqe(
 
             ops_plus = list(selected) + [cand]
             energy_plus = _energy_qnode_factory(
+                mapping=mapping_norm,
                 H=H,
                 dev=dev,
                 hf_state=hf_state,

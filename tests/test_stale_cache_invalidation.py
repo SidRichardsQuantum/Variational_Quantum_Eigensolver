@@ -7,11 +7,9 @@ import pennylane as qml
 
 from common.persist import atomic_write_json, read_json
 from qite import run_qite, run_qrte
-from qite.io_utils import RESULTS_DIR as QITE_RESULTS_DIR
+from common.paths import results_dir
 from qpe import run_qpe
-from qpe.io_utils import RESULTS_DIR as QPE_RESULTS_DIR
 from vqe import run_vqe
-from vqe.io_utils import RESULTS_DIR as VQE_RESULTS_DIR
 
 
 def _single_qubit_model() -> qml.Hamiltonian:
@@ -53,7 +51,7 @@ def test_vqe_recomputes_cache_record_without_runtime_metadata() -> None:
     )
 
     fresh = run_vqe(force=True, **cfg)
-    path = _cache_file(VQE_RESULTS_DIR, label)
+    path = _cache_file(results_dir("vqe"), label)
     _remove_runtime_metadata(path)
 
     refreshed = run_vqe(force=False, **cfg)
@@ -78,7 +76,7 @@ def test_qpe_recomputes_cache_record_without_runtime_metadata() -> None:
     )
 
     fresh = run_qpe(force=True, **cfg)
-    path = _cache_file(QPE_RESULTS_DIR, label)
+    path = _cache_file(results_dir("qpe"), label)
     _remove_runtime_metadata(path)
 
     refreshed = run_qpe(force=False, **cfg)
@@ -106,7 +104,7 @@ def test_qite_recomputes_cache_record_without_runtime_metadata() -> None:
     )
 
     fresh = run_qite(force=True, **cfg)
-    path = _cache_file(QITE_RESULTS_DIR, label)
+    path = _cache_file(results_dir("qite"), label)
     _remove_runtime_metadata(path)
 
     refreshed = run_qite(force=False, **cfg)
@@ -134,7 +132,7 @@ def test_qrte_recomputes_cache_record_without_runtime_metadata() -> None:
     )
 
     fresh = run_qrte(force=True, **cfg)
-    path = _cache_file(QITE_RESULTS_DIR, label)
+    path = _cache_file(results_dir("qite"), label)
     _remove_runtime_metadata(path)
 
     refreshed = run_qrte(force=False, **cfg)

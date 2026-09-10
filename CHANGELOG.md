@@ -4,9 +4,112 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [0.3.27] - September 9, 2026
 
-No unreleased changes.
+### Fixed
+
+- Build Hartree–Fock occupations from the requested alpha/beta electron counts
+  and multiplicity, including active spaces and all three qubit mappings.
+  Generate UCC/ADAPT excitation pools from those occupations and forward the
+  reference multiplicity through variational dynamics and excited-state circuit
+  reconstruction. Triplet H₂ no longer starts or remains in a singlet reference.
+  These excitation gates conserve particle number and spin projection, but do
+  not generally enforce an exact total-spin eigenstate.
+- Canonicalize and combine Pauli terms before QPE Trotter evolution. Equivalent
+  Hamiltonians now produce the same product formula and safely share cache
+  entries even when callers reorder or split terms.
+- Reject incomplete `symbols`/`coordinates` pairs instead of silently computing
+  the default registry molecule.
+- Validate VarQITE/VarQRTE solver names before cache lookup and numerical work.
+  Restrict numerical fallback to linear-algebra failures and save the actual
+  solver used at every step in `varqite.solver_history` or
+  `varqrte.solver_history`.
+
+- **Differentiable VQD deflation penalties**
+
+  Use Autograd-compatible dot products for statevector and density-matrix
+  overlaps, fixing `NotImplementedType` errors during excited-state optimization
+  with detached reference states. Regression tests check overlap values and
+  gradients against analytic one-qubit results, including depolarizing noise.
+
+- **QPE evolution and energy decoding**
+
+  Preserve identity-term energy offsets as controlled phases, apply all five
+  advertised noise channels, and decode measured bits in the circuit's fixed
+  most-significant-bit order. Energy unwrapping now searches the nearest branch
+  across arbitrary integer periods. Invalid evolution times raise `ValueError`,
+  and the inverse QFT respects caller-provided wire labels.
+
+- **Consistent chemistry encodings**
+
+  Hartree–Fock references now match Jordan–Wigner, parity, or Bravyi–Kitaev
+  Hamiltonians. UCC and ADAPT circuits encode their occupation-basis excitation
+  states consistently, including the shared VQE and variational-dynamics
+  plumbing. Backend retries preserve the requested mapping rather than silently
+  substituting Jordan–Wigner.
+
+- **Stable expert-mode wire meaning**
+
+  Preserve integer wire labels that already fit the resolved register,
+  regardless of Hamiltonian term order, including explicitly sized sparse
+  registers. Retain normalization for arbitrary labels outside that register.
+
+- **Energy and state agreement after optimization**
+
+  VQE and ADAPT-VQE evaluate energies after each parameter update, so reported
+  final energies and convergence histories agree with the saved parameters and
+  states rather than lagging by one iteration.
+
+- **Writable runtime storage for installed packages**
+
+  Store generated results and plots in platform-specific user data directories
+  instead of the package installation. Resolve paths at use time so changes to
+  `VQE_PENNYLANE_DATA_DIR` after imports are honored by all solver caches.
+
+### Changed
+
+- Set supported Python versions to 3.10–3.12 in package metadata and CI, matching
+  the retained NumPy 1.x dependency range. Python 3.13 support is deferred until
+  the NumPy 2 migration. The optional NumPy 2 probe installs its intended
+  dependencies first, then installs the project without dependency resolution.
+- Run the fast supported-Python test matrix on pull requests. Full integration
+  tests and the optional compatibility probe run on main pushes and manual
+  dispatches. Branch-protection configuration remains a repository-admin setting.
+- Add `multiplicity` to the VarQITE and VarQRTE Python APIs and include the
+  resolved value in run metadata and cache signatures.
+
+- **Invalidate caches from earlier numerical implementations**
+
+  Version run signatures so pre-0.3.27 results are recomputed automatically.
+  Existing files are retained. Repository-local output remains available by
+  explicitly setting `VQE_PENNYLANE_DATA_DIR` to the checkout directory.
+
+- **Numerical regression coverage**
+
+  Add exact-phase QPE cases, explicit noise-circuit comparisons, encoding
+  equivalence checks, energy/state consistency checks, wire-order regressions,
+  and runtime-path/cache isolation tests. Add spin-occupation and excitation-sector
+  checks, triplet VQE and dynamics regressions, order-independent QPE cache reuse,
+  incomplete-geometry rejection, solver validation/fallback metadata, and
+  previous-schema invalidation.
+
+### Documentation
+
+- **Package engineering roadmap**
+
+  Added a prioritized project roadmap covering writable runtime-data paths,
+  Python/NumPy/PennyLane support alignment, QITE solver validation, pull-request
+  test coverage, and source-distribution documentation completeness. The existing
+  notebook benchmark roadmap remains focused on research-validation questions.
+
+- Document the corrected spin references, mappings, QPE decoding and term order,
+  input validation, solver fallback, storage, and cache-migration behavior.
+  Align installation guidance with supported Python versions and mark completed
+  engineering-roadmap work. Include the roadmap and referenced technical Markdown
+  files in source distributions.
+
+  Historical notebook outputs and curated benchmark tables are retained and
+  require regeneration before serving as validation of the corrected solvers.
 
 ---
 

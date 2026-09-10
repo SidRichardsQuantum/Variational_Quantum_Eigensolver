@@ -4,7 +4,13 @@
 
 This document describes the fermion-to-qubit mappings supported in this repository, their conceptual differences, and their practical impact on VQE, QPE, and related workflows.
 
-Mappings are applied during Hamiltonian construction via `common.hamiltonian.build_hamiltonian(...)` and affect all downstream algorithms.
+Mappings are applied during Hamiltonian construction via `common.hamiltonian.build_hamiltonian(...)`.
+Hartree–Fock reference bits use the same encoding. UCC and ADAPT circuits apply
+their excitation gates in the occupation basis and then encode the prepared state
+with a reversible CNOT network. Consequently, corresponding noiseless UCC
+circuits represent the same physical state and energy across mappings.
+Generic hardware-efficient ansatzes operate directly on the chosen qubit register;
+they do not necessarily represent equivalent physical states across mappings.
 
 ---
 
@@ -168,19 +174,10 @@ qml.qchem.molecular_hamiltonian(..., mapping=mapping)
 
 ### Backend fallback behaviour
 
-If the installed PennyLane/qchem backend:
-
-- does **not support the `mapping` argument**, or
-- fails during Hamiltonian construction
-
-the code will:
-
-1. retry **without the mapping argument**
-2. optionally retry using `method="openfermion"`
-
-Implication:
-
-> Mapping selection is **best-effort**, and actual behaviour may depend on the installed backend. If mapping-specific construction is unsupported, the Hamiltonian falls back to the backend default (typically Jordan–Wigner).
+If the primary backend fails, the optional OpenFermion retry preserves the
+requested mapping. Unsupported mappings raise an error; the package never
+silently substitutes Jordan–Wigner. This keeps the Hamiltonian, reference state,
+and chemistry circuit in the same encoding.
 
 ### No symmetry reduction
 
@@ -203,8 +200,8 @@ Mappings influence several aspects of algorithm performance:
 ### 1. Circuit depth
 
 - longer Pauli strings → deeper circuits
-- JW typically deepest
-- BK / parity can be shallower
+- UCC circuits add an encoding CNOT network for BK / parity
+- Hamiltonian measurement locality and circuit preparation costs are distinct
 
 ### 2. Measurement cost
 
@@ -213,7 +210,8 @@ Mappings influence several aspects of algorithm performance:
 
 ### 3. Optimization landscape
 
-Mappings change:
+For untransformed hardware-efficient ansatzes, changing the Hamiltonian encoding
+can change:
 
 - gradient magnitudes
 - curvature of the loss surface
@@ -224,6 +222,10 @@ This can affect:
 - convergence speed
 - optimizer sensitivity
 - stability of excited-state methods
+
+For consistently encoded UCC circuits, the noiseless energy landscape is
+equivalent across mappings, up to numerical precision. Noise channels act on
+encoded qubits and need not preserve this equivalence.
 
 ### 4. Excited-state methods
 
@@ -268,9 +270,8 @@ mapping affects:
   - comparative studies
   - exploring different optimization behaviour
 
-- if results appear identical across mappings:
-
-  - your backend may have fallen back to the default mapping
+- identical noiseless UCC energies across mappings are expected for equivalent
+  physical circuits; compare operator structure and encoded states as well
 
 ---
 

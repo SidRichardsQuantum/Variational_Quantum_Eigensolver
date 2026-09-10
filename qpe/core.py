@@ -31,6 +31,23 @@ from common.problem import resolve_problem
 from qpe.noise import apply_noise_all
 
 
+def _canonical_evolution_hamiltonian(hamiltonian):
+    """Match Trotter ordering to the order-independent Hamiltonian cache key."""
+    terms = sorted(
+        qml.pauli.pauli_sentence(hamiltonian).items(),
+        key=lambda item: sorted(item[0].items()),
+    )
+    # Combine repeated Pauli words and remove exact cancellations before
+    # constructing the product formula. Keep the original coefficient precision.
+    terms = [(word, coeff) for word, coeff in terms if coeff != 0]
+    if not terms:
+        return qml.Hamiltonian([0.0], [qml.I(hamiltonian.wires[0])])
+    return qml.Hamiltonian(
+        [coeff for _, coeff in terms],
+        [word.operation(wire_order=hamiltonian.wires) for word, _ in terms],
+    )
+
+
 # ---------------------------------------------------------------------
 # Inverse Quantum Fourier Transform
 # ---------------------------------------------------------------------
@@ -50,7 +67,7 @@ def inverse_qft(wires: list[int]) -> None:
     # Controlled phase ladder + Hadamards
     for j in range(n):
         k = n - j - 1
-        qml.Hadamard(wires=k)
+        qml.Hadamard(wires=wires[k])
         for m in range(k):
             angle = -np.pi / (2 ** (k - m))
             qml.ControlledPhaseShift(angle, wires=[wires[m], wires[k]])
@@ -93,8 +110,16 @@ def controlled_powered_evolution(
         Optional dict {"p_dep": float, "p_amp": float}.
     """
     n_repeat = 2**power
+    # ApproxTimeEvolution omits identity terms as global phases. Under
+    # control that phase is relative to |0> and is essential to QPE.
+    identity_coeff = sum(
+        coeff
+        for word, coeff in qml.pauli.pauli_sentence(hamiltonian).items()
+        if not word
+    )
 
     for _ in range(n_repeat):
+        qml.PhaseShift(-identity_coeff * t, wires=control_wire)
         # Controlled ApproxTimeEvolution
         qml.ctrl(qml.ApproxTimeEvolution, control=control_wire)(
             hamiltonian, t, trotter_steps
@@ -106,6 +131,9 @@ def controlled_powered_evolution(
                 wires=system_wires + [control_wire],
                 p_dep=noise_params.get("p_dep", 0.0),
                 p_amp=noise_params.get("p_amp", 0.0),
+                p_phase_damp=noise_params.get("p_phase_damp", 0.0),
+                p_bit_flip=noise_params.get("p_bit_flip", 0.0),
+                p_phase_flip=noise_params.get("p_phase_flip", 0.0),
             )
 
 
@@ -159,21 +187,21 @@ def phase_to_energy_unwrapped(
     The base relation is:
         E ≈ -2π * phase / t   (mod 2π / t)
 
-    We first wrap E into (-π/t, π/t], then (if ref_energy is given) shift
-    by ± 2π/t to choose the branch closest to ref_energy.
+    Without a reference, wrap E into (-π/t, π/t]. Otherwise choose the
+    closest branch to ref_energy across all integer multiples of 2π/t.
     """
-    base = -2 * np.pi * phase / t
-
-    # Wrap into (-π/t, π/t]
-    while base > np.pi / t:
-        base -= 2 * np.pi / t
-    while base <= -np.pi / t:
-        base += 2 * np.pi / t
-
+    if not np.isfinite(t) or t <= 0:
+        raise ValueError("t must be finite and positive.")
+    if not np.isfinite(phase):
+        raise ValueError("phase must be finite.")
+    spaced = 2 * np.pi / t
+    base = -spaced * phase
     if ref_energy is not None:
-        spaced = 2 * np.pi / t
-        candidates = [base + k * spaced for k in (-1, 0, 1)]
-        base = min(candidates, key=lambda x: abs(x - ref_energy))
+        if not np.isfinite(ref_energy):
+            raise ValueError("ref_energy must be finite.")
+        base += spaced * round(float((ref_energy - base) / spaced))
+    else:
+        base = spaced / 2 - ((spaced / 2 - base) % spaced)
 
     return float(base)
 
@@ -217,6 +245,8 @@ def run_qpe(
     - optional expert override via precomputed `hamiltonian` and `hf_state`
     """
     start_time = time.perf_counter()
+    if not np.isfinite(t) or t <= 0:
+        raise ValueError("t must be finite and positive.")
     # Local import to keep qpe.core usable without I/O side effects at import time
     from qpe.io_utils import ensure_dirs, load_qpe_result, save_qpe_result
 
@@ -243,7 +273,7 @@ def run_qpe(
         require_reference_state=hamiltonian is not None,
         reference_name="hf_state",
     )
-    H = problem.hamiltonian
+    H = _canonical_evolution_hamiltonian(problem.hamiltonian)
     hf_bits = np.array(problem.reference_state, dtype=int)
     molecule_label = problem.molecule_label
     symbols_out = problem.symbols
@@ -375,10 +405,8 @@ def run_qpe(
     rows = []
     for b, weight in probs.items():
         ph_m = bitstring_to_phase(b, msb_first=True)
-        ph_l = bitstring_to_phase(b, msb_first=False)
         e_m = phase_to_energy_unwrapped(ph_m, float(t), ref_energy=E_hf)
-        e_l = phase_to_energy_unwrapped(ph_l, float(t), ref_energy=E_hf)
-        rows.append((b, float(weight), ph_m, ph_l, e_m, e_l))
+        rows.append((b, float(weight), ph_m, e_m))
 
     if not rows:
         raise RuntimeError("QPE returned no measurement outcomes.")
@@ -386,9 +414,8 @@ def run_qpe(
     best_row = max(rows, key=lambda r: r[1])
     best_b = best_row[0]
 
-    candidate_Es = (best_row[4], best_row[5])
-    best_energy = min(candidate_Es, key=lambda x: abs(x - E_hf))
-    best_phase = best_row[2] if best_energy == best_row[4] else best_row[3]
+    best_phase = best_row[2]
+    best_energy = best_row[3]
 
     compute_runtime_s = float(time.perf_counter() - start_time)
     result: Dict[str, Any] = {

@@ -10,6 +10,8 @@ from typing import Callable, List, Optional, Sequence, Tuple
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.spin import reference_multiplicity
+
 from .ansatz import _build_ucc_data
 from .engine import (
     _call_ansatz,
@@ -20,7 +22,6 @@ from .engine import (
 )
 from .hamiltonian import build_hamiltonian
 from .io_utils import (
-    RESULTS_DIR,
     ensure_dirs,
     make_filename_prefix,
     make_run_config_dict,
@@ -265,6 +266,9 @@ def run_ssvqe(
     ensure_dirs()
 
     # 1) Hamiltonian + molecular data
+    if (symbols is None) != (coordinates is None):
+        raise ValueError("symbols and coordinates must be provided together.")
+
     if symbols is None or coordinates is None:
         H, num_wires, hf_state, symbols, coordinates, basis_out, charge, unit_out = (
             build_hamiltonian(molecule, mapping=str(mapping))
@@ -292,14 +296,18 @@ def run_ssvqe(
         basis = str(basis_out)
         charge = int(charge_out)
 
+    multiplicity = reference_multiplicity(hf_state, str(mapping).strip().lower())
+
     # 2) Shared ansatz parameters
     ansatz_fn, p0 = build_ansatz(
         ansatz_name,
         num_wires,
+        mapping=str(mapping).strip().lower(),
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=basis,
     )
     params = np.array(p0, requires_grad=True)
@@ -312,6 +320,7 @@ def run_ssvqe(
                 coordinates,
                 basis=basis,
                 charge=int(charge),
+                multiplicity=multiplicity,
             )
             refs = _ucc_reference_states_from_excitations(
                 hf_state,
@@ -382,6 +391,7 @@ def run_ssvqe(
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            multiplicity=multiplicity,
             basis=basis,
             reference_state=None,
             prepare_reference=False,
@@ -418,6 +428,7 @@ def run_ssvqe(
         phase_flip_prob=float(phase_flip_prob),
         molecule_label=molecule,
     )
+    cfg["multiplicity"] = multiplicity
     cfg["num_states"] = int(num_states)
     cfg["weights"] = [float(w) for w in weights]
     cfg["reference_states"] = [list(map(int, s)) for s in reference_states]
@@ -435,7 +446,9 @@ def run_ssvqe(
         hash_str=sig,
         algo="ssvqe",
     )
-    result_path = RESULTS_DIR / f"{prefix}.json"
+    from common.paths import results_dir
+
+    result_path = results_dir("vqe") / f"{prefix}.json"
 
     if not force and result_path.exists():
         print(f"📂 Using cached SSVQE result: {result_path}")

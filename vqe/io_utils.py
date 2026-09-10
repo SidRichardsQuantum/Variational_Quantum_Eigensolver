@@ -27,12 +27,16 @@ from common.persist import (
 from vqe.ansatz import canonicalize_ansatz_name
 from vqe.optimizer import canonicalize_optimizer_name
 
-RESULTS_DIR: Path = results_dir("vqe")
+
+def __getattr__(name: str):
+    if name == "RESULTS_DIR":
+        return results_dir("vqe")
+    raise AttributeError(name)
 
 
 def ensure_dirs() -> None:
     """Create the VQE results directory if it does not already exist."""
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    results_dir("vqe").mkdir(parents=True, exist_ok=True)
 
 
 def _json_safe_mapping(values: dict[str, Any] | None) -> dict[str, Any]:
@@ -137,7 +141,7 @@ def load_run_record(prefix: str) -> Dict[str, Any] | None:
 
 
 def _result_path_from_prefix(prefix: str) -> Path:
-    return RESULTS_DIR / f"{prefix}.json"
+    return results_dir("vqe") / f"{prefix}.json"
 
 
 def save_run_record(prefix: str, record: Dict[str, Any]) -> str:

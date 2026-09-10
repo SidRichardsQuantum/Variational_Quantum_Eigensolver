@@ -221,6 +221,22 @@ python -m qite run-qrte \
   --pinv-rcond 1e-9
 ```
 
+Solver names are case-insensitive and must be `solve`, `lstsq`, or `pinv`;
+invalid names raise `ValueError`, including when `steps=0` or a cache exists.
+Only linear-algebra failures trigger fallback: after the requested backend,
+the engine tries `lstsq` and then `pinv`, skipping backends already attempted.
+Other errors propagate to the caller.
+
+The requested normalized name is stored in `result["varqrte"]["solver"]`.
+`result["varqrte"]["solver_history"]` records the backend actually used for
+each step, including fallbacks. An entry of `"none"` means the ansatz had no
+parameters and no linear solve was needed. Cached results retain this history.
+
+The Python API accepts `multiplicity` for explicit chemistry geometries and
+forwards the resolved spin reference into UCC construction. See
+[spin references](../common/problem_resolution.md#spin-references) for the
+scope of the spin constraint.
+
 ## Outputs
 
 `run_qrte(...)` returns a dictionary with the final energy, time grid, energy

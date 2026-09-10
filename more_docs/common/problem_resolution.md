@@ -62,7 +62,8 @@ Registry mode is cacheable.
 ## Explicit Geometry
 
 Explicit geometry mode is selected when both `symbols` and `coordinates` are
-provided:
+provided. Supplying only one raises `ValueError` before a registry molecule is
+selected:
 
 ```python
 from qite import run_qite
@@ -82,6 +83,21 @@ The resolver passes these values to the shared Hamiltonian builder and records
 the resolved metadata for cache signatures and result output.
 
 Explicit geometry mode is cacheable.
+
+## Spin References
+
+Chemistry references use interleaved alpha/beta spin orbitals. For multiplicity
+`m`, the reference has `N_alpha - N_beta = m - 1`: triplet H₂, for example,
+uses occupation bits `[1, 0, 1, 0]`, then applies the requested qubit encoding.
+Incompatible electron counts, orbital counts, and multiplicities are rejected.
+VQE, VarQITE, and VarQRTE accept explicit `multiplicity` in their Python APIs;
+registry workflows use the molecule's stored value.
+
+UCC and ADAPT excitation pools use the occupied and virtual orbitals of this
+reference and conserve particle number and spin projection `M_s`. They do not
+generally constrain total spin `S²`; calculations requiring a pure spin sector
+should measure `S²` separately. Hardware-efficient ansatzes and noise channels
+also need separate symmetry checks.
 
 ## Active Spaces
 

@@ -9,6 +9,8 @@ from typing import Callable, List, Optional
 
 from pennylane import numpy as np
 
+from common.spin import reference_multiplicity
+
 from .engine import (
     build_ansatz,
     build_optimizer,
@@ -18,7 +20,6 @@ from .engine import (
 )
 from .hamiltonian import build_hamiltonian
 from .io_utils import (
-    RESULTS_DIR,
     ensure_dirs,
     make_filename_prefix,
     make_run_config_dict,
@@ -42,7 +43,8 @@ def _state_overlap_metric(state_a, state_b, noisy: bool):
     """
     if not noisy:
         # |<a|b>|^2 = |sum_i conj(a_i) b_i|^2
-        inner = (np.conj(state_a) * state_b).sum()
+        # Dot avoids mixed tensor/ArrayBox ufunc dispatch during differentiation.
+        inner = np.dot(np.conj(state_a), state_b)
         val = np.abs(inner) ** 2
         return np.clip(val, 0.0, 1.0)
 
@@ -51,7 +53,7 @@ def _state_overlap_metric(state_a, state_b, noisy: bool):
     rho_b = np.array(state_b)
 
     # Tr(rho_a rho_b) = sum_{i,j} rho_a[i,j] * rho_b[j,i]
-    val = (rho_a * np.transpose(rho_b)).sum()
+    val = np.dot(np.ravel(rho_a), np.ravel(np.transpose(rho_b)))
     val = np.real(val)
     return np.clip(val, 0.0, 1.0)
 
@@ -184,6 +186,9 @@ def run_vqd(
     ensure_dirs()
 
     # 1) Hamiltonian + molecular data
+    if (symbols is None) != (coordinates is None):
+        raise ValueError("symbols and coordinates must be provided together.")
+
     if symbols is None or coordinates is None:
         H, num_wires, hf_state, symbols, coordinates, basis, charge, unit_out = (
             build_hamiltonian(molecule, mapping=mapping)
@@ -208,14 +213,18 @@ def run_vqd(
             unit=str(unit),
         )
 
+    multiplicity = reference_multiplicity(hf_state, str(mapping).strip().lower())
+
     # 2) Ansatz (for QNode construction)
     ansatz_fn, _ = build_ansatz(
         ansatz_name,
         num_wires,
+        mapping=str(mapping).strip().lower(),
         seed=seed,
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=basis,
     )
 
@@ -250,6 +259,7 @@ def run_vqd(
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=basis,
     )
 
@@ -267,6 +277,7 @@ def run_vqd(
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=basis,
         diff_method="finite-diff",
     )
@@ -290,6 +301,7 @@ def run_vqd(
         phase_flip_prob=phase_flip_prob,
         molecule_label=molecule,
     )
+    cfg["multiplicity"] = multiplicity
     cfg["beta_end"] = beta_end
     cfg["beta_start"] = beta0
     cfg["beta_ramp"] = str(beta_ramp)
@@ -310,7 +322,9 @@ def run_vqd(
         hash_str=sig,
         algo="vqd",
     )
-    result_path = RESULTS_DIR / f"{prefix}.json"
+    from common.paths import results_dir
+
+    result_path = results_dir("vqe") / f"{prefix}.json"
 
     if not force and result_path.exists():
         print(f"📂 Using cached VQD result: {result_path}")
@@ -331,10 +345,12 @@ def run_vqd(
         _, p_init = build_ansatz(
             ansatz_name,
             num_wires,
+            mapping=str(mapping).strip().lower(),
             seed=seed + n,
             symbols=symbols,
             coordinates=coordinates,
             charge=int(charge),
+            multiplicity=multiplicity,
             basis=basis,
         )
         theta = np.array(p_init, requires_grad=True)

@@ -30,6 +30,8 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import pennylane as qml
 
+from common.spin import reference_multiplicity
+
 from .core import run_vqe
 from .engine import build_ansatz as engine_build_ansatz
 from .engine import make_device, make_state_qnode
@@ -193,6 +195,8 @@ def run_lr_vqe(
         )
     )
 
+    multiplicity = reference_multiplicity(_hf_state, str(mapping).strip().lower())
+
     cfg = make_run_config_dict(
         symbols=symbols,
         coordinates=coordinates,
@@ -208,6 +212,7 @@ def run_lr_vqe(
         amplitude_damping_prob=0.0,
         molecule_label=molecule_label,
     )
+    cfg["multiplicity"] = multiplicity
     cfg["lr"] = {
         "k": int(k),
         "fd_eps": float(fd_eps),
@@ -266,10 +271,12 @@ def run_lr_vqe(
     ansatz_fn, _ = engine_build_ansatz(
         str(ansatz_name),
         int(num_qubits),
+        mapping=mapping_norm,
         seed=int(seed),
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=str(basis).strip().lower(),
     )
 
@@ -281,6 +288,7 @@ def run_lr_vqe(
         symbols=symbols,
         coordinates=coordinates,
         charge=int(charge),
+        multiplicity=multiplicity,
         basis=str(basis).strip().lower(),
     )
 

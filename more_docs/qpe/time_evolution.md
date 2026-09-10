@@ -108,7 +108,17 @@ Time evolution is built from:
 H, n_qubits, hf_state = build_hamiltonian(...)
 ```
 
-All Pauli terms in (H) are used to construct evolution.
+Before constructing evolution, `run_qpe` combines repeated Pauli words, removes
+exact cancellations, and orders the remaining words lexicographically by their
+normalized wire/axis pairs. First-order product formulas depend on ordering;
+this fixed order ensures that equivalent Hamiltonians produce the same circuit
+and can share the order-independent cache key. Coefficients retain their full
+precision during evolution.
+
+All Pauli terms in (H) are used to construct evolution. For an identity term
+`c * I`, a `PhaseShift(-c * t)` on the control preserves its energy offset.
+Although this term is a global phase for uncontrolled evolution, it becomes a
+measurable relative phase in QPE.
 
 ---
 
@@ -136,12 +146,9 @@ QPE requires:
 U^{2^k} = e^{-iH t 2^k}
 ]
 
-This is implemented by:
-
-- scaling evolution time:
-
-  - ( t \rightarrow t \cdot 2^k )
-- applying Trotterized evolution
+This is implemented by repeating the controlled base-time Trotter circuit
+`2**k` times. The same approximate base unitary is therefore used for every power.
+Optional noise is applied after each base-time segment.
 
 ---
 
@@ -223,18 +230,17 @@ Controls:
 
 ## Noise Effects
 
-Under noise:
-
-- each Trotter step introduces decoherence
-- deeper circuits amplify errors
-- controlled operations are especially sensitive
+The noise layer applies the configured depolarizing, amplitude-damping,
+phase-damping, bit-flip, and phase-flip channels to the active control and system
+wires after each controlled base-time segment.
 
 ---
 
 ### Practical implication
 
-- fewer Trotter steps → less noise, more approximation error
-- more Trotter steps → better approximation, worse noise
+Increasing `trotter_steps` improves the unitary approximation but does not add
+noise-layer applications in this model. Increasing the ancilla count increases
+the number of controlled segments and noise applications.
 
 ---
 

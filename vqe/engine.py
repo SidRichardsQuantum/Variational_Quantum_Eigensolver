@@ -35,11 +35,13 @@ algorithms like VQD.
 from __future__ import annotations
 
 import inspect
+from functools import wraps
 from typing import Callable, Iterable, Optional
 
 import pennylane as qml
 from pennylane import numpy as np
 
+from common.encoding import apply_encoding, occupation_bits
 from common.noise import apply_builtin_noise
 
 from .ansatz import get_ansatz, init_params
@@ -254,6 +256,7 @@ def build_ansatz(
     requires_grad: bool = True,
     scale: float = 0.01,
     ansatz_kwargs: Optional[dict] = None,
+    mapping: str = "jordan_wigner",
 ):
     """
     Construct an ansatz function and matching initial parameter vector.
@@ -280,6 +283,20 @@ def build_ansatz(
         ansatz_kwargs=ansatz_kwargs,
         seed=seed,
     )
+    if mapping != "jordan_wigner" and "prepare_reference" in _supported_ansatz_kwargs(
+        ansatz_fn
+    ):
+        occupation_ansatz = ansatz_fn
+
+        @wraps(occupation_ansatz)
+        def encoded_ansatz(params, wires, **kwargs):
+            ref = kwargs.get("reference_state")
+            if ref is not None:
+                kwargs["reference_state"] = occupation_bits(ref, mapping)
+            occupation_ansatz(params, wires=wires, **kwargs)
+            apply_encoding(wires, mapping)
+
+        ansatz_fn = encoded_ansatz
     return ansatz_fn, params
 
 

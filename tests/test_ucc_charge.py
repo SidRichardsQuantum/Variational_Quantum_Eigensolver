@@ -21,6 +21,7 @@ def test_ucc_data_respects_charge_for_h3plus_geometry() -> None:
         cfg["coordinates"],
         basis=cfg["basis"],
         charge=0,
+        multiplicity=2,
     )
 
     assert int(np.sum(hf_cation)) == 2
@@ -56,6 +57,7 @@ def test_ucc_init_params_respects_charge() -> None:
         coordinates=cfg["coordinates"],
         basis=cfg["basis"],
         charge=0,
+        multiplicity=2,
         seed=0,
     )
 
@@ -70,6 +72,7 @@ def test_ucc_init_params_respects_charge() -> None:
         cfg["coordinates"],
         basis=cfg["basis"],
         charge=0,
+        multiplicity=2,
     )
 
     assert len(charged_params) == len(charged_singles) + len(charged_doubles)

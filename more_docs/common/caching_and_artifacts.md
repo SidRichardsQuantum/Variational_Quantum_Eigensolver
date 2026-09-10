@@ -2,7 +2,7 @@
 
 This repository uses two different kinds of generated output:
 
-- local run caches and plots under `results/` and `images/`
+- local run caches and plots under `results/` and `images/` in the runtime data root
 - curated benchmark artifacts under `notebooks/benchmarks/_artifacts/`
 
 Keep those categories separate. The local cache is for fast development and
@@ -10,6 +10,13 @@ reruns. Curated artifacts are the reviewed result surfaces that can be linked
 from docs and committed to the repository.
 
 ## Local Run Records
+
+The default runtime root is the platform user data directory:
+`~/.local/share/vqe-pennylane` on Linux (honoring `XDG_DATA_HOME`),
+`~/Library/Application Support/vqe-pennylane` on macOS, or
+`%LOCALAPPDATA%/vqe-pennylane` on Windows. `VQE_PENNYLANE_DATA_DIR` overrides it
+at artifact-access time. Set the override to the checkout to use repository-local
+paths; package installations never serve as the default runtime root.
 
 Solver runs write JSON records through each package's I/O helpers:
 
@@ -77,6 +84,15 @@ Use forced recomputation when:
 The package includes regression coverage for stale cache invalidation. Solver
 entrypoints refresh older records when required runtime metadata is missing.
 
+QPE also canonicalizes the actual Trotter term order, so reordered or split
+Pauli terms share both the cache identity and the same approximate evolution.
+
+Run signatures include a numerical schema version, independent of the package
+release number. Version 0.3.27 invalidates results from earlier numerical
+implementations, including development snapshots affected by spin-reference,
+QPE term-order, Hamiltonian-encoding, and optimization bugs. Old files are
+preserved.
+
 Some cache records are still intentionally rejected. For example, VarQITE and
 VarQRTE records must include final parameters and parameter shape so downstream
 workflows can reuse the prepared circuit. If a legacy cache is missing required
@@ -111,6 +127,11 @@ Current curated artifact categories include:
 - H2 and LiH cross-method tables
 - QPE H2 decision-map tables
 - H2 VQE noise-robustness reference tables
+
+Artifacts produced before v0.3.27 predate the QPE energy-offset, chemistry
+encoding, and VQE energy-history corrections. Regenerate affected benchmark
+outputs before using them to validate the corrected implementations. The v0.3.27
+code fixes do not regenerate historical notebook outputs or curated tables.
 
 ## Export Workflow
 
@@ -176,4 +197,3 @@ For published result summaries, start with:
 
 Use raw local cache files only for debugging or rerun acceleration. Treat the
 curated benchmark artifacts as the stable evidence surface.
-

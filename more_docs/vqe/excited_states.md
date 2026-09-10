@@ -314,8 +314,11 @@ $$
 ### Implementation details
 
 - overlap computed via:
-  - adjoint circuit (statevector)
+  - squared inner product of statevectors (noiseless)
   - density matrix overlap (noisy)
+- previously optimized states are held fixed; both overlap models remain
+  differentiable with respect to the current state's parameters so the
+  deflation penalty contributes to optimization gradients
 - optional **beta scheduling**:
   - ramp-up strategies
 - sequential optimization

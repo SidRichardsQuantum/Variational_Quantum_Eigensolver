@@ -7,6 +7,12 @@ explicit geometry.
 Use expert mode for compact spin models, custom Pauli Hamiltonians, and
 non-chemistry benchmarks such as Ising, Heisenberg, or SSH chains.
 
+Integer labels within `range(num_qubits)` retain their meaning regardless of
+Hamiltonian term order. With an explicitly sized register, this includes sparse
+Hamiltonians such as `Z(2)` in a three-qubit register. Otherwise arbitrary labels
+are normalized in first-appearance order, and reference bits follow that order.
+Without an explicit size, the register size is the number of distinct wires.
+
 ## Basic Pattern
 
 Pass at least:
@@ -45,9 +51,9 @@ from qite import run_qite, run_qrte
 
 qpe_result = run_qpe(
     hamiltonian=hamiltonian,
-    num_qubits=2,
-    reference_state=[1, 0],
-    ancillas=4,
+    system_qubits=2,
+    hf_state=[1, 0],
+    n_ancilla=4,
     shots=1000,
 )
 
@@ -181,4 +187,3 @@ expert-mode workflow.
 | `reference_state length must match num_qubits` | Bitstring length is wrong | Pass one bit per qubit |
 | Unexpected fallback ansatz | `auto` could not classify the Pauli structure | Choose an explicit ansatz or pass `ansatz_kwargs` |
 | Cache hit when experimenting | Same canonical Hamiltonian and config | Use `force=True` |
-
