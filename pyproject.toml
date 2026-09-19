@@ -53,6 +53,8 @@ docs = [
 ]
 
 [tool.pytest.ini_options]
+# Studio is source-only; console-script pytest must also see the checkout.
+pythonpath = ["."]
 addopts = "-m 'not slow'"
 markers = [
   "slow: tests that are useful integration coverage but too expensive for the default PR loop",
