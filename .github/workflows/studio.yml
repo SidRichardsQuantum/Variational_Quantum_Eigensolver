@@ -1,0 +1,43 @@
+name: studio
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install development dependencies
+        run: |
+          python -m pip install -e '.[dev]' playwright
+          python -m playwright install --with-deps chromium
+      - name: Frontend checks
+        run: |
+          node --check studio/static/app.js
+          node --test studio/tests/model.test.mjs
+      - name: Browser integration
+        run: python -m studio.tests.browser_smoke
+      - name: Save browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-screenshots
+          path: /tmp/vqe-studio-*.png
+          if-no-files-found: ignore

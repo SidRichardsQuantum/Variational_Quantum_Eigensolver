@@ -14,6 +14,20 @@ changes to the solver engines.
 Open items are ordered by their impact on installation reliability,
 reproducibility, and release confidence.
 
+## v0.3.28 Baseline And Next Milestones
+
+The v0.3.28 Studio runs from a source checkout and supports VQE/ADAPT-VQE,
+live observations, comparisons, JSON export, cache-backed history, and re-run
+configuration restoration, queued/running cancellation, and isolated worker
+processes with private artifact staging. It remains outside the wheel and source distribution;
+see the [Studio guide](docs/studio.md) for setup and current limitations.
+
+The next feature sequence is explicit solver termination, sector-aware
+references/state diagnostics, then incremental workflow
+expansion. The existing Python/NumPy compatibility migration remains a separate
+installation milestone and is not gated on Studio feature work. Verify the fast CI jobs before merging releases; optional ruleset enforcement
+is tracked below.
+
 ## Priority 0: Installation And Supported Environments
 
 ### Migrate supported Python and NumPy versions
@@ -26,13 +40,30 @@ Planned work:
 
 ## Priority 1: CI And Merge Protection
 
-### Require fast test jobs before merge
+### Optionally enforce checks through repository rulesets
 
 Planned work:
 
-- configure branch protection/rulesets to require the fast test jobs before merge
+- activate the prepared `.github/rulesets/main.json` ruleset to require fast
+  tests, lint, package, and Studio checks before merge; the current integration
+  token returned HTTP 403 when attempting activation. See the
+  [release guide](docs/releasing.md) for the exact administrator command.
 
 This is a GitHub repository setting; workflow changes alone do not enforce it.
+
+## Completed In v0.3.28: Studio Execution Reliability
+
+- Queued and running cancellation with persisted `cancelled` state and timestamps,
+  card/detail actions, and idempotent cancellation requests.
+- One isolated worker process at a time, with copied cache inputs and private
+  scientific output until successful publication. Solver defaults, seeds, and
+  scientific cache identity remain unchanged.
+- Completion and cancellation share a lock: the first terminal transition wins.
+  Shutdown cancels pending work; abrupt parent exit stops the worker. Restart
+  marks interrupted manifests failed and removes stale staging directories.
+- Lifecycle tests cover cancellation, cache preservation, completion races,
+  shutdown, parent exit, and restart. Browser checks cover both cancellation
+  actions, restored statuses, and successful execution afterwards.
 
 ## Priority 1: Scientific References And State Diagnostics
 
@@ -51,6 +82,9 @@ Planned work:
 - Add shared state diagnostics for particle number, spin projection, total
   spin `S²`, and energy variance, supporting statevectors and density matrices
   where applicable. Report sector weight or leakage when a sector is selected.
+- Surface available references, reference errors, sector leakage, and state
+  diagnostics in Studio with the selected physical sector and reference scope
+  clearly labelled. Never infer missing diagnostics from completion status.
 - Respect qubit encodings when constructing sector projectors and observables.
   Distinguish conservation of particle number and `M_s` from a pure total-spin
   sector; measuring `S²` does not impose that constraint.
@@ -126,6 +160,9 @@ Planned work:
 - Separate budget exhaustion, tolerance satisfaction, and numerical failure.
   Record the criterion, threshold, and measured diagnostic; keep eigenstate
   quality diagnostics distinct from optimizer convergence.
+- Expose returned termination reasons and actual update counts in Studio run
+  details and comparisons; preserve them on cache hits. Include ADAPT operator
+  budget, pool exhaustion, and pool-gradient tolerance as distinct outcomes.
 - Carry status into benchmark records and comparisons so failed or non-finite
   runs cannot appear as successful evidence. Include stopping settings in cache
   identity and preserve status on cache hits.
@@ -179,23 +216,43 @@ Completion criteria:
   general time-dependent Hamiltonians and open-system dynamics remain outside
   this item
 
-## Priority 2: Source Distribution Completeness
+## Priority 2: Incremental Studio Workflow Expansion
 
-### Keep packaged documentation links valid
-
-Audit repository-relative documentation links in the source distribution.
+Deliver these after execution reliability and the shared solver contracts above.
 
 Planned work:
 
-- remove/replace any remaining links that are intended to be repository-only
-- add a package-content check for documentation targets referenced from included
-  Markdown files
+- Add VarQITE as the first additional Studio method, using its existing Python
+  runner and artifact schema. Once supplied-parameter support is available,
+  expose VQE → VarQITE refinement with compatibility checks and initialization
+  provenance, retaining independent seeded starts by default.
+- Add explicit geometry and active-space controls only through the shared problem
+  resolver, respecting each method's supported inputs. Enable recreation of
+  compatible Python/CLI artifacts only when their original inputs can be
+  recovered and verified; otherwise retain view/export access.
+- Follow with prepared-state QPE after its preparation API is implemented, then
+  excited-state methods (VQD/SSVQE and QSE-family views). Add VarQRTE with a time
+  axis and observable trajectories, not an energy-minimization presentation.
+- Index/paginate large histories and add reproducibility bundles containing
+  immutable artifacts, resolved inputs, preparation/initialization provenance,
+  and environment metadata with compatibility checks.
 
 Completion criteria:
 
-- documentation shipped in the sdist contains no repository-relative links to
-  omitted files
-- wheel and sdist metadata continue to pass `twine check`
+- each adapter reuses the Python solver and authoritative artifacts, with
+  method-specific validation, cache reuse, export, and browser coverage
+- refinement and prepared-state examples use the same resolved physical problem;
+  unsupported transfers fail clearly before submission
+- restored/imported runs retain provenance; bundles identify missing or
+  incompatible environments without silently changing the experiment
+
+## Completed In v0.3.28: Source Distribution Documentation
+
+Repository-only notebook links point to their hosted sources. The generated
+benchmark report stays outside the sdist alongside its figures; research notes
+link to the hosted report. Packaged relative Markdown targets are checked against actual sdist members in package CI
+with `scripts/check_sdist_links.py`. Wheel and sdist metadata are checked with
+`twine check`; Studio remains excluded from both distributions.
 
 ## Priority 2: Plot And Diagram Clarity
 

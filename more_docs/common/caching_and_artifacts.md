@@ -82,7 +82,11 @@ Use forced recomputation when:
 ## Stale Cache Handling
 
 The package includes regression coverage for stale cache invalidation. Solver
-entrypoints refresh older records when required runtime metadata is missing.
+entrypoints for VQE, QPE, VarQITE, and VarQRTE refresh older records when
+required runtime metadata is missing. ADAPT-VQE keeps legacy records reusable;
+when their original compute time is absent, `compute_runtime_s` is omitted.
+Its `runtime_s` measures the current invocation and `cache_hit` identifies reuse.
+Progress callbacks added in v0.3.28 do not affect scientific cache identity.
 
 QPE also canonicalizes the actual Trotter term order, so reordered or split
 Pauli terms share both the cache identity and the same approximate evolution.

@@ -21,6 +21,7 @@ pip-wheel-metadata/
 # ===================================================================
 .env*
 .venv/
+.venv-studio/
 venv/
 env/
 ENV/

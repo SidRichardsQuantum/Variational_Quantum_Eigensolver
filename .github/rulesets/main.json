@@ -1,0 +1,21 @@
+{
+  "name": "Required release checks",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {"ref_name": {"include": ["refs/heads/main"], "exclude": []}},
+  "rules": [{
+    "type": "required_status_checks",
+    "parameters": {
+      "strict_required_status_checks_policy": true,
+      "do_not_enforce_on_create": false,
+      "required_status_checks": [
+        {"context": "fast tests (3.10)", "integration_id": 15368},
+        {"context": "fast tests (3.11)", "integration_id": 15368},
+        {"context": "fast tests (3.12)", "integration_id": 15368},
+        {"context": "lint", "integration_id": 15368},
+        {"context": "package", "integration_id": 15368},
+        {"context": "studio", "integration_id": 15368}
+      ]
+    }
+  }]
+}

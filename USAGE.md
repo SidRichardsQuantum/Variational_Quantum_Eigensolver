@@ -205,6 +205,31 @@ python -c "import vqe, qpe, qite, common; print('All stacks OK')"
 
 ---
 
+## Experiment Studio and Progress Observers
+
+Version 0.3.28 adds an optional browser interface for VQE and ADAPT-VQE.
+From a source checkout with the package installed, run `python -m studio` and
+open `http://127.0.0.1:8000`. Studio is excluded from the wheel and source
+distribution. See the [Studio guide](docs/studio.md) for Codespaces setup,
+comparisons, JSON exports, cancellation, and persistence behavior. Queued and
+running experiments can be cancelled from their cards or detail views; Ctrl-C
+cancels unfinished work and cleans up isolated workers.
+
+Python callers can observe actual energy samples without using Studio:
+
+```python
+from vqe import run_vqe
+
+result = run_vqe(steps=10, plot=False, progress_callback=print)
+```
+
+`run_adapt_vqe()` accepts the same optional callback. Observers receive fresh
+status dictionaries synchronously; a cache hit emits a single `cache_hit` event.
+Callbacks are excluded from cache identity, and their exceptions propagate.
+A completed iteration budget is not a convergence or accuracy certificate.
+
+---
+
 ## General Conventions
 
 Output structure, relative to the runtime data root:
@@ -231,7 +256,8 @@ Execution behaviour:
 
 - deterministic hashing defines run identity
 - cached runs automatically reused
-- cached records missing runtime metadata are treated as stale and refreshed on access
+- VQE, QPE, VarQITE, and VarQRTE refresh cached records missing required runtime
+  metadata; ADAPT retains legacy results and omits unavailable compute timings
 - `--force` bypasses cache
 - identical Hamiltonians shared across algorithms
 
@@ -807,7 +833,7 @@ Ensures:
 
 - reproducible optimisation trajectories
 - noise evaluation does not invalidate optimisation cache
-- stale cache artifacts without runtime metadata are refreshed automatically instead of being trusted as benchmark inputs
+- runtime-based benchmarks require recorded compute timings; legacy ADAPT cache hits may omit them
 
 ---
 
