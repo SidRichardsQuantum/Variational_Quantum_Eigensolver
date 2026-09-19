@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 from typing import Callable, List, Optional
 
+import pennylane as qml
 from pennylane import numpy as np
 
 from common.spin import reference_multiplicity
@@ -279,8 +280,19 @@ def run_vqd(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=basis,
-        diff_method="finite-diff",
+        # Differentiate the real overlap objective through the simulator. A
+        # finite-difference state Jacobian is complex and can pass complex
+        # cotangents back to real, indexed UCC parameters in Autograd.
+        diff_method="backprop",
     )
+    if effective_noisy:
+        # default.mixed's excitation contractions can create object arrays or
+        # complex-to-real casts from Autograd parameters. Equivalent elementary
+        # gates keep UCC overlap gradients differentiable without those casts.
+        state_qnode = qml.transforms.decompose(
+            state_qnode,
+            gate_set=set(qml.ops.__all__) - {"SingleExcitation", "DoubleExcitation"},
+        )
 
     # 4) Config + caching
     cfg = make_run_config_dict(
@@ -307,6 +319,8 @@ def run_vqd(
     cfg["beta_ramp"] = str(beta_ramp)
     cfg["beta_hold_fraction"] = float(beta_hold_fraction)
     cfg["num_states"] = int(num_states)
+    # Separate corrected overlap gradients from legacy finite-difference runs.
+    cfg["state_diff_method"] = "backprop"
 
     # Noise model is not JSON-serializable; store only a lightweight identifier.
     if noise_model is not None:

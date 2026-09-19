@@ -245,6 +245,7 @@ def test_encoding_non_power_of_two_register(mapping):
         (run_vqd, {"num_states": 2, "steps": 1}, "energies_per_state"),
     ],
 )
+@pytest.mark.filterwarnings("error::numpy.exceptions.ComplexWarning")
 def test_other_ucc_workflows_preserve_mapping_energies(runner, options, key):
     cfg = dict(
         molecule="H2",

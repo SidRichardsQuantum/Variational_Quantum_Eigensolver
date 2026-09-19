@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.29] - Unreleased
+
+### Fixed
+
+- Differentiate VQD deflation overlaps with simulator backpropagation for both
+  statevectors and noisy density matrices. This avoids complex-gradient casts
+  into real UCC parameters from finite-difference state Jacobians. Record the
+  state differentiation method in VQD cache identity so previous results are
+  recomputed while their artifacts are retained.
+- Decompose UCC single- and double-excitation gates for noisy VQD state
+  evaluation, avoiding mixed-state simulator backpropagation failures and
+  complex-cast warnings without changing the circuit's physical state.
+- Treat complex-cast warnings as errors in overlap-gradient, UCC mapping, and
+  spin-reference regression tests. Cover noiseless and noisy VQD optimization
+  with nonzero deflation penalties and cache reuse.
+
+---
+
 ## [0.3.28] - September 19, 2026
 
 ### Added

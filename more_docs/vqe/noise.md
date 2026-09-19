@@ -248,17 +248,17 @@ Implication:
 
 ## Effect on Differentiation
 
-Differentiation method depends on noise:
+The shared energy QNodes choose these differentiation defaults:
 
 | Setting   | Method            |
 | --------- | ----------------- |
 | Noiseless | `parameter-shift` |
 | Noisy     | `finite-diff`     |
 
-Reason:
-
-- parameter-shift is not generally valid for noisy channels
-- finite-difference is used as a fallback
+VQD's state QNode explicitly uses `backprop` on both simulators to differentiate
+its real deflation-overlap objective. This avoids passing finite-difference
+complex state Jacobians back to real UCC parameters. Its energy QNode retains
+the defaults above.
 
 ---
 

@@ -27,6 +27,7 @@ from vqe.engine import build_ansatz, make_state_qnode
         (run_lr_vqe, {"steps": 1, "stepsize": 0.0}, "reference_energy"),
     ],
 )
+@pytest.mark.filterwarnings("error::numpy.exceptions.ComplexWarning")
 def test_triplet_registry_reference_reaches_other_workflows(
     monkeypatch, run, options, energy_key
 ):

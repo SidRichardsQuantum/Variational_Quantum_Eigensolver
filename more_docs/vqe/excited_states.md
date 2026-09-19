@@ -319,6 +319,11 @@ $$
 - previously optimized states are held fixed; both overlap models remain
   differentiable with respect to the current state's parameters so the
   deflation penalty contributes to optimization gradients
+- the state QNode uses simulator backpropagation for both noiseless and noisy
+  overlaps, avoiding finite-difference complex state Jacobians for real UCC
+  parameters; the differentiation method is recorded in cache identity
+- noisy state evaluation decomposes UCC single and double excitations into
+  equivalent elementary gates to support mixed-state backpropagation
 - optional **beta scheduling**:
   - ramp-up strategies
 - sequential optimization
