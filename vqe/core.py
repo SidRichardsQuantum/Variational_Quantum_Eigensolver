@@ -14,7 +14,7 @@ Includes:
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import Any, Callable
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -183,6 +183,8 @@ def run_vqe(
     hamiltonian: qml.Hamiltonian | None = None,
     num_qubits: int | None = None,
     reference_state=None,
+    *,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
 ):
     """
     Run a ground-state VQE optimization.
@@ -222,6 +224,12 @@ def run_vqe(
         true, but remain part of normalized run metadata.
     force:
         Recompute even when a matching cached JSON result exists.
+    progress_callback:
+        Optional synchronous observer receiving fresh dictionaries with ``phase``,
+        ``iteration``, ``total_iterations``, and computed ``energy``. Iteration zero
+        is the initial energy. A cache hit emits one ``cache_hit`` event, never a
+        replay of optimization. The observer is excluded from cache signatures;
+        its exceptions propagate to the caller and abort the run.
     symbols, coordinates:
         Explicit molecular geometry. Use with ``basis``, ``charge``,
         ``multiplicity``, ``unit``, and optional active-space settings.
@@ -350,6 +358,15 @@ def run_vqe(
             if record is not None and cached is not None:
                 cached["runtime_s"] = float(time.perf_counter() - start_time)
                 cached["cache_hit"] = True
+                if progress_callback is not None:
+                    progress_callback(
+                        {
+                            "phase": "cache_hit",
+                            "iteration": int(cached["steps"]),
+                            "total_iterations": int(steps),
+                            "energy": float(cached["energy"]),
+                        }
+                    )
                 return cached
 
     # --- Device, ansatz, optim, QNodes ---
@@ -419,6 +436,15 @@ def run_vqe(
     # --- Optimization loop ---
     params = np.array(params0, requires_grad=True)
     energies: list[float] = [float(energy_qnode(params))]
+    if progress_callback is not None:
+        progress_callback(
+            {
+                "phase": "optimization",
+                "iteration": 0,
+                "total_iterations": int(steps),
+                "energy": energies[0],
+            }
+        )
 
     params_history: list[list[float]] = [
         [float(x) for x in np.asarray(params, dtype=float).ravel()]
@@ -432,6 +458,15 @@ def run_vqe(
         e = float(energy_qnode(params))
 
         energies.append(float(e))
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "optimization",
+                    "iteration": step + 1,
+                    "total_iterations": int(steps),
+                    "energy": float(e),
+                }
+            )
         params_history.append(
             [float(x) for x in np.asarray(params, dtype=float).ravel()]
         )

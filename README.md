@@ -367,12 +367,19 @@ Layout:
 
 Recommended starting points:
 
-- [`notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`](notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb)
-- [`notebooks/getting_started/07_getting_started_qite_h2.ipynb`](notebooks/getting_started/07_getting_started_qite_h2.ipynb)
-- [`notebooks/getting_started/11_getting_started_qrte_h2.ipynb`](notebooks/getting_started/11_getting_started_qrte_h2.ipynb)
-- [`notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`](notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb)
+- [`notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb`](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/getting_started/01_vqe_vs_qpe_from_scratch_h2.ipynb)
+- [`notebooks/getting_started/07_getting_started_qite_h2.ipynb`](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/getting_started/07_getting_started_qite_h2.ipynb)
+- [`notebooks/getting_started/11_getting_started_qrte_h2.ipynb`](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/getting_started/11_getting_started_qrte_h2.ipynb)
+- [`notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb`](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/benchmarks/qite/H2/Exact_QRTE_Benchmark.ipynb)
 
 ## Documentation
+
+New in v0.3.28, an optional [VQE Experiment Studio](docs/studio.md) provides a browser composer,
+VQE and ADAPT-VQE execution, live energy observations, experiment comparisons,
+artifact-backed history, JSON export, and re-run configuration restoration.
+Run it from a source checkout with `python -m studio`; the Studio is excluded
+from the wheel and source distribution. It calls the existing Python solvers
+and adds no dependencies to the scientific package. See the guide for fresh Codespaces setup commands.
 
 The repository documentation can be built as a navigable Sphinx site:
 

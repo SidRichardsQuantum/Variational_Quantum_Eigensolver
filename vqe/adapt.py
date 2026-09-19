@@ -18,6 +18,7 @@ Iterate:
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Sequence, Tuple
 
@@ -25,6 +26,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from common.encoding import apply_encoding
+from common.persist import cached_compute_runtime
 from common.spin import reference_multiplicity
 
 from .ansatz import _build_ucc_data
@@ -147,6 +149,7 @@ def _inner_optimize(
     optimizer_name: str,
     stepsize: float,
     steps: int,
+    progress_callback: Optional[Callable[[dict], None]] = None,
 ) -> Tuple[np.ndarray, List[float]]:
     theta = np.array(theta_init, requires_grad=True)
 
@@ -155,19 +158,29 @@ def _inner_optimize(
     # independent of theta and there is nothing to optimize.
     if len(theta) == 0:
         e0 = float(energy_qnode(theta))
+        if progress_callback is not None:
+            progress_callback({"iteration": 0, "total_iterations": 0, "energy": e0})
         return theta, [e0]
 
     opt = build_optimizer(str(optimizer_name), stepsize=float(stepsize))
 
     energies: List[float] = [float(energy_qnode(theta))]
+    if progress_callback is not None:
+        progress_callback(
+            {"iteration": 0, "total_iterations": int(steps), "energy": energies[0]}
+        )
 
-    for _ in range(int(steps)):
+    for step in range(int(steps)):
         try:
             theta, _ = opt.step_and_cost(energy_qnode, theta)
         except AttributeError:
             theta = opt.step(energy_qnode, theta)
         e = float(energy_qnode(theta))
         energies.append(e)
+        if progress_callback is not None:
+            progress_callback(
+                {"iteration": step + 1, "total_iterations": int(steps), "energy": e}
+            )
 
     return theta, energies
 
@@ -192,9 +205,18 @@ def run_adapt_vqe(
     noise_model: Optional[Callable[[list[int]], None]] = None,
     plot: bool = True,
     force: bool = False,
+    progress_callback: Optional[Callable[[dict], None]] = None,
 ):
     """
     Run ADAPT-VQE with a UCC excitation pool.
+
+    ``progress_callback`` optionally observes synchronous ``inner_optimization``,
+    ``outer_completed``, and ``pool_scored`` events containing computed energies,
+    outer iteration and selected-operator count. Inner events also contain
+    ``iteration`` and ``total_iterations``. A cache hit emits only ``cache_hit``.
+    Callback exceptions propagate; callbacks never affect the cache signature.
+    Runtime/cache metadata are additive. Legacy cached results without a stored
+    compute runtime remain reusable and omit that unavailable measurement.
 
     Returns
     -------
@@ -210,6 +232,7 @@ def run_adapt_vqe(
           "config": dict,
         }
     """
+    start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))
 
@@ -310,7 +333,17 @@ def run_adapt_vqe(
     if not force:
         record = load_run_record(prefix)
         if record is not None:
-            return record["result"]
+            cached = dict(record["result"])
+            compute_runtime = cached_compute_runtime(cached)
+            if compute_runtime is not None:
+                cached["compute_runtime_s"] = compute_runtime
+            cached["runtime_s"] = float(time.perf_counter() - start_time)
+            cached["cache_hit"] = True
+            if progress_callback is not None:
+                progress_callback(
+                    {"phase": "cache_hit", "energy": float(cached["energy"])}
+                )
+            return cached
 
     # Device + diff method
     dev = make_device(int(num_wires), noisy=bool(effective_noisy))
@@ -328,6 +361,18 @@ def run_adapt_vqe(
 
     # Outer loop
     for _outer in range(int(max_ops) + 1):
+
+        def report_inner(event):
+            if progress_callback is not None:
+                progress_callback(
+                    {
+                        **event,
+                        "phase": "inner_optimization",
+                        "outer_iteration": _outer,
+                        "selected_operators": len(selected),
+                    }
+                )
+
         # Inner optimization for current ansatz
         energy_qnode = _energy_qnode_factory(
             mapping=mapping_norm,
@@ -352,11 +397,21 @@ def run_adapt_vqe(
             optimizer_name=str(optimizer_name),
             stepsize=float(inner_stepsize),
             steps=int(inner_steps),
+            progress_callback=report_inner if progress_callback is not None else None,
         )
 
         e_now = float(traj[-1])
         energies_outer.append(e_now)
         inner_energies.append([float(x) for x in traj])
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "outer_completed",
+                    "outer_iteration": _outer,
+                    "selected_operators": len(selected),
+                    "energy": e_now,
+                }
+            )
 
         # Stop if we've already hit the operator budget
         if len(selected) >= int(max_ops):
@@ -399,6 +454,18 @@ def run_adapt_vqe(
                 best_op = cand
 
         max_gradients.append(float(best_grad_abs))
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "phase": "pool_scored",
+                    "outer_iteration": _outer,
+                    "selected_operators": len(selected),
+                    "energy": e_now,
+                    "max_gradient": (
+                        float(best_grad_abs) if best_op is not None else None
+                    ),
+                }
+            )
 
         # Convergence check
         if best_op is None or float(best_grad_abs) < float(grad_tol):
@@ -423,7 +490,10 @@ def run_adapt_vqe(
         "final_params": [float(x) for x in np.array(theta, dtype=float).tolist()],
         "num_qubits": int(num_wires),
         "config": cfg,
+        "compute_runtime_s": float(time.perf_counter() - start_time),
+        "cache_hit": False,
     }
+    result["runtime_s"] = result["compute_runtime_s"]
 
     save_run_record(prefix, {"config": cfg, "result": result})
     print(f"\n💾 Saved ADAPT-VQE run record: results/vqe/{prefix}.json\n")

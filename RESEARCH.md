@@ -6,7 +6,7 @@ is universally best, and it is not production chemistry software.
 
 For the problem scope and user-facing workflows, read `PROBLEM.md`. For the
 current benchmark inventory, read `notebooks/benchmarks/SUMMARY.md`. For
-published tables and figures, read `notebooks/benchmarks/RESULTS.md`.
+published tables and figures, read [curated benchmark results](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/benchmarks/RESULTS.md).
 
 ## Research Claims This Repo Can Support
 
@@ -102,5 +102,5 @@ The markdown files intentionally have separate jobs:
 - `USAGE.md`: API and CLI usage
 - `RESEARCH.md`: evidence standards and benchmark acceptance rules
 - `notebooks/benchmarks/SUMMARY.md`: benchmark inventory
-- `notebooks/benchmarks/RESULTS.md`: curated result surfaces
+- [curated benchmark results](https://github.com/SidRichardsQuantum/Variational_Quantum_Eigensolver/blob/main/notebooks/benchmarks/RESULTS.md): curated result surfaces
 - `notebooks/benchmarks/SCHEMA.md`: benchmark row and artifact metadata fields

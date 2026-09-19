@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>VQE Experiment Studio</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="mark" aria-hidden="true">ψ</span>
+        <div>
+          <strong>VQE Experiment Studio</strong
+          ><small>QUANTUM SIMULATION / GROUND STATE</small>
+        </div>
+      </div>
+      <span id="connection" role="status">Connecting…</span>
+    </header>
+    <main>
+      <aside>
+        <div class="eyebrow">01 / CONFIGURE</div>
+        <h1>Experiment composer</h1>
+        <p class="muted">
+          A reproducible path from molecular problem to variational energy.
+        </p>
+        <form id="composer">
+          <label>Method<select id="method" name="method"></select></label>
+          <div id="fields"></div>
+          <button class="primary" id="run" disabled>
+            Run experiment <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <p id="notice" role="status">Loading the Python catalogue…</p>
+        <p class="footnote">
+          Scientific calculations run in the Python package. Matching
+          configurations reuse its cache.
+        </p>
+      </aside>
+      <section class="workspace">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">02 / INSPECT & REPRODUCE</div>
+            <h2>Experiment history</h2>
+          </div>
+          <span id="count" class="pill">0 runs</span>
+        </div>
+        <div class="comparison-toolbar">
+          <button id="compare" disabled>Compare selected (0/4)</button
+          ><button id="clear-comparison" disabled>Clear selection</button>
+        </div>
+        <p id="error" role="alert" hidden></p>
+        <div id="history">
+          <div class="empty">Loading experiment artifacts…</div>
+        </div>
+      </section>
+    </main>
+    <dialog id="detail">
+      <div class="dialog-head">
+        <h2 id="detail-title">Experiment detail</h2>
+        <button id="close" aria-label="Close experiment detail">Close ×</button>
+      </div>
+      <div id="detail-content"></div>
+    </dialog>
+  </body>
+</html>

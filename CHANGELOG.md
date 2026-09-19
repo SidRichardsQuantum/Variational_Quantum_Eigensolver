@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [0.3.28] - September 19, 2026
+
+### Added
+
+- Optional VQE Experiment Studio for source checkouts, with ground-state VQE
+  and ADAPT-VQE composition, queued execution, live energy observations,
+  artifact-backed history, JSON export, and configuration restoration for re-runs.
+  Compare two to four runs with method-specific energy axes and warnings when
+  resolved physical problems differ. The Studio adds no runtime dependencies
+  and is excluded from both the wheel and source distribution.
+- Queued and running Studio cancellation with persisted lifecycle timestamps,
+  isolated worker processes, private artifact staging, deterministic completion
+  races, shutdown cancellation, and recovery after abrupt server exit.
+- Optional synchronous `progress_callback` observers in `run_vqe()` and
+  `run_adapt_vqe()`, reporting computed optimization samples and cache reuse.
+  Observers do not change scientific cache identity; observer exceptions
+  propagate to the caller.
+- Studio adapter, lifecycle, HTTP, frontend, and real H2 browser checks, plus
+  dedicated Studio CI and package-content checks preserving the source-checkout
+  distribution boundary. Document local and private Codespaces setup.
+
+### Changed
+
+- ADAPT-VQE now reports invocation runtime, original compute runtime, and cache
+  reuse. Legacy cache entries remain usable without inventing missing compute
+  timings.
+- Record the next Studio milestones in the engineering roadmap: cancellation
+  and process isolation, solver termination reporting, scientific diagnostics,
+  and staged workflow expansion alongside package compatibility work. Cancellation
+  and process isolation are now delivered; the remaining milestones stay planned.
+- Validate relative Markdown links against source-distribution contents and fix
+  notebook links and the notebook license link. Exclude the generated benchmark
+  report alongside its omitted figures and link to the hosted report.
+
+---
+
 ## [0.3.27] - September 9, 2026
 
 ### Fixed

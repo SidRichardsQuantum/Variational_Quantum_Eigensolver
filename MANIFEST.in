@@ -5,6 +5,8 @@ include THEORY.md
 include RESEARCH.md
 include CHANGELOG.md
 include ROADMAP.md
+include docs/studio.md
+include docs/releasing.md
 include PROBLEM.md
 recursive-include more_docs *.md
 include LICENSE
@@ -24,6 +26,8 @@ recursive-include notebooks *.md
 # wheel because package discovery is restricted to the runtime package modules.
 recursive-include tests *.py *.ipynb
 exclude tests/test_benchmark_artifacts.py
+# The optional studio runs from a checkout and is excluded from the distribution.
+exclude tests/test_studio.py
 
 # Exclude notebooks themselves (huge)
 exclude notebooks/*.ipynb
@@ -33,6 +37,7 @@ exclude notebooks/**/*.ipynb
 # repository for the docs site, but they are generated result artifacts rather
 # than source-package inputs.
 prune notebooks/benchmarks/_artifacts
+exclude notebooks/benchmarks/RESULTS.md
 
 # Exclude large data directories
 prune data

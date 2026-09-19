@@ -401,4 +401,6 @@ VarQRTE <qite/varqrte>
 :caption: Reference
 
 API Reference <api>
+Experiment Studio <studio>
+Release checks <releasing>
 ```

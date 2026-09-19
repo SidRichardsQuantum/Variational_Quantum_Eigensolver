@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vqe-pennylane"
-version = "0.3.27"
+version = "0.3.28"
 description = "Quantum Simulation Suite with VQE, QPE, and QITE modules (PennyLane-based)"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Sid Richards", email = "siddrichards@hotmail.co.uk" }]
@@ -53,6 +53,8 @@ docs = [
 ]
 
 [tool.pytest.ini_options]
+# Studio is source-only; console-script pytest must also see the checkout.
+pythonpath = ["."]
 addopts = "-m 'not slow'"
 markers = [
   "slow: tests that are useful integration coverage but too expensive for the default PR loop",
