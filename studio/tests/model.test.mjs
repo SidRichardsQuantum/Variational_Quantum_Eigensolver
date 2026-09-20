@@ -37,6 +37,10 @@ test("progress measures iteration budgets and distinguishes preparation and comp
   assert.equal(runProgress(row).percent, 100);
   row.status = "failed";
   assert.equal(runProgress(row), null);
+  row.status = "cancelled";
+  assert.equal(runProgress(row), null);
+  delete row.progress;
+  assert.equal(runProgress(row), null);
 });
 test("ADAPT progress is scoped to inner optimization, never overall completion", () => {
   const row = { status: "running", method: "adapt_vqe", progress: {

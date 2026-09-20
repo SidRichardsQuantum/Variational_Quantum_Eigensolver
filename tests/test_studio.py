@@ -164,6 +164,55 @@ def test_jobs_lifecycle_and_restart():
     assert restarted.cancel(second["id"])["status"] == "completed"
 
 
+def test_second_instance_preserves_active_jobs(monkeypatch, tmp_path):
+    import subprocess
+
+    control = use_probe(monkeypatch, tmp_path)
+    jobs = Jobs()
+    try:
+        running = jobs.submit({"settings": {"steps": 2}})
+        wait_for((control / "observed").exists)
+        queued = jobs.submit({"settings": {"steps": 3}})
+        manifests = {p: p.read_bytes() for p in jobs.directory.glob("*.json")}
+        staging = list(jobs.directory.glob("worker-*"))
+        assert staging
+        with pytest.raises(RuntimeError, match="Another Studio instance"):
+            Jobs()
+        check = subprocess.run(
+            [sys.executable, "-c", "from studio.jobs import Jobs; Jobs()"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert check.returncode != 0
+        assert "Another Studio instance" in check.stderr
+        assert {p: p.read_bytes() for p in manifests} == manifests
+        assert all(p.is_dir() for p in staging)
+        assert jobs.rows[running["id"]]["status"] == "running"
+        assert jobs.rows[queued["id"]]["status"] == "submitted"
+    finally:
+        (control / "release").touch()
+        jobs.close(cancel=False)
+    assert all(row["status"] == "completed" for row in jobs.history())
+
+
+def test_startup_failure_releases_directory_ownership(monkeypatch):
+    def fail(*args):
+        raise OSError("startup failed")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Jobs, "recover", fail)
+        with pytest.raises(OSError, match="startup failed"):
+            Jobs()
+    with monkeypatch.context() as patch:
+        patch.setattr("studio.server.ThreadingHTTPServer", fail)
+        with pytest.raises(OSError, match="startup failed"):
+            make_server()
+    jobs = Jobs()
+    jobs.close()
+    jobs.close()
+
+
 def test_failed_and_interrupted_jobs(monkeypatch, tmp_path):
     control = use_probe(monkeypatch, tmp_path)
     (control / "fail").touch()

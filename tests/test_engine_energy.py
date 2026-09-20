@@ -4,7 +4,33 @@ import numpy as np
 import pennylane as qml
 import pytest
 
-from vqe.engine import make_energy_qnode
+from vqe.engine import make_energy_qnode, make_overlap00_fn, make_state_qnode
+
+
+@pytest.mark.parametrize("reference", [None, [0, 0], [1, 0]])
+@pytest.mark.parametrize("handles_reference", [False, True])
+def test_overlap_helper_respects_reference(reference, handles_reference):
+    def rotation(params, wires):
+        qml.CRY(params, wires=wires)
+
+    def prepared_rotation(params, wires, reference_state=None):
+        if reference_state is not None:
+            qml.BasisState(reference_state, wires=wires)
+        rotation(params, wires)
+
+    ansatz = prepared_rotation if handles_reference else rotation
+    dev = qml.device("default.qubit", wires=2)
+    state = make_state_qnode(dev, ansatz, 2, reference_state=reference)
+    overlap = make_overlap00_fn(dev, ansatz, 2, reference_state=reference)
+    theta = qml.numpy.array(0.7, requires_grad=True)
+    expected = abs(np.vdot(state(0.0), state(theta))) ** 2
+    assert overlap(0.0, theta) == pytest.approx(expected)
+    gradient = -np.sin(theta) / 2 if reference == [1, 0] else 0.0
+    assert qml.grad(lambda angle: overlap(0.0, angle))(theta) == pytest.approx(
+        gradient, abs=1e-10
+    )
+    if reference == [1, 0]:
+        assert overlap(0.0, np.pi) == pytest.approx(0.0, abs=1e-12)
 
 
 @pytest.mark.parametrize("diff_method", ["finite-diff", "backprop"])

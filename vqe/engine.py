@@ -521,6 +521,7 @@ def make_overlap00_fn(
             charge=int(charge),
             active_electrons=active_electrons,
             active_orbitals=active_orbitals,
+            reference_state=reference_state,
             basis=basis,
             ansatz_kwargs=ansatz_kwargs,
         )

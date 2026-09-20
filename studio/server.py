@@ -126,7 +126,11 @@ def make_server(host="127.0.0.1", port=8000):
             except (ValueError, UnicodeError) as exc:
                 self.send(400, json_bytes({"error": str(exc)}))
 
-    server = ThreadingHTTPServer((host, port), Handler)
+    try:
+        server = ThreadingHTTPServer((host, port), Handler)
+    except BaseException:
+        jobs.close()
+        raise
     server.jobs = jobs
     return server
 

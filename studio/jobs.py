@@ -17,6 +17,7 @@ from common.persist import atomic_write_json, read_json, stable_hash_dict
 
 from .adapter import json_bytes, normalize
 from .history import artifact_digest, artifacts, timestamp
+from .ownership import DirectoryLock
 
 WORKER_COMMAND = [sys.executable, "-m", "studio.worker"]
 
@@ -25,12 +26,21 @@ class Jobs:
     def __init__(self):
         self.directory = data_root() / "results" / "studio"
         self.directory.mkdir(parents=True, exist_ok=True)
+        self.owner = DirectoryLock(self.directory)
         self.lock = threading.RLock()
-        self.pool = ThreadPoolExecutor(max_workers=1)
         self.rows = {}
         self.progress = {}
         self.processes = {}
         self.closed = False
+        try:
+            self.recover()
+            self.pool = ThreadPoolExecutor(max_workers=1)
+        except BaseException:
+            self.owner.close()
+            raise
+
+    def recover(self):
+        """Recover interrupted work only while holding directory ownership."""
         for stale in self.directory.glob("worker-*"):
             if stale.is_dir() and not stale.is_symlink():
                 shutil.rmtree(stale)
@@ -259,3 +269,5 @@ class Jobs:
                 for run_id in self.rows:
                     self.cancel(run_id)
         self.pool.shutdown(wait=True)
+        with self.lock:
+            self.owner.close()

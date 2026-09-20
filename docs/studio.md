@@ -23,7 +23,9 @@ export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 
 Open port **8000** in the Codespaces **Ports** panel and choose **Open in Browser**.
 Keep port visibility **Private**. Locally, `python -m studio` defaults to
-`http://127.0.0.1:8000`. Run only one studio server against a data directory.
+`http://127.0.0.1:8000`. Only one Studio server may own a data directory at a time.
+A second instance is rejected before it can modify jobs or worker files. Stop the
+first server or choose another `VQE_PENNYLANE_DATA_DIR` to start a separate instance.
 The standard-library server is for a trusted local user, not a public deployment.
 Host validation, a per-server submission token, a strict JSON body limit, and
 same-origin static assets protect the local submission endpoint. These are not
@@ -50,12 +52,17 @@ the next queued run start after cleanup. Repeated cancellation is harmless. If
 completion has already been recorded, cancellation returns that completed status.
 Cancellation records `cancelled_at` and `finished_at`; it is an operational action,
 not a numerical convergence or termination verdict.
+Cancelled runs show their terminal status without an active progress indicator.
 
 Ctrl-C cancels queued and running work and waits for worker cleanup. An abrupt
 server exit closes the worker's parent-liveness pipe, causing it to exit; on the
 next startup unfinished manifests are marked failed with a finish timestamp and
 private staging directories are removed. Work is never automatically replayed.
 Programmatic `Jobs.close(cancel=False)` explicitly drains the queue instead.
+An OS-backed lock holds directory ownership until worker cleanup completes and
+is automatically released if the server process exits. The persistent
+`results/studio/.owner.lock` file is not itself evidence of a running server;
+leave it in place, including after a crash.
 
 ## Scientific outputs
 
@@ -265,7 +272,7 @@ node studio/tests/model.test.mjs
 
 Backend tests cover mapping, defaults, invalid requests, JSON determinism, real H2
 cache reuse, lifecycle, cancellation/completion races, shutdown, abrupt parent exit,
-restart, missing artifacts, and HTTP boundaries. Node's
+restart, exclusive directory ownership, startup failures, missing artifacts, and HTTP boundaries. Node's
 built-in test runner checks catalogue-derived defaults, restoration, input parsing,
 ADAPT metrics, and comparison semantics without adding frontend dependencies. HTTP tests need
 permission to bind a loopback port. Slow scientific integration tests remain

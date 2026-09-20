@@ -30,7 +30,7 @@ export function inputValue(field, text) {
 }
 export function runProgress(row) {
   if (row.status === "completed") return { percent: 100, label: "Completed" };
-  if (row.status === "failed") return null;
+  if (["failed", "cancelled"].includes(row.status)) return null;
   if (row.status === "submitted") return { percent: null, label: "Queued" };
   const p = row.progress;
   if (!p) return { percent: null, label: "Preparing experiment" };

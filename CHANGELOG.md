@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Acquire exclusive Studio data-directory ownership before recovering interrupted
+  jobs or removing worker staging directories. Reject a second Studio instance
+  without modifying active work; release ownership on shutdown, startup failure,
+  or process exit so crash recovery remains available.
+- Forward explicit reference states in `make_overlap00_fn`, keeping overlaps
+  and their gradients consistent with the corresponding prepared states.
+- Treat cancelled Studio runs as terminal in detail-view progress rendering,
+  removing the misleading “Preparing experiment” indicator.
 - Differentiate VQD deflation overlaps with simulator backpropagation for both
   statevectors and noisy density matrices. This avoids complex-gradient casts
   into real UCC parameters from finite-difference state Jacobians. Record the
