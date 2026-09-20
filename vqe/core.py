@@ -22,7 +22,8 @@ from pennylane import numpy as np
 from common.metrics import compute_fidelity
 from common.molecules import MOLECULES
 from common.persist import cached_compute_runtime, canonical_hamiltonian
-from common.problem import resolve_problem
+from common.problem import problem_metadata, resolve_problem
+from common.termination import optimize, stopping_config, supplied_parameters
 from common.units import coordinate_unit_label
 
 from .auto_ansatz import resolve_auto_ansatz
@@ -185,6 +186,10 @@ def run_vqe(
     reference_state=None,
     *,
     progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    energy_tol: float | None = None,
+    patience: int = 1,
+    initial_params=None,
+    initialization_source: dict | None = None,
 ):
     """
     Run a ground-state VQE optimization.
@@ -250,6 +255,13 @@ def run_vqe(
         ``params_history``, ``runtime_s``, ``compute_runtime_s``,
         ``cache_hit``, and ``ansatz_selection`` when auto-selection was used.
     """
+    stopping = stopping_config(steps, energy_tol, patience)
+    if initial_params is not None and not np.all(
+        np.isfinite(np.asarray(initial_params, dtype=float))
+    ):
+        raise ValueError("initial_params must be finite")
+    if initialization_source is not None and initial_params is None:
+        raise ValueError("initialization_source requires initial_params")
     start_time = time.perf_counter()
     ensure_dirs()
     np.random.seed(int(seed))
@@ -323,6 +335,15 @@ def run_vqe(
         ansatz_kwargs=resolved_ansatz_kwargs,
     )
     cfg["multiplicity"] = int(multiplicity_out)
+    cfg.update(problem_metadata(problem))
+    cfg["initialization_source"] = initialization_source
+    cfg["termination_schema"] = 1
+    cfg["stopping"] = stopping
+    cfg["initial_params"] = (
+        None
+        if initial_params is None
+        else np.asarray(initial_params, dtype=float).tolist()
+    )
     if ansatz_selection is not None:
         cfg["ansatz_selection"] = dict(ansatz_selection)
     if hamiltonian_mode:
@@ -364,7 +385,7 @@ def run_vqe(
                             "phase": "cache_hit",
                             "iteration": int(cached["steps"]),
                             "total_iterations": int(steps),
-                            "energy": float(cached["energy"]),
+                            "energy": cached["energy"],
                         }
                     )
                 return cached
@@ -434,52 +455,33 @@ def run_vqe(
     opt = engine_build_optimizer(str(optimizer_name), stepsize=resolved_stepsize)
 
     # --- Optimization loop ---
+    if initial_params is not None:
+        params0 = supplied_parameters(initial_params, params0)
     params = np.array(params0, requires_grad=True)
-    energies: list[float] = [float(energy_qnode(params))]
-    if progress_callback is not None:
-        progress_callback(
-            {
-                "phase": "optimization",
-                "iteration": 0,
-                "total_iterations": int(steps),
-                "energy": energies[0],
-            }
-        )
 
-    params_history: list[list[float]] = [
-        [float(x) for x in np.asarray(params, dtype=float).ravel()]
-    ]
+    def update(current):
+        if hasattr(opt, "step_and_cost"):
+            return opt.step_and_cost(energy_qnode, current)[0]
+        return opt.step(energy_qnode, current)
 
-    for step in range(int(steps)):
-        try:
-            params, _ = opt.step_and_cost(energy_qnode, params)
-        except AttributeError:
-            params = opt.step(energy_qnode, params)
-        e = float(energy_qnode(params))
-
-        energies.append(float(e))
-        if progress_callback is not None:
-            progress_callback(
-                {
-                    "phase": "optimization",
-                    "iteration": step + 1,
-                    "total_iterations": int(steps),
-                    "energy": float(e),
-                }
-            )
-        params_history.append(
-            [float(x) for x in np.asarray(params, dtype=float).ravel()]
-        )
-
-        print(f"Step {step + 1:02d}/{steps}: E = {float(e):.6f} Ha")
-
-    final_energy = float(energies[-1])
-    final_params = params_history[-1]
-
-    final_state = state_qnode(params)
+    params, energies, params_history, termination = optimize(
+        params,
+        energy_qnode,
+        update,
+        steps=steps,
+        energy_tol=energy_tol,
+        patience=patience,
+        progress_callback=progress_callback,
+    )
+    final_energy = energies[-1] if energies else None
+    final_params = np.asarray(params, dtype=float).ravel().tolist()
+    final_state = state_qnode(params) if energies else None
+    if final_state is not None and not np.all(np.isfinite(final_state)):
+        termination.update(reason="numerical_failure", message="Non-finite final state")
+        final_state = None
 
     # --- Optional plot ---
-    if plot:
+    if plot and energies:
         plot_convergence(
             energies,
             molecule_label,
@@ -495,11 +497,23 @@ def run_vqe(
     # --- Save ---
     compute_runtime_s = float(time.perf_counter() - start_time)
     result = {
-        "energy": float(final_energy),
+        "energy": final_energy,
         "energies": [float(e) for e in energies],
-        "steps": int(steps),
-        "final_state_real": np.real(final_state).tolist(),
-        "final_state_imag": np.imag(final_state).tolist(),
+        "steps": termination["updates"],
+        "termination": termination,
+        "config": cfg,
+        "initialization": {
+            "source": "supplied" if initial_params is not None else "seed",
+            "seed": int(seed),
+            "provenance": initialization_source,
+        },
+        "final_params_shape": list(np.shape(params)),
+        "final_state_real": (
+            None if final_state is None else np.real(final_state).tolist()
+        ),
+        "final_state_imag": (
+            None if final_state is None else np.imag(final_state).tolist()
+        ),
         "num_qubits": int(qubits),
         "active_electrons": resolved_active_electrons,
         "active_orbitals": resolved_active_orbitals,

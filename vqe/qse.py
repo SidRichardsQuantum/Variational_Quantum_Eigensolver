@@ -23,10 +23,9 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import pennylane as qml
 
-from common.molecules import get_molecule_config
+from common.problem import problem_metadata, resolve_problem, solver_inputs
 
 from .core import run_vqe
-from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
     load_run_record,
@@ -366,6 +365,18 @@ def run_qse(
     stepsize: float | None = None,
     seed: int = 0,
     mapping: str = "jordan_wigner",
+    symbols=None,
+    coordinates=None,
+    basis: str = "sto-3g",
+    charge: int = 0,
+    multiplicity: int = 1,
+    unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+    hamiltonian=None,
+    num_qubits: int | None = None,
+    reference_state=None,
+    ansatz_kwargs=None,
     # QSE pool controls
     pool: str = "hamiltonian_topk",
     max_ops: int = 24,
@@ -408,6 +419,30 @@ def run_qse(
         else float(stepsize)
     )
 
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        multiplicity=multiplicity,
+        unit=unit,
+        mapping=mapping,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+    )
+    H = problem.hamiltonian
+    num_wires = problem.num_qubits
+    symbols, coordinates = problem.symbols, problem.coordinates
+    basis, charge, multiplicity = problem.basis, problem.charge, problem.multiplicity
+    active_electrons, active_orbitals = (
+        problem.active_electrons,
+        problem.active_orbitals,
+    )
+
     # ------------------------------------------------------------
     # 1) Reference VQE run (noiseless)
     # ------------------------------------------------------------
@@ -422,6 +457,8 @@ def run_qse(
         noisy=False,
         mapping=mapping_norm,
         force=bool(force),
+        **solver_inputs(problem),
+        ansatz_kwargs=ansatz_kwargs,
     )
 
     psi = np.array(vqe_res["final_state_real"], dtype=float) + 1j * np.array(
@@ -438,7 +475,7 @@ def run_qse(
     # ------------------------------------------------------------
     # 2) Hamiltonian (for QSE subspace matrix construction)
     # ------------------------------------------------------------
-    H, n_qubits, *_ = build_hamiltonian(mol, mapping=mapping_norm, unit="angstrom")
+    H, n_qubits = problem.hamiltonian, problem.num_qubits
     if int(n_qubits) != int(num_wires):
         raise RuntimeError(
             f"QSE: mismatch in qubit count (VQE={num_wires}, H={n_qubits})."
@@ -466,11 +503,6 @@ def run_qse(
     # ------------------------------------------------------------
     # 4) Config + caching
     # ------------------------------------------------------------
-    cfg_mol = get_molecule_config(mol)
-    symbols = list(cfg_mol["symbols"])
-    coordinates = np.array(cfg_mol["coordinates"], dtype=float)
-    basis = str(cfg_mol["basis"])
-
     cfg = make_run_config_dict(
         symbols=symbols,
         coordinates=coordinates,
@@ -486,6 +518,9 @@ def run_qse(
         amplitude_damping_prob=0.0,
         molecule_label=mol,
     )
+
+    cfg.update(problem_metadata(problem))
+    cfg["ansatz_kwargs"] = dict(ansatz_kwargs or {})
 
     cfg["qse_pool"] = pool_norm
     cfg["qse_k"] = int(k)
@@ -520,7 +555,7 @@ def run_qse(
     # ------------------------------------------------------------
     # 5) Build subspace matrices Hs and Ss
     # ------------------------------------------------------------
-    Hmat = np.array(qml.matrix(H), dtype=complex)
+    Hmat = np.array(qml.matrix(H, wire_order=range(num_wires)), dtype=complex)
 
     # Precompute O_i|psi>
     wire_order = list(range(int(num_wires)))

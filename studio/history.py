@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 
 from common.paths import data_root, results_dir
 from common.persist import read_json
-from vqe.io_utils import make_filename_prefix, run_signature
+from qite import io_utils as qite_io
+from vqe import io_utils as vqe_io
 
 from .adapter import json_bytes
 
@@ -15,7 +16,9 @@ def timestamp():
 
 def artifacts():
     records = {}
-    for path in results_dir("vqe").glob("*.json"):
+    for path in list(results_dir("vqe").glob("*.json")) + list(
+        results_dir("qite").glob("*.json")
+    ):
         try:
             if path.is_symlink():
                 continue
@@ -24,14 +27,19 @@ def artifacts():
             cfg, result = record["config"], record["result"]
             # VQE-family methods share a directory. Accept only the standard VQE
             # filename and result shape, with the current scientific signature.
-            signature = run_signature(cfg)
-            method = "adapt_vqe" if "adapt_pool" in cfg else "vqe"
-            prefix = make_filename_prefix(
+            method = (
+                "varqite"
+                if path.parent.name == "qite"
+                else ("adapt_vqe" if "adapt_pool" in cfg else "vqe")
+            )
+            io = qite_io if method == "varqite" else vqe_io
+            signature = io.run_signature(cfg)
+            prefix = io.make_filename_prefix(
                 cfg,
                 noisy=bool(cfg.get("noise")),
                 seed=cfg["seed"],
                 hash_str=signature,
-                algo="vqe",
+                algo="varqite" if method == "varqite" else "vqe",
             )
             if method == "adapt_vqe":
                 prefix += "_adapt"
@@ -39,13 +47,22 @@ def artifacts():
             required |= (
                 {"inner_energies", "selected_operators", "max_gradients"}
                 if method == "adapt_vqe"
-                else {"params_history"}
+                else (
+                    {"varqite", "final_params_shape"}
+                    if method == "varqite"
+                    else {"params_history"}
+                )
             )
             if path.stem != prefix or not required <= result.keys():
                 continue
             records[path.name] = {
                 "id": path.stem,
-                "status": "completed",
+                "status": (
+                    "failed"
+                    if result.get("termination", {}).get("reason")
+                    == "numerical_failure"
+                    else "completed"
+                ),
                 "method": method,
                 "artifact": str(path.relative_to(data_root())),
                 "signature": signature,
@@ -80,11 +97,16 @@ def find_artifact(experiment, result):
         c, r = row["resolved_config"], row["result"]
         if row["method"] != experiment["method"]:
             continue
-        if experiment["method"] == "adapt_vqe":
+        if result.get("config") is not None:
             # ADAPT returns its authoritative resolved config; no reconstruction.
             if c == result.get("config") and all(
                 r.get(k) == result.get(k)
-                for k in ("energies", "final_params", "selected_operators")
+                for k in (
+                    "energies",
+                    "final_params",
+                    "selected_operators",
+                    "termination",
+                )
             ):
                 matches.append(name)
             continue

@@ -1,7 +1,7 @@
 # VQE Experiment Studio
 
 An optional, local web interface for composing, running, inspecting, and reusing
-ground-state VQE and ADAPT-VQE experiments. The scientific Python package remains the
+ground-state VQE, ADAPT-VQE, and VarQITE experiments. The scientific Python package remains the
 only computational implementation. No generative AI, image generation, frontend
 framework, Node runtime, or web dependency is added to `pip install vqe-pennylane`.
 The studio runs from a source checkout; it is not installed in the Python wheel.
@@ -31,7 +31,7 @@ Host validation, a per-server submission token, a strict JSON body limit, and
 same-origin static assets protect the local submission endpoint. These are not
 user authentication or a multi-user job service.
 
-Choose Ground-state VQE or ADAPT-VQE in the method selector. Start with H2 / UCCSD / Adam for VQE. VQE automatically displays the selected optimizer's calibrated step size.
+Choose Ground-state VQE, ADAPT-VQE, or VarQITE in the method selector. Start with H2 / UCCSD / Adam for VQE. VQE automatically displays the selected optimizer's calibrated step size.
 Changing optimizer updates that value while it is automatic; editing it creates
 a custom override, and clearing it restores automatic selection. Method changes
 load the new solver's defaults while retaining molecule and mapping. Molecule
@@ -64,45 +64,77 @@ is automatically released if the server process exits. The persistent
 `results/studio/.owner.lock` file is not itself evidence of a running server;
 leave it in place, including after a crash.
 
+## Refine a VQE run with VarQITE
+
+Open a completed noiseless Studio VQE run and choose **Refine with VarQITE**.
+The composer displays the source artifact and retains its molecule, mapping, and
+ansatz. Those controls are locked while refinement is selected. Set the
+imaginary-time step, update budget, linear solver, regularization, and optional
+stopping tolerance, then press **Run experiment**. **Start independently** removes
+the source while keeping your VarQITE settings. Changing method also resets the
+initialization. **Re-run** on a refinement restores its source and settings.
+
+The backend verifies the source digest, resolved Hamiltonian/geometry/active space,
+reference, mapping, parameter shape, and prepared state (up to global phase)
+before queueing and again in the worker's private snapshot. Missing, changed,
+noisy, or incompatible sources fail explicitly. This transfers parameters; it
+does not resume the VQE optimizer or claim orbital compatibility across geometries.
+Imported artifacts without a recoverable Studio configuration remain view/export
+only. Older VQE artifacts without recorded parameter shape cannot be refined.
+
+Open a finished refinement and choose **Compare with source**, or select it and an
+independent VarQITE run through the usual comparison controls. Details show the
+source energy change and **Combined VQE + VarQITE compute runtime**, which adds
+original source preparation and refinement compute times even on cache hits.
+Invocation runtime remains separate. Missing source timings are not estimated.
+A lower energy is not an exact-reference error or proof that the extra work was
+worthwhile. See the reproducible [H2 refinement case study](../more_docs/qite/varqite.md#refinement-case-study)
+for a comparison with independent initialization.
+
 ## Scientific outputs
 
 Cards and detail views display real energy, energy history, completed iteration
 count, qubits, active electrons (when returned), compute runtime, invocation
 runtime, and cache-hit status. The last energy change is explicitly derived from
-the last two history samples. For VQE, completion means the requested fixed iteration budget finished. ADAPT
-may stop at its operator budget, pool exhaustion, or pool-gradient tolerance.
+the last two history samples. VQE and VarQITE report `budget_exhausted`, `tolerance_satisfied`, or
+`numerical_failure`, together with actual updates and the stopping diagnostic.
+Leave the energy-change tolerance empty for fixed-step execution; otherwise
+patience sets the required consecutive small changes. Budget exhaustion is a
+completed execution, not a convergence claim. Numerical failures are failed runs;
+the last finite iterate is retained where available. ADAPT reports its operator
+budget, pool exhaustion, or pool-gradient tolerance separately; non-finite ADAPT
+calculations raise an error.
 Studio does **not** infer a convergence verdict from completion or energy change.
 
-Neither runner returns exact/reference energies, reference errors, or a
-convergence verdict, so none are invented. The browser plots the returned
+None of these runners returns exact/reference energies or reference errors, so none are invented. The browser plots the returned
 `energies` array, including the initial state at iteration zero. `plot=False`
 suppresses interactive Matplotlib output. Existing PNG names do not contain the
 full deterministic run signature, so the studio does not associate potentially
 overwritable PNG files with a specific run. Its SVG curve always uses that run's
 actual energy samples. JSON export contains all results returned by the selected runner, requested and
 resolved configuration, available runtime/environment metadata, artifact path, and
-IDs. VQE includes statevectors and parameter history; ADAPT includes selected
+IDs. VQE and VarQITE include statevectors and parameter history; ADAPT includes selected
 operators, inner energy histories, and scored pool gradients. Legacy ADAPT caches
 may lack compute runtime; Studio leaves that measurement absent.
 
-Energy charts label both axes: energy in hartree (Ha) and optimizer or ADAPT outer
-iteration (a count). Live ADAPT inner curves identify their outer iteration.
+Energy charts label both axes: energy in hartree (Ha) and optimizer iteration, ADAPT outer
+iteration, or imaginary-time update (a count). Live ADAPT inner curves identify their outer iteration.
 Comparison legends use colors and line styles; iteration zero marks the start
 of each plotted sequence.
 
 Select two to four completed runs with **Compare**, then press **Compare selected**
 to overlay energy curves and inspect metrics and configuration differences. Curves
-are grouped by method because VQE optimizer steps and ADAPT outer iterations have
+are grouped by method because VQE optimizer steps, VarQITE updates, and ADAPT outer iterations have
 different meanings. A warning identifies different or incomplete resolved problems;
 absolute energies across such problems do not establish algorithm performance.
 
 While a run executes, cards and open detail views show computed energy observations.
-Progress bars show the percentage of VQE optimizer steps completed, or the current
+Progress bars show the percentage of VQE optimizer steps or VarQITE updates completed, or the current
 ADAPT inner optimization's steps. ADAPT percentages restart for each outer iteration
 and do not estimate overall completion. Preparation, pool scoring, and cache loading
 use an indeterminate bar. Percentages measure iteration budgets, not elapsed time;
 finishing optimization may still be followed by result serialization.
-VQE reports initial energy and optimizer updates. ADAPT reports inner optimization,
+VQE and VarQITE report initial energy and computed updates. ADAPT reports inner optimization,
 completed outer iterations, selected-operator count, and pool scoring. Observations
 are provisional, held in memory, and replaced by the authoritative artifact when
 execution completes. Polling may skip intermediate displays on short runs. Cache
@@ -237,20 +269,17 @@ such as VarQRTE as energy minimizers.
 
 Introduced in v0.3.28, the Studio is available only from a source checkout;
 `pip install vqe-pennylane` installs the scientific package without the Studio.
-Queued/running cancellation and isolated worker processes are included. Explicit
-solver termination reasons, sector-aware references, and additional algorithm
-adapters remain planned work.
-
-The [engineering roadmap](../ROADMAP.md) tracks the implementation order and
-completion criteria. Solver
-termination and scientific diagnostics then improve result interpretation;
-VarQITE and VQE → VarQITE refinement lead the subsequent workflow expansion.
+Queued/running cancellation, isolated worker processes, solver termination
+reporting, VarQITE, and compatible VQE → VarQITE refinement are included.
+Sector-aware references, state diagnostics, explicit geometry controls, and further
+algorithm adapters remain planned. The [engineering roadmap](../ROADMAP.md)
+tracks completion criteria and the remaining work.
 Python/NumPy compatibility is tracked as a separate package milestone.
 
 ## Python progress observers
 
-Both runners accept `progress_callback=observer`. The synchronous observer receives
-fresh dictionaries containing a `phase` and computed `energy`. VQE optimization
+All three runners accept `progress_callback=observer`. The synchronous observer receives
+fresh dictionaries containing a `phase` and computed `energy`. VQE and VarQITE update
 events include `iteration` and `total_iterations`; ADAPT inner events also identify
 `outer_iteration` and `selected_operators`. ADAPT additionally emits
 `outer_completed` and `pool_scored` events. A cache hit emits only `cache_hit`.

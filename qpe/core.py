@@ -235,6 +235,7 @@ def run_qpe(
     hamiltonian: qml.Hamiltonian | None = None,
     hf_state: np.ndarray | None = None,
     system_qubits: int | None = None,
+    multiplicity: int = 1,
 ) -> Dict[str, Any]:
     """
     Run a (noisy or noiseless) Quantum Phase Estimation simulation with caching.
@@ -263,6 +264,7 @@ def run_qpe(
         coordinates=coordinates,
         basis=basis,
         charge=charge,
+        multiplicity=multiplicity,
         mapping=mapping,
         unit=unit,
         active_electrons=active_electrons,
@@ -315,6 +317,7 @@ def run_qpe(
             geometry=np.array(coordinates_out, dtype=float),
             basis=str(basis_out),
             charge=int(charge_out),
+            multiplicity=problem.multiplicity,
             n_ancilla=int(n_ancilla),
             t=float(t),
             seed=int(seed),
@@ -424,6 +427,7 @@ def run_qpe(
         "geometry": np.array(coordinates_out, dtype=float).tolist(),
         "basis": basis_out,
         "charge": charge_out,
+        "multiplicity": problem.multiplicity,
         "unit": unit_out,
         "counts": counts,
         "probs": probs,

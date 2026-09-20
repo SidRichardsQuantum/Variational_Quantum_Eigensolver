@@ -251,6 +251,9 @@ def handle_special_modes(args) -> bool:
         weights = _parse_weights(args.weights, num_states=args.num_states)
 
         res = run_ssvqe(
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             num_states=int(args.num_states),
             weights=weights,
@@ -295,6 +298,14 @@ def handle_special_modes(args) -> bool:
         print("🔹 Running LR-VQE (post-VQE tangent-space TDA)...")
 
         res = run_lr_vqe(
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             k=int(args.lr_k),
             ansatz_name=args.ansatz,
@@ -332,6 +343,14 @@ def handle_special_modes(args) -> bool:
         print("🔹 Running EOM-VQE (post-VQE tangent-space full response)...")
 
         res = run_eom_vqe(
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             k=int(args.eom_k),
             ansatz_name=args.ansatz,
@@ -370,6 +389,14 @@ def handle_special_modes(args) -> bool:
         print("🔹 Running EOM-QSE (post-VQE operator-manifold commutator EOM)...")
 
         res = run_eom_qse(
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             k=int(args.eom_qse_k),
             ansatz_name=args.ansatz,
@@ -402,6 +429,9 @@ def handle_special_modes(args) -> bool:
         print("🔹 Running VQD (excited states via deflation)...")
 
         res = run_vqd(
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             num_states=int(args.num_states),
             beta=float(args.beta),
@@ -454,6 +484,14 @@ def handle_special_modes(args) -> bool:
         )
 
         res = run_adapt_vqe(
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             pool=str(args.pool),
             max_ops=int(args.max_ops),
@@ -574,6 +612,14 @@ def handle_special_modes(args) -> bool:
         print("🔹 Running QSE (post-VQE subspace expansion)...")
 
         res = run_qse(
+            symbols=symbols,
+            coordinates=coordinates,
+            basis=str(args.basis),
+            charge=int(args.charge),
+            unit=str(args.unit),
+            multiplicity=getattr(args, "multiplicity", 1),
+            active_electrons=getattr(args, "active_electrons", None),
+            active_orbitals=getattr(args, "active_orbitals", None),
             molecule=args.molecule,
             k=int(args.qse_k),
             ansatz_name=args.ansatz,
@@ -613,6 +659,9 @@ def handle_special_modes(args) -> bool:
             coordinates=coordinates,
             basis=str(args.basis),
             charge=int(args.charge),
+            multiplicity=getattr(args, "multiplicity", 1),
+            energy_tol=getattr(args, "energy_tol", None),
+            patience=getattr(args, "patience", 1),
             **_active_space_kwargs(args),
             unit=str(args.unit),
             mapping=args.mapping,
@@ -637,6 +686,9 @@ def handle_special_modes(args) -> bool:
             coordinates=coordinates,
             basis=str(args.basis),
             charge=int(args.charge),
+            multiplicity=getattr(args, "multiplicity", 1),
+            energy_tol=getattr(args, "energy_tol", None),
+            patience=getattr(args, "patience", 1),
             **_active_space_kwargs(args),
             unit=str(args.unit),
             mapping=args.mapping,
@@ -680,6 +732,9 @@ def build_parser() -> argparse.ArgumentParser:
         default="H2",
         help="Molecule label or registry key (e.g. H2, LiH, H2O, H3+). In explicit geometry mode, this is used as a label.",
     )
+    core.add_argument("--multiplicity", type=int, default=1)
+    core.add_argument("--energy-tol", type=float, default=None)
+    core.add_argument("--patience", type=int, default=1)
     core.add_argument("-a", "--ansatz", type=str, default="UCCSD", help="Ansatz name")
     core.add_argument(
         "-o", "--optimizer", type=str, default="Adam", help="Optimizer name"
@@ -1120,6 +1175,9 @@ def main(argv: list[str] | None = None) -> None:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        multiplicity=getattr(args, "multiplicity", 1),
+        energy_tol=getattr(args, "energy_tol", None),
+        patience=getattr(args, "patience", 1),
         **_active_space_kwargs(args),
         unit=str(args.unit),
         mapping=str(args.mapping),

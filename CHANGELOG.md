@@ -4,7 +4,47 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [0.3.29] - Unreleased
+## [Unreleased]
+
+### Added
+
+- Optional energy-change stopping criteria and patience for VQE and VarQITE,
+  with explicit termination reasons, actual and attempted update counts, and
+  aligned energy/parameter histories. Fixed budgets remain the default.
+- Supplied initial parameters for VQE and VarQITE, with finite-value and shape
+  validation, initialization provenance, and cache identity. VarQITE now supports
+  synchronous progress observers and returns parameter histories.
+- Studio VarQITE execution and VQE → VarQITE refinement from a completed noiseless
+  Studio VQE artifact. Refinement checks the artifact digest, resolved problem,
+  ansatz, parameter shape, and reconstructed state before submission and again in
+  the worker. The composer retains the source, locks compatible problem/circuit
+  controls, and offers independent initialization and direct source comparison.
+- Refinement details and comparisons report the energy change from the source,
+  source compute time, and combined VQE + VarQITE compute time, including on cache
+  hits. Missing timings remain absent.
+- An `h2-refinement` benchmark suite compares three seeds of 10 VQE + 10 VarQITE
+  updates against 20 independent VarQITE updates using the same resolved problem
+  and exact full-qubit reference, retaining individual runs and combined costs.
+
+### Changed
+
+- Route ADAPT and existing excited-state solvers through shared problem resolution
+  for explicit geometry, multiplicity, and active spaces. Supported excited-state
+  ansatzes/pools accept expert Hamiltonians; ADAPT's chemistry UCC pool rejects
+  them explicitly. Post-VQE reference and projected problems share resolved inputs.
+- Forward supported chemistry inputs through solver CLIs and add QPE multiplicity.
+  Prepared-state QPE remains deferred.
+- Preserve termination metadata on cache hits and distinguish ADAPT operator
+  budget, pool exhaustion, and gradient-tolerance outcomes. VQE/VarQITE numerical
+  failures retain the last finite iterate and are marked failed in Studio and
+  benchmark records. Stopping tolerance does not certify ground-state accuracy.
+- Include resolved problem, stopping, and initialization metadata in affected
+  cache signatures. Older artifacts remain on disk; changed signatures recompute
+  instead of inventing missing metadata.
+- Expand solver, Studio, and browser regression coverage, and document delivered
+  workflows separately from deferred geometry scans and scientific diagnostics.
+
+## [0.3.29]
 
 ### Fixed
 

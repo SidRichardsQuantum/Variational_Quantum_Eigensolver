@@ -15,7 +15,7 @@ from pathlib import Path
 from common.paths import data_root
 from common.persist import atomic_write_json, read_json, stable_hash_dict
 
-from .adapter import json_bytes, normalize
+from .adapter import json_bytes, normalize, refinement_kwargs
 from .history import artifact_digest, artifacts, timestamp
 from .ownership import DirectoryLock
 
@@ -63,6 +63,8 @@ class Jobs:
 
     def submit(self, raw):
         config = normalize(raw)
+        if "refinement" in config:
+            refinement_kwargs(config)
         with self.lock:
             if self.closed:
                 raise ValueError("Studio is shutting down")
@@ -120,12 +122,15 @@ class Jobs:
                 prefix="worker-", dir=self.directory
             ) as staging:
                 root = Path(staging)
-                cache = root / "results" / "vqe"
-                cache.mkdir(parents=True)
-                # Copy, never hard-link: a worker cannot overwrite the shared cache.
-                for source in (self.directory.parent / "vqe").glob("*.json"):
-                    if source.is_file() and not source.is_symlink():
-                        shutil.copy2(source, cache / source.name)
+                family = "qite" if row["method"] == "varqite" else "vqe"
+                cache = root / "results" / family
+                # Copy both families so refinement can verify its VQE source.
+                for folder in ("vqe", "qite"):
+                    target = root / "results" / folder
+                    target.mkdir(parents=True)
+                    for source in (self.directory.parent / folder).glob("*.json"):
+                        if source.is_file() and not source.is_symlink():
+                            shutil.copy2(source, target / source.name)
                 env = os.environ.copy()
                 env["VQE_PENNYLANE_DATA_DIR"] = staging
                 env["PYTHONPATH"] = (
@@ -176,7 +181,7 @@ class Jobs:
                         with self.lock:
                             if row["status"] != "running":
                                 return
-                            destination = self.directory.parent / "vqe" / name
+                            destination = self.directory.parent / family / name
                             # Publishing and completing share the cancellation lock.
                             if (
                                 not destination.exists()
@@ -185,7 +190,16 @@ class Jobs:
                             ):
                                 atomic_write_json(destination, record)
                             row.update(
-                                **result, status="completed", finished_at=timestamp()
+                                **result,
+                                status=(
+                                    "failed"
+                                    if record["result"]
+                                    .get("termination", {})
+                                    .get("reason")
+                                    == "numerical_failure"
+                                    else "completed"
+                                ),
+                                finished_at=timestamp(),
                             )
                             self.progress.pop(run_id, None)
                             self.save(row)

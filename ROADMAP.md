@@ -5,16 +5,10 @@ solver workflows, and documentation clarity.
 Research questions and proposed benchmark notebooks remain in
 [`notebooks/BENCHMARK_ROADMAP.md`](notebooks/BENCHMARK_ROADMAP.md).
 
-Optional qml-pennylane studies for sparse energy-curve interpolation and the
-effect of solver error on physics classification are tracked in the
-[notebook roadmap](notebooks/BENCHMARK_ROADMAP.md#optional-qml-studies-on-simulation-results).
-They consume simulation results and do not require a core ML dependency or
-changes to the solver engines.
-
 Open items are ordered by their impact on installation reliability,
 reproducibility, and release confidence.
 
-## v0.3.28 Baseline And Next Milestones
+## Current Baseline And Next Milestones
 
 The v0.3.28 Studio runs from a source checkout and supports VQE/ADAPT-VQE,
 live observations, comparisons, JSON export, cache-backed history, and re-run
@@ -22,11 +16,12 @@ configuration restoration, queued/running cancellation, and isolated worker
 processes with private artifact staging. It remains outside the wheel and source distribution;
 see the [Studio guide](docs/studio.md) for setup and current limitations.
 
-The next feature sequence is explicit solver termination, sector-aware
-references/state diagnostics, then incremental workflow
-expansion. The existing Python/NumPy compatibility migration remains a separate
-installation milestone and is not gated on Studio feature work. Verify the fast CI jobs before merging releases; optional ruleset enforcement
-is tracked below.
+The working tree now adds explicit termination, supplied initial parameters,
+shared inputs across existing solver workflows, Studio VarQITE, and compatible
+VQE → VarQITE refinement with source comparison and combined compute costs.
+The next scientific milestone is sector-aware references/state diagnostics.
+Prepared-state QPE, geometry-scan continuation, and reusable trajectory analysis
+remain planned. Python/NumPy compatibility is a separate installation milestone.
 
 ## Priority 0: Installation And Supported Environments
 
@@ -102,31 +97,20 @@ Completion criteria:
 
 ## Priority 2: Complete Existing Solver Workflows
 
-Implement shared problem inputs and prepared-state QPE first, then convergence
-reporting, warm starts, and reusable trajectory analysis. Research validation is
+Shared problem inputs, VQE/VarQITE termination, and supplied parameters are implemented.
+Prepared-state QPE, scan continuation, and reusable trajectory analysis remain open. Research validation is
 tracked in the [notebook roadmap](notebooks/BENCHMARK_ROADMAP.md#validation-of-existing-solver-workflows).
 
-### Share problem inputs across ADAPT and excited-state methods
+### Implemented: shared inputs across ADAPT and excited-state methods
 
-Planned work:
-
-- Extend ADAPT-VQE and the existing excited-state entrypoints through the shared
-  problem-resolution layer to accept explicit geometries, active spaces,
-  multiplicity, and expert Hamiltonians where their ansatz or operator pool
-  supports them. Add explicit multiplicity input to QPE.
-- Ensure post-VQE methods use the same resolved problem for their reference
-  state and projected eigenproblem. Keep unsupported chemistry-dependent pools
-  explicit rather than silently substituting a different problem or method.
-- Include resolved inputs in cache signatures and result metadata, document
-  method-specific restrictions, and forward supported chemistry options through
-  the existing CLIs. Keep expert Hamiltonian inputs in the Python API.
-
-Completion criteria:
-
-- small active-space, explicit spin-reference, and expert-model cases verify
-  shared Hamiltonian/reference conventions across supported methods
-- cache entries distinguish physical input changes, unsupported combinations
-  fail clearly, and existing molecule-name calls retain their behavior
+- ADAPT and existing excited-state entrypoints use shared problem resolution for
+  explicit geometry, active spaces, and multiplicity. QPE accepts multiplicity.
+- Post-VQE methods reuse the resolved Hamiltonian and reference. Expert inputs
+  work with supported ansatzes/pools; ADAPT explicitly requires its chemistry pool.
+- Resolved inputs participate in cache identity and result metadata; supported
+  chemistry options are forwarded by the CLIs. Expert Hamiltonians remain Python-only.
+- Regression coverage includes active-space ADAPT, spin references, sparse expert
+  registers, cache identity, and existing molecule-name workflows.
 
 ### Accept prepared states in QPE
 
@@ -150,37 +134,28 @@ Completion criteria:
 - VQE → QPE and VarQITE → QPE examples reuse the same resolved problem;
   preparation changes invalidate cache reuse, and existing HF calls still work
 
-### Report convergence and termination explicitly
+### Implemented: explicit termination reporting
 
-Planned work:
+- VQE and VarQITE retain fixed budgets by default and optionally stop after a
+  specified number of consecutive small energy changes. Results record reasons,
+  thresholds, diagnostics, actual updates, and attempted updates. Numerical failure
+  retains only finite iterates; cache hits preserve the outcome.
+- Studio displays these outcomes, marks numerical failures failed, and distinguishes
+  ADAPT operator budget, pool exhaustion, and gradient tolerance. ADAPT non-finite
+  calculations raise rather than publishing a completed result.
+- Benchmark rows retain termination and failure status. QRTE retains its requested
+  time horizon; optimizer stopping is separate from physical accuracy.
 
-- Start with VQE and VarQITE: add optional stopping criteria, actual update
-  counts, non-finite-value detection, and explicit termination reasons.
-  Preserve fixed-step execution when stopping controls are omitted.
-- Separate budget exhaustion, tolerance satisfaction, and numerical failure.
-  Record the criterion, threshold, and measured diagnostic; keep eigenstate
-  quality diagnostics distinct from optimizer convergence.
-- Expose returned termination reasons and actual update counts in Studio run
-  details and comparisons; preserve them on cache hits. Include ADAPT operator
-  budget, pool exhaustion, and pool-gradient tolerance as distinct outcomes.
-- Carry status into benchmark records and comparisons so failed or non-finite
-  runs cannot appear as successful evidence. Include stopping settings in cache
-  identity and preserve status on cache hits.
+### Supplied parameters implemented; geometry-scan continuation remains planned
 
-Completion criteria:
+VQE and VarQITE accept finite, shape-compatible `initial_params`, record shape
+and provenance, and include initialization in cache identity. Studio verifies
+same-problem, same-state VQE → VarQITE transfer. The `h2-refinement` suite compares
+this workflow with independent VarQITE across three seeds, including source cost.
+This is parameter transfer, not optimizer checkpoint/resume.
 
-- controlled cases cover tolerance satisfaction, budget exhaustion, and
-  numerical failure, with histories aligned to the actual number of updates
-- real-time evolution retains its requested time horizon; stationary energy
-  alone is not used as a stopping criterion or an accuracy certificate for QRTE
+Remaining work:
 
-### Support supplied parameters and geometry-scan warm starts
-
-Planned work:
-
-- Add `initial_params` to VQE and VarQITE, following the existing VarQRTE
-  convention. Record parameter shape and initialization provenance, validate
-  finite values and compatibility, and include supplied parameters in cache keys.
 - Allow opt-in continuation along geometry scans and VQE → VarQITE refinement.
   Preserve independent seeded starts as the default and keep separate
   continuation chains for each seed.
@@ -222,10 +197,9 @@ Deliver these after execution reliability and the shared solver contracts above.
 
 Planned work:
 
-- Add VarQITE as the first additional Studio method, using its existing Python
-  runner and artifact schema. Once supplied-parameter support is available,
-  expose VQE → VarQITE refinement with compatibility checks and initialization
-  provenance, retaining independent seeded starts by default.
+- Implemented: VarQITE, VQE → VarQITE refinement with source digest and prepared-state
+  checks, independent seeded starts, source comparison, initialization provenance,
+  combined compute costs, cache reuse, export, and browser coverage.
 - Add explicit geometry and active-space controls only through the shared problem
   resolver, respecting each method's supported inputs. Enable recreation of
   compatible Python/CLI artifacts only when their original inputs can be

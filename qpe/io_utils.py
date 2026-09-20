@@ -55,6 +55,7 @@ def signature_hash(
     active_orbitals: int | None = None,
     hamiltonian: Dict[str, Any] | None = None,
     reference_state: list[int] | None = None,
+    multiplicity: int = 1,
     shots: Optional[int] = None,
     noise: Optional[Dict[str, float]] = None,
     trotter_steps: int = 1,
@@ -82,6 +83,7 @@ def signature_hash(
         "geometry": canonical_geometry(geometry, ndigits=8),
         "basis": str(basis).strip().lower(),
         "charge": int(charge),
+        "multiplicity": int(multiplicity),
         "n_ancilla": int(n_ancilla),
         "t": float(t),
         "seed": int(seed),
@@ -174,6 +176,7 @@ def save_qpe_result(result: Dict[str, Any]) -> str:
         geometry=result["geometry"],
         basis=result["basis"],
         charge=int(result["charge"]),
+        multiplicity=int(result.get("multiplicity", 1)),
         n_ancilla=int(result.get("n_ancilla", 0)),
         t=float(result["t"]),
         seed=seed,
@@ -224,6 +227,7 @@ def load_qpe_result(
     active_orbitals: int | None = None,
     hamiltonian: Dict[str, Any] | None = None,
     reference_state: list[int] | None = None,
+    multiplicity: int = 1,
 ) -> Optional[Dict[str, Any]]:
     """
     Load a cached QPE result matching the provided normalized configuration.
@@ -250,6 +254,7 @@ def load_qpe_result(
         active_orbitals=active_orbitals,
         hamiltonian=hamiltonian,
         reference_state=reference_state,
+        multiplicity=multiplicity,
     )
 
     path = cache_path(

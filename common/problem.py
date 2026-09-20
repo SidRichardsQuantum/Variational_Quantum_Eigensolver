@@ -268,3 +268,44 @@ def resolve_problem(
         active_orbitals=resolved_active_orbitals,
         cacheable=True,
     )
+
+
+def problem_metadata(problem: ResolvedProblem) -> dict:
+    """Resolved physical inputs for result provenance and scientific cache keys."""
+    from .persist import canonical_hamiltonian
+
+    return {
+        "symbols": list(problem.symbols),
+        "geometry": np.asarray(problem.coordinates).tolist(),
+        "basis": problem.basis,
+        "charge": problem.charge,
+        "multiplicity": problem.multiplicity,
+        "unit": problem.unit,
+        "mapping": problem.mapping,
+        "active_electrons": problem.active_electrons,
+        "active_orbitals": problem.active_orbitals,
+        "num_qubits": problem.num_qubits,
+        "hamiltonian": canonical_hamiltonian(problem.hamiltonian),
+        "reference_state": (
+            None
+            if problem.reference_state is None
+            else problem.reference_state.tolist()
+        ),
+    }
+
+
+def solver_inputs(problem: ResolvedProblem) -> dict:
+    """Reuse exactly the resolved Hamiltonian, register and chemistry conventions."""
+    return dict(
+        symbols=problem.symbols,
+        coordinates=problem.coordinates,
+        basis=problem.basis,
+        charge=problem.charge,
+        multiplicity=problem.multiplicity,
+        unit=problem.unit,
+        active_electrons=problem.active_electrons,
+        active_orbitals=problem.active_orbitals,
+        hamiltonian=problem.hamiltonian,
+        num_qubits=problem.num_qubits,
+        reference_state=problem.reference_state,
+    )

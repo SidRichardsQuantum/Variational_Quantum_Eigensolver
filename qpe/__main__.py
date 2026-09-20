@@ -112,6 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
+    parser.add_argument("--multiplicity", type=int, default=1)
     parser.add_argument(
         "--seed",
         type=int,
@@ -301,6 +302,7 @@ def main(argv: list[str] | None = None):
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        multiplicity=args.multiplicity,
         active_electrons=(
             None
             if getattr(args, "active_electrons", None) is None

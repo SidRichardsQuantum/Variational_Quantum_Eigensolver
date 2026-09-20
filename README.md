@@ -374,7 +374,7 @@ Recommended starting points:
 
 ## Documentation
 
-New in v0.3.28, an optional [VQE Experiment Studio](docs/studio.md) provides a browser composer,
+Introduced in v0.3.28, an optional [VQE Experiment Studio](docs/studio.md) provides a browser composer,
 VQE and ADAPT-VQE execution, live energy observations, experiment comparisons,
 artifact-backed history, JSON export, and re-run configuration restoration.
 Run it from a source checkout with `python -m studio`; the Studio is excluded

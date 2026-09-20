@@ -237,6 +237,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_p.add_argument("--basis", type=str, default="sto-3g")
     run_p.add_argument("--charge", type=int, default=0)
+    run_p.add_argument("--multiplicity", type=int, default=1)
+    run_p.add_argument("--energy-tol", type=float, default=None)
+    run_p.add_argument("--patience", type=int, default=1)
     run_p.add_argument("--active-electrons", type=int, default=None)
     run_p.add_argument("--active-orbitals", type=int, default=None)
     run_p.add_argument(
@@ -285,6 +288,7 @@ def build_parser() -> argparse.ArgumentParser:
     qrte_p.add_argument("--seed", type=int, default=0)
     qrte_p.add_argument("--basis", type=str, default="sto-3g")
     qrte_p.add_argument("--charge", type=int, default=0)
+    qrte_p.add_argument("--multiplicity", type=int, default=1)
     qrte_p.add_argument("--active-electrons", type=int, default=None)
     qrte_p.add_argument("--active-orbitals", type=int, default=None)
     qrte_p.add_argument(
@@ -466,6 +470,9 @@ def _run_varqite(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        multiplicity=getattr(args, "multiplicity", 1),
+        energy_tol=getattr(args, "energy_tol", None),
+        patience=getattr(args, "patience", 1),
         active_electrons=active_space["active_electrons"],
         active_orbitals=active_space["active_orbitals"],
         mapping=str(args.mapping),
@@ -496,6 +503,7 @@ def _run_varqrte(args) -> dict:
         coordinates=coordinates,
         basis=str(args.basis),
         charge=int(args.charge),
+        multiplicity=getattr(args, "multiplicity", 1),
         active_electrons=active_space["active_electrons"],
         active_orbitals=active_space["active_orbitals"],
         mapping=str(args.mapping),

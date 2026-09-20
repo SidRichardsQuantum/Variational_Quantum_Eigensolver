@@ -34,6 +34,18 @@ async function api(path, options) {
 }
 function renderComposer() {
   controls.clear();
+  const initialization = $("initialization");
+  initialization.replaceChildren();
+  if (config.refinement) {
+    initialization.append(
+      el("p", `Refining VQE source: ${config.refinement.artifact}`, "muted"),
+      button("Start independently", () => {
+        delete config.refinement;
+        renderComposer();
+        $("notice").textContent = "VarQITE will start from its seeded parameters.";
+      }),
+    );
+  }
   $("fields").replaceChildren();
   for (const f of method.fields) {
     const label = el("label", f.label);
@@ -54,6 +66,8 @@ function renderComposer() {
       control.required = !f.nullable;
       if (f.nullable) control.placeholder = "Automatic";
     }
+    if (config.refinement && (f.group === "problem" || f.name === "ansatz"))
+      control.disabled = true;
     control.value = fieldValue(f, config, catalogue);
     const help = el("small", f.help);
     help.id = `help-${f.name}`;
@@ -132,7 +146,7 @@ async function view(row, refresh = false) {
       content.append(
         el(
           "p",
-          "Energy change is not a convergence certificate. Exact/reference energy is not returned by this runner.",
+          "A satisfied stopping tolerance does not certify ground-state accuracy. Exact/reference energy is not returned by this runner.",
           "muted",
         ),
       );
@@ -151,6 +165,28 @@ async function view(row, refresh = false) {
     if (["submitted", "running"].includes(full.status))
       actions.append(button("Cancel", () => cancelRun(full)));
     if (full.config) actions.append(button("Re-run", () => reuse(full)));
+    if (full.config && full.method === "vqe" && full.status === "completed" && full.result?.final_params_shape && full.artifact && full.artifact_digest && !Object.keys(full.resolved_config?.noise ?? {}).length)
+      actions.append(button("Refine with VarQITE", () => {
+        method = catalogue.methods.find((m) => m.id === "varqite");
+        config = defaults(method, full.config.problem);
+        config.settings.ansatz = full.config.settings.ansatz;
+        config.refinement = {artifact: full.artifact.split("/").at(-1), digest: full.artifact_digest};
+        $("method").value = method.id;
+        renderComposer();
+        $("detail").close();
+        $("notice").textContent = "VQE parameters selected for refinement. Matching problem and circuit preparation are checked before submission. Change method to start independently.";
+        $("composer").scrollIntoView({behavior: "smooth"});
+      }));
+    const sourceRef = full.result?.initialization?.provenance;
+    const source = sourceRef && latestRows.find((r) =>
+      r.artifact?.split("/").at(-1) === sourceRef.artifact &&
+      r.artifact_digest === sourceRef.digest && r.status === "completed");
+    if (source && full.status === "completed")
+      actions.append(button("Compare with source", () => {
+        detailId = null;
+        $("detail-title").textContent = "Experiment comparison";
+        content.replaceChildren(renderComparison([source, full]));
+      }));
     actions.append(
       button("Export JSON", () => {
         const blob = new Blob([JSON.stringify(full, null, 2)], {
@@ -266,7 +302,7 @@ function renderProgress(container, row) {
         p.energies,
         row.method === "adapt_vqe"
           ? `inner optimizer iteration (outer ${p.outer_iteration})`
-          : "optimizer iteration",
+          : curveAxis(row),
       ),
     );
   if (p.outer_energies?.length)
@@ -338,6 +374,8 @@ function renderHistory(rows) {
         metricList(
           metrics(row).filter(([label]) =>
             [
+              "Termination reason",
+              "Actual updates",
               "Compute runtime (s)",
               "Cache hit",
               "Completed iterations",

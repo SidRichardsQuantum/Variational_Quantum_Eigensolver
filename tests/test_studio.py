@@ -45,6 +45,8 @@ def test_h2_maps_to_public_api(monkeypatch):
             optimizer_name="Adam",
             steps=3,
             stepsize=None,
+            energy_tol=None,
+            patience=1,
             seed=42,
             plot=False,
         )
@@ -320,7 +322,7 @@ def test_adapt_catalogue_and_adapter_defaults(monkeypatch):
     from vqe.adapt import run_adapt_vqe
 
     kwargs = adapter.to_kwargs({"method": "adapt_vqe"})
-    assert "basis" not in kwargs
+    assert kwargs["basis"] == "sto-3g"
     assert "ansatz_name" not in kwargs
     for name, value in kwargs.items():
         if name != "plot":
@@ -521,3 +523,42 @@ time.sleep(120)
         if parent.poll() is None:
             parent.kill()
         parent.wait()
+
+
+def test_studio_refinement_preserves_state_and_provenance():
+    from studio.adapter import execute, normalize, refinement_kwargs
+    from studio.history import artifacts, find_artifact
+
+    config = normalize({"settings": {"steps": 1}})
+    source = execute(config)
+    name = find_artifact(config, source)
+    row = artifacts()[name]
+    request = normalize(
+        {
+            "method": "varqite",
+            "settings": {"steps": 0},
+            "refinement": {"artifact": name, "digest": row["artifact_digest"]},
+        }
+    )
+    result = execute(request)
+    assert result["energy"] == pytest.approx(source["energy"], abs=1e-10)
+    assert (
+        result["initialization"]["provenance"].items() >= request["refinement"].items()
+    )
+    assert artifacts()[find_artifact(request, result)]["method"] == "varqite"
+    assert execute(request)["cache_hit"]
+    request["problem"]["mapping"] = "parity"
+    with pytest.raises(ValueError, match="same resolved"):
+        refinement_kwargs(request)
+
+
+def test_studio_varqite_jobs():
+    from studio.jobs import Jobs
+
+    jobs = Jobs()
+    submitted = jobs.submit({"method": "varqite", "settings": {"steps": 0}})
+    jobs.close(cancel=False)
+    row = next(r for r in jobs.history() if r["id"] == submitted["id"])
+    assert row["status"] == "completed", row.get("error")
+    assert row["result"]["termination"]["reason"] == "budget_exhausted"
+    assert row["artifact"].startswith("results/qite/")

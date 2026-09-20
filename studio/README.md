@@ -1,7 +1,8 @@
 # VQE Experiment Studio
 
-Introduced in v0.3.28. Optional source-checkout UI for VQE and ADAPT-VQE;
-Includes queued/running cancellation and isolated scientific workers;
+Introduced in v0.3.28. Optional source-checkout UI for VQE, ADAPT-VQE, and VarQITE;
+Includes compatible VQE → VarQITE refinement, termination reporting, source
+comparison, queued/running cancellation and isolated scientific workers;
 no additional runtime dependencies. Excluded from the wheel and source
 distribution. From an installed checkout, start with `python -m studio`.
 

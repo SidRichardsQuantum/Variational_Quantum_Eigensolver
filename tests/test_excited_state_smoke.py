@@ -211,7 +211,9 @@ def test_ssvqe_propagates_mapping_to_hamiltonian(
 ) -> None:
     captured: dict[str, str] = {}
 
-    def fake_build_hamiltonian(molecule, mapping="jordan_wigner", unit="angstrom"):
+    def fake_build_hamiltonian(
+        molecule, mapping="jordan_wigner", unit="angstrom", **kwargs
+    ):
         captured["mapping"] = mapping
         return (
             qml.Hamiltonian([0.0], [qml.Identity(0)]),
@@ -230,7 +232,10 @@ def test_ssvqe_propagates_mapping_to_hamiltonian(
 
         return ansatz_fn, pnp.array([], requires_grad=True)
 
-    monkeypatch.setattr("vqe.ssvqe.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr(
+        "common.problem.resolve_active_space", lambda **k: (None, None, (None, None))
+    )
+    monkeypatch.setattr("common.problem.build_hamiltonian", fake_build_hamiltonian)
     monkeypatch.setattr("vqe.ssvqe.build_ansatz", fake_build_ansatz)
 
     res = run_ssvqe(
@@ -261,6 +266,7 @@ def test_ssvqe_explicit_geometry_uses_shared_builder(
         basis=None,
         mapping="jordan_wigner",
         unit="angstrom",
+        **kwargs,
     ):
         captured["molecule"] = molecule
         captured["symbols"] = list(symbols)
@@ -286,7 +292,10 @@ def test_ssvqe_explicit_geometry_uses_shared_builder(
 
         return ansatz_fn, pnp.array([], requires_grad=True)
 
-    monkeypatch.setattr("vqe.ssvqe.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr(
+        "common.problem.resolve_active_space", lambda **k: (None, None, (None, None))
+    )
+    monkeypatch.setattr("common.problem.build_hamiltonian", fake_build_hamiltonian)
     monkeypatch.setattr("vqe.ssvqe.build_ansatz", fake_build_ansatz)
 
     run_ssvqe(
@@ -329,6 +338,7 @@ def test_vqd_explicit_geometry_uses_shared_builder(
         basis=None,
         mapping="jordan_wigner",
         unit="angstrom",
+        **kwargs,
     ):
         captured["molecule"] = molecule
         captured["symbols"] = list(symbols)
@@ -354,7 +364,10 @@ def test_vqd_explicit_geometry_uses_shared_builder(
 
         return ansatz_fn, pnp.array([], requires_grad=True)
 
-    monkeypatch.setattr("vqe.vqd.build_hamiltonian", fake_build_hamiltonian)
+    monkeypatch.setattr(
+        "common.problem.resolve_active_space", lambda **k: (None, None, (None, None))
+    )
+    monkeypatch.setattr("common.problem.build_hamiltonian", fake_build_hamiltonian)
     monkeypatch.setattr("vqe.vqd.build_ansatz", fake_build_ansatz)
 
     run_vqd(

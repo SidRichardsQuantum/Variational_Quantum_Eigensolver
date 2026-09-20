@@ -10,7 +10,7 @@ from typing import Callable, List, Optional, Sequence, Tuple
 import pennylane as qml
 from pennylane import numpy as np
 
-from common.spin import reference_multiplicity
+from common.problem import problem_metadata, resolve_problem
 
 from .ansatz import _build_ucc_data
 from .engine import (
@@ -20,7 +20,6 @@ from .engine import (
     build_optimizer,
     make_device,
 )
-from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
     make_filename_prefix,
@@ -223,7 +222,14 @@ def run_ssvqe(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+    hamiltonian=None,
+    num_qubits: int | None = None,
+    reference_state=None,
+    ansatz_kwargs=None,
     mapping: str = "jordan_wigner",
     reference_states: Optional[Sequence[Sequence[int]]] = None,
     plot: bool = True,
@@ -265,38 +271,30 @@ def run_ssvqe(
     np.random.seed(int(seed))
     ensure_dirs()
 
-    # 1) Hamiltonian + molecular data
-    if (symbols is None) != (coordinates is None):
-        raise ValueError("symbols and coordinates must be provided together.")
-
-    if symbols is None or coordinates is None:
-        H, num_wires, hf_state, symbols, coordinates, basis_out, charge, unit_out = (
-            build_hamiltonian(molecule, mapping=str(mapping))
-        )
-        basis = str(basis_out)
-    else:
-        (
-            H,
-            num_wires,
-            hf_state,
-            symbols,
-            coordinates,
-            basis_out,
-            charge_out,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=int(charge),
-            basis=str(basis),
-            mapping=str(mapping),
-            unit=str(unit),
-        )
-        basis = str(basis_out)
-        charge = int(charge_out)
-
-    multiplicity = reference_multiplicity(hf_state, str(mapping).strip().lower())
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        multiplicity=multiplicity,
+        unit=unit,
+        mapping=mapping,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+    )
+    H = problem.hamiltonian
+    num_wires = problem.num_qubits
+    hf_state = problem.reference_state
+    symbols, coordinates = problem.symbols, problem.coordinates
+    basis, charge, multiplicity = problem.basis, problem.charge, problem.multiplicity
+    active_electrons, active_orbitals = (
+        problem.active_electrons,
+        problem.active_orbitals,
+    )
 
     # 2) Shared ansatz parameters
     ansatz_fn, p0 = build_ansatz(
@@ -309,6 +307,9 @@ def run_ssvqe(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        ansatz_kwargs=ansatz_kwargs,
     )
     params = np.array(p0, requires_grad=True)
 
@@ -321,6 +322,8 @@ def run_ssvqe(
                 basis=basis,
                 charge=int(charge),
                 multiplicity=multiplicity,
+                active_electrons=active_electrons,
+                active_orbitals=active_orbitals,
             )
             refs = _ucc_reference_states_from_excitations(
                 hf_state,
@@ -393,6 +396,9 @@ def run_ssvqe(
             charge=int(charge),
             multiplicity=multiplicity,
             basis=basis,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            ansatz_kwargs=ansatz_kwargs,
             reference_state=None,
             prepare_reference=False,
         )
@@ -428,7 +434,8 @@ def run_ssvqe(
         phase_flip_prob=float(phase_flip_prob),
         molecule_label=molecule,
     )
-    cfg["multiplicity"] = multiplicity
+    cfg.update(problem_metadata(problem))
+    cfg["ansatz_kwargs"] = dict(ansatz_kwargs or {})
     cfg["num_states"] = int(num_states)
     cfg["weights"] = [float(w) for w in weights]
     cfg["reference_states"] = [list(map(int, s)) for s in reference_states]

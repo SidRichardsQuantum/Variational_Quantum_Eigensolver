@@ -48,7 +48,7 @@ export function runProgress(row) {
     );
     const scope = row.method === "adapt_vqe"
       ? `Inner optimization (outer ${p.outer_iteration})`
-      : "Optimization";
+      : row.method === "varqite" ? "Imaginary-time evolution" : "Optimization";
     return { percent, label: `${scope} · ${p.iteration} / ${p.total_iterations} steps` };
   }
   return { percent: null, label: row.method === "adapt_vqe"
@@ -65,7 +65,25 @@ export function metrics(row) {
     ["Compute runtime (s)", runtime.compute_runtime_s],
     ["Invocation runtime (s)", runtime.runtime_s],
     ["Cache hit", runtime.cache_hit],
+    ["Termination reason", result.termination?.reason],
+    ["Actual updates", result.termination?.updates],
+    ["Stopping criterion", result.termination?.criterion],
+    ["Stopping threshold", result.termination?.threshold],
+    ["Stopping diagnostic", result.termination?.diagnostic],
+    ["Initialization", result.initialization?.source],
+    ["Source artifact", result.initialization?.provenance?.artifact],
   ];
+  const source = result.initialization?.provenance;
+  if (source?.artifact) {
+    if (Number.isFinite(source.energy) && Number.isFinite(result.energy))
+      values.push(["Energy change from VQE source (Ha)", result.energy - source.energy]);
+    if (Number.isFinite(source.compute_runtime_s)) {
+      values.push(["Source VQE compute runtime (s)", source.compute_runtime_s]);
+      if (Number.isFinite(runtime.compute_runtime_s))
+        values.push(["Combined VQE + VarQITE compute runtime (s)",
+          source.compute_runtime_s + runtime.compute_runtime_s]);
+    }
+  }
   if (Array.isArray(result.energies) && result.energies.length) {
     values.push([
       row.method === "adapt_vqe"
@@ -97,12 +115,12 @@ export function metrics(row) {
 }
 
 export function methodLabel(row) {
-  return row.method === "adapt_vqe" ? "ADAPT-VQE" : "VQE";
+  return {vqe: "VQE", adapt_vqe: "ADAPT-VQE", varqite: "VarQITE"}[row.method] ?? row.method;
 }
 export function curveAxis(row) {
   return row.method === "adapt_vqe"
     ? "ADAPT outer iteration"
-    : "optimizer iteration";
+    : row.method === "varqite" ? "imaginary-time update" : "optimizer iteration";
 }
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);

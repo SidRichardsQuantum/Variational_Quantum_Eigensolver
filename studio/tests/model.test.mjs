@@ -172,3 +172,16 @@ test("comparison flags missing problem metadata and distinguishes absent/null", 
   assert.equal(diff.problemMismatch, true);
   assert.deepEqual(diff.differences[0].values, ["null", "0.15"]);
 });
+
+
+test("refinement metrics include preparation cost on cache hits and omit missing costs", () => {
+  const row = {method: "varqite", result: {energy: -1.1,
+    initialization: {source: "supplied", provenance: {artifact: "source.json", energy: -1, compute_runtime_s: 4}}},
+    invocation: {compute_runtime_s: 3, runtime_s: 0.1, cache_hit: true}};
+  let values = Object.fromEntries(metrics(row));
+  assert.equal(values["Combined VQE + VarQITE compute runtime (s)"], 7);
+  assert.ok(Math.abs(values["Energy change from VQE source (Ha)"] + 0.1) < 1e-12);
+  delete row.result.initialization.provenance.compute_runtime_s;
+  values = Object.fromEntries(metrics(row));
+  assert.ok(!("Combined VQE + VarQITE compute runtime (s)" in values));
+});

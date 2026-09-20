@@ -10,7 +10,7 @@ from typing import Callable, List, Optional
 import pennylane as qml
 from pennylane import numpy as np
 
-from common.spin import reference_multiplicity
+from common.problem import problem_metadata, resolve_problem
 
 from .engine import (
     build_ansatz,
@@ -19,7 +19,6 @@ from .engine import (
     make_energy_qnode,
     make_state_qnode,
 )
-from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
     make_filename_prefix,
@@ -141,7 +140,14 @@ def run_vqd(
     coordinates=None,
     basis: str = "sto-3g",
     charge: int = 0,
+    multiplicity: int = 1,
     unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+    hamiltonian=None,
+    num_qubits: int | None = None,
+    reference_state=None,
+    ansatz_kwargs=None,
     plot: bool = True,
     force: bool = False,
     mapping: str = "jordan_wigner",
@@ -186,35 +192,29 @@ def run_vqd(
     np.random.seed(seed)
     ensure_dirs()
 
-    # 1) Hamiltonian + molecular data
-    if (symbols is None) != (coordinates is None):
-        raise ValueError("symbols and coordinates must be provided together.")
-
-    if symbols is None or coordinates is None:
-        H, num_wires, hf_state, symbols, coordinates, basis, charge, unit_out = (
-            build_hamiltonian(molecule, mapping=mapping)
-        )
-    else:
-        (
-            H,
-            num_wires,
-            hf_state,
-            symbols,
-            coordinates,
-            basis,
-            charge,
-            unit_out,
-        ) = build_hamiltonian(
-            molecule=None,
-            symbols=list(symbols),
-            coordinates=np.array(coordinates, dtype=float),
-            charge=int(charge),
-            basis=str(basis),
-            mapping=str(mapping),
-            unit=str(unit),
-        )
-
-    multiplicity = reference_multiplicity(hf_state, str(mapping).strip().lower())
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        multiplicity=multiplicity,
+        unit=unit,
+        mapping=mapping,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+    )
+    H = problem.hamiltonian
+    num_wires = problem.num_qubits
+    symbols, coordinates = problem.symbols, problem.coordinates
+    basis, charge, multiplicity = problem.basis, problem.charge, problem.multiplicity
+    active_electrons, active_orbitals = (
+        problem.active_electrons,
+        problem.active_orbitals,
+    )
 
     # 2) Ansatz (for QNode construction)
     ansatz_fn, _ = build_ansatz(
@@ -227,6 +227,10 @@ def run_vqd(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        ansatz_kwargs=ansatz_kwargs,
+        reference_state=reference_state,
     )
 
     # 3) Device + QNodes
@@ -262,6 +266,10 @@ def run_vqd(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        ansatz_kwargs=ansatz_kwargs,
+        reference_state=reference_state,
     )
 
     state_qnode = make_state_qnode(
@@ -280,6 +288,10 @@ def run_vqd(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=basis,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        ansatz_kwargs=ansatz_kwargs,
+        reference_state=reference_state,
         # Differentiate the real overlap objective through the simulator. A
         # finite-difference state Jacobian is complex and can pass complex
         # cotangents back to real, indexed UCC parameters in Autograd.
@@ -313,7 +325,8 @@ def run_vqd(
         phase_flip_prob=phase_flip_prob,
         molecule_label=molecule,
     )
-    cfg["multiplicity"] = multiplicity
+    cfg.update(problem_metadata(problem))
+    cfg["ansatz_kwargs"] = dict(ansatz_kwargs or {})
     cfg["beta_end"] = beta_end
     cfg["beta_start"] = beta0
     cfg["beta_ramp"] = str(beta_ramp)
@@ -366,6 +379,10 @@ def run_vqd(
             charge=int(charge),
             multiplicity=multiplicity,
             basis=basis,
+            active_electrons=active_electrons,
+            active_orbitals=active_orbitals,
+            ansatz_kwargs=ansatz_kwargs,
+            reference_state=reference_state,
         )
         theta = np.array(p_init, requires_grad=True)
 

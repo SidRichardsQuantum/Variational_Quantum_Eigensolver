@@ -39,7 +39,7 @@ def main():
                 page.on("pageerror", lambda error: errors.append(str(error)))
                 page.goto(f"http://127.0.0.1:{server.server_port}")
                 expect(page.locator("#connection")).to_have_text("Python connected")
-                expect(page.locator("#fields label")).to_have_count(8)
+                expect(page.locator("#fields label")).to_have_count(10)
                 expect(page.locator('[name="settings.steps"]')).to_have_value("75")
                 expect(page.locator('[name="problem.basis"]')).to_have_value("sto-3g")
                 step_size = page.locator('[name="settings.stepsize"]')
@@ -199,6 +199,83 @@ def main():
                 expect(page.locator(".card .completed")).to_have_count(
                     5, timeout=120000
                 )
+                # Refine the completed zero-step VQE, compare its source, and re-run.
+                page.locator(".card").first.get_by_role(
+                    "button", name="View", exact=True
+                ).click()
+                page.get_by_role(
+                    "button", name="Refine with VarQITE", exact=True
+                ).click()
+                expect(page.locator("#method")).to_have_value("varqite")
+                expect(page.locator("#initialization")).to_contain_text(
+                    "Refining VQE source"
+                )
+                expect(page.locator('[name="problem.mapping"]')).to_be_disabled()
+                expect(page.locator('[name="settings.ansatz"]')).to_be_disabled()
+                page.locator('[name="settings.steps"]').fill("2")
+                page.locator("#run").click()
+                expect(page.locator(".card .completed")).to_have_count(
+                    6, timeout=120000
+                )
+                page.locator(".card").first.get_by_role(
+                    "button", name="View", exact=True
+                ).click()
+                expect(page.locator("#detail-content")).to_contain_text(
+                    "Combined VQE + VarQITE compute runtime"
+                )
+                expect(page.locator("#detail-content")).to_contain_text(
+                    "imaginary-time update"
+                )
+                with page.expect_download() as download:
+                    page.get_by_role("button", name="Export JSON").click()
+                refined = json.loads(Path(download.value.path()).read_text())
+                assert refined["result"]["initialization"]["source"] == "supplied"
+                assert (
+                    abs(
+                        refined["result"]["energies"][0]
+                        - refined["result"]["initialization"]["provenance"]["energy"]
+                    )
+                    < 1e-9
+                )
+                page.get_by_role(
+                    "button", name="Compare with source", exact=True
+                ).click()
+                expect(page.locator("#detail-title")).to_have_text(
+                    "Experiment comparison"
+                )
+                expect(page.locator("#detail-content")).to_contain_text(
+                    "Combined VQE + VarQITE"
+                )
+                expect(page.locator("#detail-content")).not_to_contain_text(
+                    "Different or incomplete resolved problems"
+                )
+                page.screenshot(path="/tmp/vqe-studio-refinement.png", full_page=True)
+                page.locator("#close").click()
+                page.locator(".card").first.get_by_role(
+                    "button", name="View", exact=True
+                ).click()
+                page.get_by_role("button", name="Re-run", exact=True).click()
+                expect(page.locator("#initialization")).to_contain_text(
+                    "Refining VQE source"
+                )
+                page.locator("#run").click()
+                expect(page.locator(".card .completed")).to_have_count(
+                    7, timeout=120000
+                )
+                expect(
+                    page.locator(".card").first.locator("dd").filter(has_text="Yes")
+                ).to_have_count(1)
+                page.get_by_role(
+                    "button", name="Start independently", exact=True
+                ).click()
+                expect(page.locator('[name="problem.mapping"]')).to_be_enabled()
+                page.locator('[name="settings.steps"]').fill("0")
+                page.locator("#run").click()
+                expect(page.locator(".card .completed")).to_have_count(
+                    8, timeout=120000
+                )
+                page.reload()
+                expect(page.locator(".card .completed")).to_have_count(8)
                 page.screenshot(path="/tmp/vqe-studio-desktop.png", full_page=True)
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert page.evaluate(
@@ -208,7 +285,7 @@ def main():
                 assert errors == [], errors
                 browser.close()
                 print(
-                    "Browser smoke passed: VQE/ADAPT, live progress, queued/running cancellation, comparisons, detail/export, restoration, cache reuse, reload, mobile, no JS errors."
+                    "Browser smoke passed: VQE/ADAPT/VarQITE, refinement/source comparison, live progress, queued/running cancellation, comparisons, detail/export, restoration, cache reuse, reload, mobile, no JS errors."
                 )
         finally:
             (control / "release").touch()

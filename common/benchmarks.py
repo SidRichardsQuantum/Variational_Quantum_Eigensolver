@@ -372,7 +372,13 @@ def _row_from_result(
     active_electrons: int | None = None,
     active_orbitals: int | None = None,
 ) -> dict[str, Any]:
-    energy = float(result["energy"])
+    energy = None if result["energy"] is None else float(result["energy"])
+    termination = result.get("termination", {})
+    failed = (
+        termination.get("reason") == "numerical_failure"
+        or energy is None
+        or not np.isfinite(energy)
+    )
     return {
         "benchmark_id": benchmark_id,
         "question": question,
@@ -397,12 +403,18 @@ def _row_from_result(
         "noise_level": "",
         "energy": energy,
         "exact_energy": float(exact_energy),
-        "abs_error": abs(energy - float(exact_energy)),
+        "abs_error": (
+            None if failed or energy is None else abs(energy - float(exact_energy))
+        ),
         "runtime_s": float(result.get("runtime_s", 0.0)),
         "compute_runtime_s": float(result.get("compute_runtime_s", 0.0)),
         "cache_hit": bool(result.get("cache_hit", False)),
-        "status": "ok",
-        "failure_reason": "",
+        "status": "failed" if failed else "ok",
+        "failure_reason": (
+            termination.get("message", "numerical_failure") if failed else ""
+        ),
+        "termination_reason": termination.get("reason", ""),
+        "actual_updates": termination.get("updates", ""),
     }
 
 
@@ -694,7 +706,117 @@ def _h2_cross_method_suite(
     }
 
 
+def _h2_refinement_suite(*, force: bool, suppress_stdout: bool) -> dict[str, Any]:
+    """Small case study of refinement versus independent relaxation, including cost."""
+    import pennylane as qml
+
+    from common.problem import problem_metadata, resolve_problem, solver_inputs
+    from qite.core import run_qite
+    from vqe.core import run_vqe
+
+    problem = resolve_problem(molecule="H2")
+    exact = float(
+        np.linalg.eigvalsh(
+            qml.matrix(problem.hamiltonian, wire_order=range(problem.num_qubits))
+        )[0]
+    )
+    inputs = {
+        **solver_inputs(problem),
+        "molecule": "H2",
+        "mapping": problem.mapping,
+        "ansatz_name": "UCCSD",
+        "plot": False,
+        "force": force,
+    }
+    rows, runs = [], []
+    question = "Does VQE → VarQITE refinement improve H2 accuracy enough to justify both stages?"
+    for seed in (0, 1, 2):
+        source, _ = timed_call(
+            run_vqe, suppress_stdout=suppress_stdout, **inputs, seed=seed, steps=10
+        )
+        independent, _ = timed_call(
+            run_qite,
+            suppress_stdout=suppress_stdout,
+            **inputs,
+            seed=seed,
+            steps=20,
+            dtau=0.2,
+        )
+        candidates = [("VQE", source, 10), ("VarQITE", independent, 20)]
+        if source["termination"]["reason"] != "numerical_failure":
+            refined, _ = timed_call(
+                run_qite,
+                suppress_stdout=suppress_stdout,
+                **inputs,
+                seed=seed,
+                steps=10,
+                dtau=0.2,
+                initial_params=np.asarray(source["final_params"]).reshape(
+                    source["final_params_shape"]
+                ),
+                initialization_source={"method": "VQE", "seed": seed, "steps": 10},
+            )
+            candidates.append(("VQE → VarQITE", refined, 20))
+        else:
+            # Retain failed chains in the denominator and in exported evidence.
+            candidates.append(("VQE → VarQITE", source, 20))
+        for method, result, budget in candidates:
+            row = _row_from_result(
+                benchmark_id="h2-refinement",
+                question=question,
+                system="H2",
+                system_type="molecule",
+                method=method,
+                result=result,
+                exact_energy=exact,
+                hamiltonian_terms=len(problem.hamiltonian),
+                ansatz="UCCSD",
+                seed=seed,
+                steps=budget,
+                mapping=problem.mapping,
+                basis=problem.basis,
+                charge=problem.charge,
+                multiplicity=problem.multiplicity,
+                active_electrons=problem.active_electrons,
+                active_orbitals=problem.active_orbitals,
+            )
+            row["reference_scope"] = "full_qubit_space"
+            if method == "VQE → VarQITE":
+                row["source_compute_runtime_s"] = source["compute_runtime_s"]
+                row["source_cache_hit"] = source["cache_hit"]
+                row["combined_compute_runtime_s"] = source["compute_runtime_s"] + (
+                    result["compute_runtime_s"] if result is not source else 0
+                )
+                row["combined_invocation_runtime_s"] = source["runtime_s"] + (
+                    result["runtime_s"] if result is not source else 0
+                )
+                row["actual_updates"] = source["steps"] + (
+                    result["steps"] if result is not source else 0
+                )
+            else:
+                row["combined_compute_runtime_s"] = result["compute_runtime_s"]
+                row["combined_invocation_runtime_s"] = result["runtime_s"]
+            rows.append(row)
+            runs.append({"method": method, "seed": seed, "result": result})
+    return {
+        "suite": {
+            "id": "h2-refinement",
+            "title": "H2 VQE → VarQITE Refinement",
+            "question": question,
+            "scope": "H2/STO-3G, noiseless UCCSD, seeds 0/1/2; 10 VQE + 10 VarQITE updates versus 20 independent VarQITE updates. Update counts are not equal computational costs. Full-qubit exact reference; no general performance claim.",
+        },
+        "resolved_problem": problem_metadata(problem),
+        "runs": runs,
+        "rows": rows,
+    }
+
+
 _BENCHMARK_SUITE_METADATA: dict[str, dict[str, str]] = {
+    "h2-refinement": {
+        "id": "h2-refinement",
+        "title": "H2 VQE → VarQITE Refinement",
+        "question": "Does refinement justify the combined preparation and relaxation cost?",
+    },
     "expert-z-cross-method": {
         "id": "expert-z-cross-method",
         "title": "Expert-Mode Single-Qubit Cross-Method Smoke Benchmark",
@@ -714,6 +836,7 @@ _BENCHMARK_SUITE_METADATA: dict[str, dict[str, str]] = {
 }
 
 _BENCHMARK_SUITE_RUNNERS: dict[str, Callable[..., dict[str, Any]]] = {
+    "h2-refinement": _h2_refinement_suite,
     "expert-z-cross-method": _expert_z_cross_method_suite,
     "h2-cross-method": _h2_cross_method_suite,
 }
@@ -760,6 +883,17 @@ def _markdown_rows_table(rows: list[dict[str, Any]]) -> str:
         "runtime_s",
         "compute_runtime_s",
         "cache_hit",
+    ]
+    columns += [
+        key
+        for key in (
+            "seed",
+            "status",
+            "termination_reason",
+            "actual_updates",
+            "combined_compute_runtime_s",
+        )
+        if any(key in row for row in rows)
     ]
     lines = [
         "| " + " | ".join(columns) + " |",

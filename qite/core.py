@@ -25,7 +25,8 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from common.persist import cached_compute_runtime, canonical_hamiltonian
-from common.problem import resolve_problem
+from common.problem import problem_metadata, resolve_problem
+from common.termination import optimize, stopping_config, supplied_parameters
 from qite.engine import build_ansatz as engine_build_ansatz
 from qite.engine import (
     make_device,
@@ -81,6 +82,11 @@ def run_qite(
     hamiltonian: qml.Hamiltonian | None = None,
     num_qubits: int | None = None,
     reference_state=None,
+    energy_tol: float | None = None,
+    patience: int = 1,
+    initial_params=None,
+    initialization_source: dict | None = None,
+    progress_callback=None,
 ) -> Dict[str, Any]:
     """
     Run VarQITE end-to-end with caching.
@@ -104,6 +110,13 @@ def run_qite(
             "varqite": {...},
         }
     """
+    stopping = stopping_config(steps, energy_tol, patience)
+    if initial_params is not None and not np.all(
+        np.isfinite(np.asarray(initial_params, dtype=float))
+    ):
+        raise ValueError("initial_params must be finite")
+    if initialization_source is not None and initial_params is None:
+        raise ValueError("initialization_source requires initial_params")
     start_time = time.perf_counter()
     solver = validate_solver(solver)
     ensure_dirs()
@@ -193,6 +206,15 @@ def run_qite(
         ansatz_kwargs=resolved_ansatz_kwargs,
     )
     cfg["multiplicity"] = problem.multiplicity
+    cfg.update(problem_metadata(problem))
+    cfg["initialization_source"] = initialization_source
+    cfg["termination_schema"] = 1
+    cfg["stopping"] = stopping
+    cfg["initial_params"] = (
+        None
+        if initial_params is None
+        else np.asarray(initial_params, dtype=float).tolist()
+    )
     if ansatz_selection is not None:
         cfg["ansatz_selection"] = dict(ansatz_selection)
     if hamiltonian_mode:
@@ -225,6 +247,15 @@ def run_qite(
             if record is not None and res is not None:
                 res["runtime_s"] = float(time.perf_counter() - start_time)
                 res["cache_hit"] = True
+                if progress_callback is not None:
+                    progress_callback(
+                        {
+                            "phase": "cache_hit",
+                            "iteration": res["steps"],
+                            "total_iterations": int(steps),
+                            "energy": res["energy"],
+                        }
+                    )
                 return res
 
     # --- Device, ansatz, QNodes ---
@@ -275,15 +306,14 @@ def run_qite(
     )
 
     # --- Iteration loop (VarQITE) ---
+    if initial_params is not None:
+        params = supplied_parameters(initial_params, params)
     params = np.array(params, requires_grad=True)
-    energies = [float(energy_qnode(params))]
-
     engine_cache: dict[str, Any] = {}
-    print("\n⚙️ Using VarQITE (McLachlan) update rule")
 
-    for k in range(int(steps)):
-        params = qite_step(
-            params=params,
+    def update(current):
+        return qite_step(
+            params=current,
             energy_qnode=energy_qnode,
             state_qnode=state_qnode,
             dtau=float(dtau),
@@ -296,15 +326,23 @@ def run_qite(
             cache=engine_cache,
         )
 
-        e = float(energy_qnode(params))
-        energies.append(e)
-        print(f"Iter {k + 1:02d}/{steps}: E = {e:.6f} Ha")
-
-    final_energy = float(energies[-1])
-    final_state = state_qnode(params)
+    params, energies, params_history, termination = optimize(
+        params,
+        energy_qnode,
+        update,
+        steps=steps,
+        energy_tol=energy_tol,
+        patience=patience,
+        progress_callback=progress_callback,
+    )
+    final_energy = energies[-1] if energies else None
+    final_state = state_qnode(params) if energies else None
+    if final_state is not None and not np.all(np.isfinite(final_state)):
+        termination.update(reason="numerical_failure", message="Non-finite final state")
+        final_state = None
 
     # --- Optional plot ---
-    if plot:
+    if plot and energies:
         plot_convergence(
             energies,
             molecule=str(molecule_label),
@@ -332,13 +370,25 @@ def run_qite(
         "active_orbitals": resolved_active_orbitals,
         "ansatz": str(resolved_ansatz_name),
         "ansatz_kwargs": dict(cfg.get("ansatz_kwargs", {})),
-        "energy": float(final_energy),
+        "energy": final_energy,
         "energies": [float(e) for e in energies],
-        "steps": int(steps),
+        "steps": termination["updates"],
+        "termination": termination,
+        "config": cfg,
+        "params_history": params_history,
+        "initialization": {
+            "source": "supplied" if initial_params is not None else "seed",
+            "seed": int(seed),
+            "provenance": initialization_source,
+        },
         "dtau": float(dtau),
         "num_qubits": int(qubits),
-        "final_state_real": np.real(final_state).tolist(),
-        "final_state_imag": np.imag(final_state).tolist(),
+        "final_state_real": (
+            None if final_state is None else np.real(final_state).tolist()
+        ),
+        "final_state_imag": (
+            None if final_state is None else np.imag(final_state).tolist()
+        ),
         "final_params": params_arr.astype(float).ravel().tolist(),
         "final_params_shape": list(params_arr.shape),
         "varqite": {

@@ -32,12 +32,11 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 import pennylane as qml
 
-from common.spin import reference_multiplicity
+from common.problem import problem_metadata, resolve_problem, solver_inputs
 
 from .core import run_vqe
 from .engine import build_ansatz as engine_build_ansatz
 from .engine import make_device, make_state_qnode
-from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
     load_run_record,
@@ -207,6 +206,18 @@ def run_eom_vqe(
     stepsize: float | None = None,
     seed: int = 0,
     mapping: str = "jordan_wigner",
+    symbols=None,
+    coordinates=None,
+    basis: str = "sto-3g",
+    charge: int = 0,
+    multiplicity: int = 1,
+    unit: str = "angstrom",
+    active_electrons: int | None = None,
+    active_orbitals: int | None = None,
+    hamiltonian=None,
+    num_qubits: int | None = None,
+    reference_state=None,
+    ansatz_kwargs=None,
     fd_eps: float = 1e-3,
     eps: float = 1e-10,
     omega_eps: float = 1e-12,
@@ -263,15 +274,29 @@ def run_eom_vqe(
     mapping_norm = str(mapping).strip().lower()
     molecule_label = str(molecule).strip()
 
-    H, num_qubits, _hf_state, symbols, coordinates, basis, charge, _unit = (
-        build_hamiltonian(
-            str(molecule),
-            mapping=mapping_norm,
-            unit="angstrom",
-        )
+    problem = resolve_problem(
+        molecule=molecule,
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
+        multiplicity=multiplicity,
+        unit=unit,
+        mapping=mapping,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        hamiltonian=hamiltonian,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
     )
-
-    multiplicity = reference_multiplicity(_hf_state, str(mapping).strip().lower())
+    H = problem.hamiltonian
+    symbols, coordinates = problem.symbols, problem.coordinates
+    basis, charge, multiplicity = problem.basis, problem.charge, problem.multiplicity
+    active_electrons, active_orbitals = (
+        problem.active_electrons,
+        problem.active_orbitals,
+    )
+    num_qubits = problem.num_qubits
 
     cfg = make_run_config_dict(
         symbols=symbols,
@@ -288,7 +313,8 @@ def run_eom_vqe(
         amplitude_damping_prob=0.0,
         molecule_label=molecule_label,
     )
-    cfg["multiplicity"] = multiplicity
+    cfg.update(problem_metadata(problem))
+    cfg["ansatz_kwargs"] = dict(ansatz_kwargs or {})
     cfg["eom"] = {
         "k": int(k),
         "fd_eps": float(fd_eps),
@@ -336,6 +362,8 @@ def run_eom_vqe(
         amplitude_damping_prob=0.0,
         force=True,
         mapping=mapping_norm,
+        **solver_inputs(problem),
+        ansatz_kwargs=ansatz_kwargs,
     )
 
     theta_star = np.asarray(vqe_res["final_params"], dtype=float).ravel()
@@ -356,6 +384,10 @@ def run_eom_vqe(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=str(basis).strip().lower(),
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        reference_state=problem.reference_state,
+        ansatz_kwargs=ansatz_kwargs,
     )
 
     state_qnode = make_state_qnode(
@@ -368,6 +400,10 @@ def run_eom_vqe(
         charge=int(charge),
         multiplicity=multiplicity,
         basis=str(basis).strip().lower(),
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        reference_state=problem.reference_state,
+        ansatz_kwargs=ansatz_kwargs,
     )
 
     # 2) Build finite-difference tangent vectors.

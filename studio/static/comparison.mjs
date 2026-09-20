@@ -94,7 +94,7 @@ export function renderComparison(rows) {
   content.append(
     el(
       "p",
-      "Runtime includes solver work and observer overhead, and depends on the execution environment. Cache hits reuse results; energy change is not a reference-energy error.",
+      "Runtime includes solver work and observer overhead, and depends on the execution environment. Combined VQE + VarQITE compute runtime includes the source preparation and refinement, even on cache hits; it is not invocation latency. Energy change is not a reference-energy error or proof that refinement is cost-effective.",
       "muted",
     ),
   );

@@ -27,11 +27,11 @@ from pennylane import numpy as np
 
 from common.encoding import apply_encoding
 from common.persist import cached_compute_runtime
-from common.spin import reference_multiplicity
+from common.problem import problem_metadata, resolve_problem
+from common.termination import stopping_config
 
 from .ansatz import _build_ucc_data
 from .engine import apply_optional_noise, build_optimizer, make_device
-from .hamiltonian import build_hamiltonian
 from .io_utils import (
     ensure_dirs,
     load_run_record,
@@ -56,6 +56,8 @@ def _make_ucc_pool(
     charge: int,
     pool: str,
     multiplicity: int = 1,
+    active_electrons=None,
+    active_orbitals=None,
 ) -> Tuple[List[PoolOp], np.ndarray]:
     singles, doubles, hf_state = _build_ucc_data(
         symbols,
@@ -63,6 +65,8 @@ def _make_ucc_pool(
         basis=basis,
         charge=int(charge),
         multiplicity=multiplicity,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
     )
 
     pool_key = str(pool).strip().lower()
@@ -206,6 +210,17 @@ def run_adapt_vqe(
     plot: bool = True,
     force: bool = False,
     progress_callback: Optional[Callable[[dict], None]] = None,
+    symbols=None,
+    coordinates=None,
+    basis="sto-3g",
+    charge=0,
+    multiplicity=1,
+    unit="angstrom",
+    active_electrons=None,
+    active_orbitals=None,
+    hamiltonian=None,
+    num_qubits=None,
+    reference_state=None,
 ):
     """
     Run ADAPT-VQE with a UCC excitation pool.
@@ -238,36 +253,43 @@ def run_adapt_vqe(
 
     mapping_norm = str(mapping).strip().lower()
 
-    # Hamiltonian + metadata
-    (
-        H,
-        num_wires,
-        hf_state_meta,
-        symbols,
-        coordinates,
-        basis,
-        charge,
-        unit_out,
-    ) = build_hamiltonian(str(molecule), mapping=mapping_norm, unit="angstrom")
-
-    basis = str(basis).strip().lower()
-
-    multiplicity = reference_multiplicity(hf_state_meta, str(mapping).strip().lower())
-
-    # Pool + HF (pool HF is the one consistent with qchem excitation bookkeeping)
-    pool_ops, hf_state_pool = _make_ucc_pool(
+    stopping_config(max_ops)
+    stopping_config(inner_steps)
+    if not np.isfinite(grad_tol) or grad_tol < 0:
+        raise ValueError("grad_tol must be finite and non-negative")
+    if hamiltonian is not None:
+        raise ValueError(
+            "ADAPT's UCC pool requires chemistry inputs; expert Hamiltonians are unsupported"
+        )
+    problem = resolve_problem(
+        molecule=molecule,
         symbols=symbols,
         coordinates=coordinates,
         basis=basis,
-        charge=int(charge),
+        charge=charge,
+        multiplicity=multiplicity,
+        unit=unit,
+        mapping=mapping,
+        active_electrons=active_electrons,
+        active_orbitals=active_orbitals,
+        num_qubits=num_qubits,
+        reference_state=reference_state,
+    )
+    H, num_wires = problem.hamiltonian, problem.num_qubits
+    symbols, coordinates = problem.symbols, problem.coordinates
+    basis, charge, multiplicity = problem.basis, problem.charge, problem.multiplicity
+    pool_ops, hf_state = _make_ucc_pool(
+        symbols=symbols,
+        coordinates=coordinates,
+        basis=basis,
+        charge=charge,
         multiplicity=multiplicity,
         pool=str(pool),
+        active_electrons=problem.active_electrons,
+        active_orbitals=problem.active_orbitals,
     )
-
-    # Prefer the pool HF if it matches; otherwise fall back to metadata HF.
-    hf_state = hf_state_pool
-    if len(hf_state_pool) != int(num_wires):
-        hf_state = np.array(hf_state_meta, dtype=int)
+    if len(hf_state) != num_wires:
+        raise ValueError("ADAPT pool and resolved Hamiltonian registers differ")
 
     from common.persist import canonical_noise
 
@@ -308,7 +330,8 @@ def run_adapt_vqe(
         phase_flip_prob=float(phase_flip_prob),
         molecule_label=str(molecule).strip(),
     )
-    cfg["multiplicity"] = multiplicity
+    cfg.update(problem_metadata(problem))
+    cfg["termination_schema"] = 1
     cfg["adapt_pool"] = str(pool).strip().lower()
     cfg["adapt_max_ops"] = int(max_ops)
     cfg["adapt_grad_tol"] = float(grad_tol)
@@ -359,6 +382,13 @@ def run_adapt_vqe(
     inner_energies: List[List[float]] = []
     max_gradients: List[float] = []
 
+    termination = {
+        "reason": "operator_budget_exhausted",
+        "criterion": "pool_gradient",
+        "threshold": float(grad_tol),
+        "diagnostic": None,
+        "budget": int(max_ops),
+    }
     # Outer loop
     for _outer in range(int(max_ops) + 1):
 
@@ -401,6 +431,8 @@ def run_adapt_vqe(
         )
 
         e_now = float(traj[-1])
+        if not np.isfinite(e_now) or not np.all(np.isfinite(theta)):
+            raise FloatingPointError("ADAPT numerical failure: non-finite iterate")
         energies_outer.append(e_now)
         inner_energies.append([float(x) for x in traj])
         if progress_callback is not None:
@@ -448,6 +480,10 @@ def run_adapt_vqe(
 
             g = qml.grad(energy_plus)(theta_plus)
             g_last = float(np.abs(g[-1]))
+            if not np.isfinite(g_last):
+                raise FloatingPointError(
+                    "ADAPT numerical failure: non-finite pool gradient"
+                )
 
             if g_last > best_grad_abs:
                 best_grad_abs = g_last
@@ -468,7 +504,12 @@ def run_adapt_vqe(
             )
 
         # Convergence check
-        if best_op is None or float(best_grad_abs) < float(grad_tol):
+        if best_op is None:
+            termination["reason"] = "pool_exhausted"
+            break
+        termination["diagnostic"] = float(best_grad_abs)
+        if float(best_grad_abs) < float(grad_tol):
+            termination["reason"] = "tolerance_satisfied"
             break
 
         # Append best operator with initial parameter 0
@@ -479,7 +520,10 @@ def run_adapt_vqe(
             requires_grad=True,
         )
 
+    termination["updates"] = sum(max(0, len(values) - 1) for values in inner_energies)
     result = {
+        "termination": termination,
+        "steps": termination["updates"],
         "energy": float(energies_outer[-1]) if energies_outer else float("nan"),
         "energies": [float(x) for x in energies_outer],
         "inner_energies": inner_energies,
