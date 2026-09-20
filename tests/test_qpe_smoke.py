@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import subprocess
 import sys
 
@@ -13,16 +14,26 @@ from qpe import run_qpe
 from qpe.visualize import plot_qpe_distribution
 
 
-def test_qpe_minimal_smoke() -> None:
-    atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
-
-    hamiltonian, _, hf_state = build_hamiltonian(
-        atoms,
-        coords,
+@pytest.fixture(scope="module")
+def _h2_problem():
+    # Chemistry is input setup here; geometry construction has dedicated tests.
+    return build_hamiltonian(
+        ["H", "H"],
+        np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]]),
         charge=0,
         basis="sto-3g",
     )
+
+
+@pytest.fixture
+def h2_problem(_h2_problem):
+    # Keep each solver test's mutable inputs independent, as well as its tmp_path
+    # result cache. Never share a solver result between tests.
+    return deepcopy(_h2_problem)
+
+
+def test_qpe_minimal_smoke(h2_problem) -> None:
+    hamiltonian, _, hf_state = h2_problem
 
     res = run_qpe(
         hamiltonian=hamiltonian,
@@ -42,16 +53,8 @@ def test_qpe_minimal_smoke() -> None:
     assert "pennylane" in res["environment"]["packages"]
 
 
-def test_qpe_probability_dict_has_mass() -> None:
-    atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
-
-    hamiltonian, _, hf_state = build_hamiltonian(
-        atoms,
-        coords,
-        charge=0,
-        basis="sto-3g",
-    )
+def test_qpe_probability_dict_has_mass(h2_problem) -> None:
+    hamiltonian, _, hf_state = h2_problem
 
     res = run_qpe(
         hamiltonian=hamiltonian,
@@ -68,16 +71,8 @@ def test_qpe_probability_dict_has_mass() -> None:
     assert 0.0 < total <= 1.0
 
 
-def test_qpe_analytic_mode_smoke() -> None:
-    atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
-
-    hamiltonian, _, hf_state = build_hamiltonian(
-        atoms,
-        coords,
-        charge=0,
-        basis="sto-3g",
-    )
+def test_qpe_analytic_mode_smoke(h2_problem) -> None:
+    hamiltonian, _, hf_state = h2_problem
 
     res = run_qpe(
         hamiltonian=hamiltonian,
@@ -113,16 +108,8 @@ def test_qpe_explicit_geometry_mode_smoke() -> None:
     assert "probs" in res
 
 
-def test_qpe_hamiltonian_override_uses_cache() -> None:
-    atoms = ["H", "H"]
-    coords = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.7]])
-
-    hamiltonian, _, hf_state = build_hamiltonian(
-        atoms,
-        coords,
-        charge=0,
-        basis="sto-3g",
-    )
+def test_qpe_hamiltonian_override_uses_cache(h2_problem) -> None:
+    hamiltonian, _, hf_state = h2_problem
 
     cfg = dict(
         molecule="expert_qpe_cache_smoke",
@@ -187,12 +174,16 @@ def test_qpe_distribution_displays_right_to_left_kets(monkeypatch) -> None:
         "t": 1.0,
     }
 
-    monkeypatch.setattr(plt, "close", lambda *args, **kwargs: None)
-    plot_qpe_distribution(result, show=False, save=False)
-    labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
-    plt.close("all")
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(plt, "close", lambda *args, **kwargs: None)
+            plot_qpe_distribution(result, show=False, save=False)
+            labels = [tick.get_text() for tick in plt.gca().get_xticklabels()]
 
-    assert labels == ["|00⟩", "|01⟩", "|10⟩", "|11⟩"]
+        assert labels == ["|00⟩", "|01⟩", "|10⟩", "|11⟩"]
+    finally:
+        # Restore the real close function before cleanup, even on assertion failure.
+        plt.close("all")
 
 
 def test_qpe_cli_supports_explicit_geometry(monkeypatch, capsys) -> None:

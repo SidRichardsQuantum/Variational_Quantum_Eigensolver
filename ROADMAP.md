@@ -16,7 +16,7 @@ configuration restoration, queued/running cancellation, and isolated worker
 processes with private artifact staging. It remains outside the wheel and source distribution;
 see the [Studio guide](docs/studio.md) for setup and current limitations.
 
-The working tree now adds explicit termination, supplied initial parameters,
+v0.3.30 adds explicit termination, supplied initial parameters,
 shared inputs across existing solver workflows, Studio VarQITE, and compatible
 VQE → VarQITE refinement with source comparison and combined compute costs.
 The next scientific milestone is sector-aware references/state diagnostics.
@@ -34,6 +34,17 @@ Planned work:
 - make the NumPy 2 job required once that range is supported
 
 ## Priority 1: CI And Merge Protection
+
+### Completed in v0.3.30: release validation
+
+- Gate publishing on lint, supported-Python tests, slow integration tests,
+  package validation, Studio browser checks, and documentation checks.
+- Validate the version tag and main-branch ancestry, then publish the exact
+  validated artifacts.
+- Remove duplicate fast-suite execution from the integration job, report slow
+  tests, and retain full molecule coverage while consolidating duplicate cases.
+- Keep workflows event-driven with no schedules; run the advisory NumPy 2
+  probe manually until the supported dependency range changes.
 
 ### Optionally enforce checks through repository rulesets
 

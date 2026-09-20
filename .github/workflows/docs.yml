@@ -1,12 +1,21 @@
 name: docs
 
 on:
+  workflow_call:
   pull_request:
     branches: ["main"]
+
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     env:
       PYTHONUTF8: "1"
