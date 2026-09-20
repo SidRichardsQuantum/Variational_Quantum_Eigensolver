@@ -1,17 +1,29 @@
 name: package
 
 on:
+  workflow_call:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   package:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     env:
       PYTHONUTF8: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MPLBACKEND: Agg
 
     steps:
       - name: Checkout repository
@@ -161,3 +173,11 @@ jobs:
           /tmp/vqe-wheel-smoke/bin/vqe --help >/tmp/vqe-help.txt
           /tmp/vqe-wheel-smoke/bin/qpe --help >/tmp/qpe-help.txt
           /tmp/vqe-wheel-smoke/bin/qite --help >/tmp/qite-help.txt
+
+      - name: Upload validated distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7

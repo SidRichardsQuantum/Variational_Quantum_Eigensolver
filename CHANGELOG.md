@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [0.3.30] - September 21, 2026
 
 ### Added
 
@@ -44,7 +44,36 @@ All notable changes to this project will be documented in this file.
 - Expand solver, Studio, and browser regression coverage, and document delivered
   workflows separately from deferred geometry scans and scientific diagnostics.
 
-## [0.3.29]
+
+- Gate PyPI publishing on reusable lint, supported-Python tests, slow integration
+  tests, package validation, Studio browser checks, and documentation checks.
+  Require a tag matching the project version whose commit is reachable from
+  `main`, including for manually dispatched releases. Publish the exact wheel
+  and sdist that passed package validation instead of rebuilding them.
+- Keep Actions event-driven, with no scheduled runs. Run the advisory NumPy 2
+  compatibility probe only through a manual tests-workflow dispatch. Add job
+  timeouts, read-only permissions for validation, and cancellation of superseded
+  validation runs; preserve active publishing runs.
+- Run fast tests on Python 3.10/3.11/3.12 and only the additional slow tests in
+  the Python 3.12 integration job, avoiding a duplicate fast-suite run. Report
+  the slowest tests and limit OpenMP/BLAS threads in scientific test jobs.
+- Install lint tooling from the pinned development extra. Document a fail-fast
+  local release sequence with an atomic branch/tag push and matching thread
+  limits.
+- Consolidate five duplicate registry test cases while retaining all 32 registry
+  molecules and the same assertions. Reuse real H₂ input setup across QPE smoke
+  tests with independent deep copies and per-test result caches. Preserve
+  numerical tolerances, iteration counts, and real subprocess coverage.
+
+### Fixed
+
+- Restore Matplotlib's real `close()` before cleaning up the QPE plot-label test,
+  including when an assertion fails, so its mocked close function cannot leave
+  figures open.
+
+---
+
+## [0.3.29] - September 20, 2026
 
 ### Fixed
 

@@ -63,20 +63,20 @@ def test_build_hamiltonian_h2() -> None:
     assert all(hasattr(op, "wires") for op in ops)
 
 
-@pytest.mark.parametrize("name", REPRESENTATIVE_REGISTRY_MOLECULES)
-def test_build_hamiltonian_representative_registry_molecules(name: str) -> None:
-    cfg = get_molecule_config(name)
-    hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)
-
-    assert n_qubits > 0
-    assert len(hf_state) == n_qubits
-    assert len(hamiltonian) > 0
-
-
-@pytest.mark.slow
+# The representative cases belong to both the default and full chemistry runs.
+# Mark only the additional cases slow to avoid repeating identical registry cases.
 @pytest.mark.chemistry
 @pytest.mark.full_chemistry
-@pytest.mark.parametrize("name", FULL_REGISTRY_MOLECULES)
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=() if name in REPRESENTATIVE_REGISTRY_MOLECULES else pytest.mark.slow,
+        )
+        for name in FULL_REGISTRY_MOLECULES
+    ],
+)
 def test_build_hamiltonian_full_registry_molecules(name: str) -> None:
     cfg = get_molecule_config(name)
     hamiltonian, n_qubits, hf_state = build_hamiltonian(**cfg)

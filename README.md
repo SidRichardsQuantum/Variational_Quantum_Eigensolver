@@ -445,6 +445,23 @@ Run the full suite, including slow integration coverage, with:
 pytest -q -o addopts=''
 ```
 
+Run only the additional slow tests, or inspect test durations, with:
+
+```bash
+python -m pytest -q -m slow --durations=15
+```
+
+CI runs the fast suite on Python 3.10/3.11/3.12 and the additional slow tests on
+Python 3.12, without repeating the fast suite in the integration job. Scientific
+test jobs use `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1`; use the same environment
+settings locally to avoid thread oversubscription.
+
+Release tags must match the project version and reference a commit reachable
+from `main`. Publishing waits for validation and uploads the validated package
+artifacts. There are no scheduled workflows; the advisory NumPy 2 probe is
+manual-only. See the [release guide](docs/releasing.md) for the terminal sequence
+and complete release checks.
+
 Run a registered benchmark suite and write reproducible artifacts with:
 
 ```bash
