@@ -39,5 +39,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: studio-screenshots
+          retention-days: 14
           path: /tmp/vqe-studio-*.png
           if-no-files-found: ignore
