@@ -358,6 +358,14 @@ def make_energy_qnode(
     energy(params) -> float
     """
     diff_method = _choose_diff_method(noisy, diff_method)
+    split_terms = noisy and isinstance(H, (qml.Hamiltonian, qml.ops.Sum))
+    if split_terms:
+        coefficients, observables = H.terms()
+        coefficients = np.stack(coefficients)
+        observables = [
+            qml.Identity(0) if isinstance(op, qml.Identity) and not op.wires else op
+            for op in observables
+        ]
 
     @qml.qnode(dev, diff_method=diff_method)
     def energy(params):
@@ -385,8 +393,19 @@ def make_energy_qnode(
             num_wires,
             noise_model=noise_model,
         )
+        if split_terms:
+            return tuple(qml.expval(observable) for observable in observables)
         return qml.expval(H)
 
+    if split_terms:
+        # PennyLane 0.42's mixed-state Hamiltonian measurement calls
+        # np.sum(generator). Measure terms on one tape and combine them with
+        # an Autograd-compatible dot product instead.
+        @wraps(energy)
+        def noisy_energy(params):
+            return np.dot(coefficients, np.stack(energy(params)))
+
+        return noisy_energy
     return energy
 
 
