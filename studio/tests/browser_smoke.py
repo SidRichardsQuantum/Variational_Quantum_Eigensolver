@@ -254,7 +254,9 @@ def main():
                 page.locator(".card").first.get_by_role(
                     "button", name="View", exact=True
                 ).click()
-                page.get_by_role("button", name="Re-run", exact=True).click()
+                page.locator("#detail-content").get_by_role(
+                    "button", name="Re-run", exact=True
+                ).click()
                 expect(page.locator("#initialization")).to_contain_text(
                     "Refining VQE source"
                 )
